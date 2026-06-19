@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { isDatabaseConfigured } from "@/lib/dbConfig";
 import MatchTabs from "@/components/matches/MatchTabs";
 import type { MatchDTO } from "@/lib/types";
 
@@ -9,7 +10,7 @@ export default async function HomePage() {
   let past: MatchDTO[] = [];
   let dbAvailable = false;
 
-  try {
+  if (isDatabaseConfigured()) {
     const raw = await db.match.findMany({
       include: {
         registrations: {
@@ -24,8 +25,6 @@ export default async function HomePage() {
     upcoming = matches.filter((m) => new Date(m.scheduledAt) >= now);
     past = matches.filter((m) => new Date(m.scheduledAt) < now).reverse();
     dbAvailable = true;
-  } catch {
-    // DB not configured — client will load from IndexedDB
   }
 
   return (

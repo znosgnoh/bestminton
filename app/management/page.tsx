@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { isDatabaseConfigured } from "@/lib/dbConfig";
 import MembersSection from "@/components/management/MembersSection";
 import MatchesSection from "@/components/management/MatchesSection";
 import type { MemberDTO, MatchDTO } from "@/lib/types";
@@ -10,7 +11,7 @@ export default async function ManagementPage() {
   let matches: MatchDTO[] = [];
   let dbAvailable = false;
 
-  try {
+  if (isDatabaseConfigured()) {
     const [rawMembers, rawMatches] = await Promise.all([
       db.member.findMany({ orderBy: { name: "asc" } }),
       db.match.findMany({
@@ -26,8 +27,6 @@ export default async function ManagementPage() {
     members = JSON.parse(JSON.stringify(rawMembers));
     matches = JSON.parse(JSON.stringify(rawMatches));
     dbAvailable = true;
-  } catch {
-    // DB not configured — client will load from IndexedDB
   }
 
   return (

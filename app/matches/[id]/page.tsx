@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { isDatabaseConfigured } from "@/lib/dbConfig";
 import { isSplitwiseConfigured } from "@/lib/splitwise";
 import MatchDetailClient from "./MatchDetailClient";
 import type { MatchDTO, MemberDTO } from "@/lib/types";
@@ -34,7 +35,7 @@ export default async function MatchPage({
   let initialMembers: MemberDTO[] = [];
   let dbAvailable = false;
 
-  try {
+  if (isDatabaseConfigured()) {
     const [rawMatch, rawMembers] = await Promise.all([
       db.match.findUnique({
         where: { id: matchId },
@@ -50,11 +51,9 @@ export default async function MatchPage({
 
     if (rawMatch) {
       initialMatch = JSON.parse(JSON.stringify(rawMatch));
-      dbAvailable = true;
     }
     initialMembers = JSON.parse(JSON.stringify(rawMembers));
-  } catch {
-    // DB not available — client will load from IndexedDB
+    dbAvailable = true;
   }
 
   return (

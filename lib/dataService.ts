@@ -1,4 +1,5 @@
 // Client-side only. Routes data operations to the real API or local IndexedDB.
+import { allowsIndexedDbFallback } from "./dbConfig";
 import * as localDb from "./localDb";
 import type { MemberDTO, MatchDTO, RegistrationDTO } from "./types";
 
@@ -9,6 +10,7 @@ let _modePromise: Promise<StorageMode> | null = null;
 
 async function detectMode(): Promise<StorageMode> {
   if (typeof window === "undefined") return "api";
+  if (!allowsIndexedDbFallback()) return "api";
   try {
     const res = await fetch("/api/health", { cache: "no-store" });
     const data = (await res.json()) as { db: boolean };

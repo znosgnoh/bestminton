@@ -26,7 +26,7 @@ function MatchTabsInner({ upcoming: initialUpcoming, past: initialPast, dbAvaila
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  // Load from IndexedDB when server DB is not available
+  // Load from API or IndexedDB when server had no Postgres configured (local dev only)
   useEffect(() => {
     if (!dbAvailable) {
       dataService.getMatches().then((matches) => {
