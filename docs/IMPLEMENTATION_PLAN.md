@@ -1,7 +1,7 @@
-# Implementation Plan — Badminton Splitwise Integrator
+# Implementation Plan — Bestminton (v2)
 
-**Source:** US-01 through US-16 (see `docs/`) + `CLAUDE.md`
-**Stack:** Next.js 16 App Router · TypeScript · TailwindCSS v4 · Lucide Icons · React 19
+**Source:** US-01 – US-28 (see `docs/`) + `CLAUDE.md`
+**Stack:** Next.js 16 · React 19 · TypeScript · TailwindCSS v4 · Prisma · Vercel Postgres
 
 ---
 
@@ -9,481 +9,527 @@
 
 ```
 bestminton/
+├── prisma/
+│   └── schema.prisma                         # DB schema — Member, Match, MatchRegistration, Guest
+│
 ├── app/
 │   ├── api/
+│   │   ├── members/
+│   │   │   ├── route.ts                      # GET list, POST create
+│   │   │   └── [id]/
+│   │   │       └── route.ts                  # PUT update, DELETE remove
+│   │   ├── matches/
+│   │   │   ├── route.ts                      # GET list, POST create
+│   │   │   └── [id]/
+│   │   │       ├── route.ts                  # GET detail, PUT update, DELETE remove
+│   │   │       ├── register/
+│   │   │       │   └── route.ts              # POST register, DELETE unregister
+│   │   │       └── guests/
+│   │   │           ├── route.ts              # POST add guest
+│   │   │           └── [guestId]/
+│   │   │               └── route.ts          # DELETE remove guest
 │   │   └── splitwise/
-│   │       ├── members/
-│   │       │   └── route.ts          # GET – fetch Splitwise group members
-│   │       └── expense/
-│   │           └── route.ts          # POST – create expense in Splitwise
+│   │       ├── members/route.ts              # GET Splitwise group members (proxy)
+│   │       └── expense/route.ts              # POST create Splitwise expense (proxy)
+│   │
+│   ├── matches/
+│   │   └── [id]/
+│   │       └── page.tsx                      # Match detail — registration + settlement
+│   ├── management/
+│   │   └── page.tsx                          # Admin — member list + match list + forms
 │   ├── globals.css
 │   ├── layout.tsx
-│   └── page.tsx                      # Single-page app shell
+│   └── page.tsx                              # Homepage — upcoming/past match tabs
+│
 ├── components/
-│   ├── SessionForm.tsx               # Step 1 – Total Cost + Paid By (US-01, US-02)
-│   ├── MemberList.tsx                # Step 2 – Attendance list container (US-03, US-04, US-14)
-│   ├── MemberRow.tsx                 # Step 2 – One row per member (US-04, US-05, US-06)
-│   ├── ReviewSummary.tsx             # Step 3 – Summary table (US-07, US-08, US-09)
-│   ├── SyncButton.tsx                # Step 4 – Sync + status states (US-10, US-13, US-15)
+│   ├── matches/
+│   │   ├── MatchCard.tsx                     # Card shown on homepage
+│   │   ├── MatchTabs.tsx                     # Upcoming / Past tab switcher
+│   │   ├── MemberRoster.tsx                  # Avatar grid for self-registration
+│   │   ├── AvatarTile.tsx                    # Single tappable avatar
+│   │   ├── RegistrationRow.tsx               # Registered player row + guest controls
+│   │   └── SettleForm.tsx                    # Cost / hours / payer entry form
+│   ├── management/
+│   │   ├── MemberForm.tsx                    # Add / edit member
+│   │   ├── MemberCard.tsx                    # Member list item (edit + delete)
+│   │   ├── MatchForm.tsx                     # Create / edit match (recurring toggle)
+│   │   └── MatchManageRow.tsx                # Match list item (edit + delete)
 │   └── ui/
-│       ├── ErrorBanner.tsx           # Reusable error banner with Retry (US-13, US-14)
-│       └── LoadingSpinner.tsx        # Reusable spinner
-├── hooks/
-│   └── useSessionState.ts            # All client state in one hook
+│       ├── Avatar.tsx                        # Avatar with fallback initials
+│       ├── ErrorBanner.tsx
+│       ├── LoadingSpinner.tsx
+│       ├── SyncButton.tsx                    # Sync + status states
+│       └── Tabs.tsx                          # Generic tab component
+│
 ├── lib/
-│   ├── calculations.ts               # Weight + share math + rounding fix (US-07, US-08)
-│   ├── splitwise.ts                  # Server-side Splitwise HTTP helper
-│   └── types.ts                      # All shared TypeScript interfaces
-├── .env.local                        # SPLITWISE_API_KEY, SPLITWISE_GROUP_ID
+│   ├── calculations.ts                       # Weight + share math + rounding fix
+│   ├── db.ts                                 # Prisma client singleton
+│   ├── splitwise.ts                          # Server-side Splitwise fetch helper
+│   └── types.ts                              # Shared TypeScript interfaces
+│
+├── .env.local
 ├── next.config.ts
-├── tailwind.config.ts
 └── tsconfig.json
 ```
 
 ---
 
-## 2. Core Types (`lib/types.ts`)
+## 2. Prisma Schema (`prisma/schema.prisma`)
 
-```typescript
-// --- Splitwise API shapes ---
-
-export interface SplitwiseMember {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  picture: { small: string; medium: string; large: string };
+```prisma
+generator client {
+  provider = "prisma-client-js"
 }
 
-// --- Application domain models ---
-
-export interface AttendanceRecord {
-  memberId: number;
-  firstName: string;
-  lastName: string;
-  present: boolean;
-  hours: number;       // positive float; required when present = true
-  guests: number;      // non-negative integer; default 0
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
-export interface CalculatedShare {
-  memberId: number;
-  firstName: string;
-  lastName: string;
-  weight: number;      // W_i = hours * (1 + guests)
-  owedShare: number;   // after rounding adjustment, in currency units
+model Member {
+  id           Int      @id @default(autoincrement())
+  name         String
+  avatarUrl    String?
+  splitwiseId  Int?     @unique
+  createdAt    DateTime @default(now())
+
+  registrations MatchRegistration[]
+  paidMatches   Match[]             @relation("MatchPayer")
 }
 
-// --- Step-based UI state machine ---
+model Match {
+  id              Int      @id @default(autoincrement())
+  title           String
+  venue           String
+  scheduledAt     DateTime
+  hours           Float?
+  totalCost       Float?
+  paidByMemberId  Int?
+  isRecurring     Boolean  @default(false)
+  recurDayOfWeek  Int?
+  synced          Boolean  @default(false)
+  createdAt       DateTime @default(now())
 
-export type AppStep = 'init' | 'attendance' | 'review' | 'done';
-export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
-
-export interface SessionState {
-  step: AppStep;
-  totalCost: number | '';        // '' when field is empty
-  paidById: number | null;
-  members: SplitwiseMember[];
-  attendance: AttendanceRecord[];
-  membersLoading: boolean;
-  membersError: string | null;
-  syncStatus: SyncStatus;
-  syncError: string | null;
+  paidBy        Member?             @relation("MatchPayer", fields: [paidByMemberId], references: [id])
+  registrations MatchRegistration[]
 }
 
-// --- API contract: client → /api/splitwise/expense ---
+model MatchRegistration {
+  id        Int      @id @default(autoincrement())
+  matchId   Int
+  memberId  Int
+  joinedAt  DateTime @default(now())
 
-export interface CreateExpenseRequest {
-  totalCost: number;
-  description: string;          // e.g. "Badminton – 18 Jun 2026"
-  groupId: number;
-  paidById: number;
-  participants: Array<{
-    userId: number;
-    owedShare: number;           // already rounding-adjusted
-  }>;
+  match  Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id])
+  guests Guest[]
+
+  @@unique([matchId, memberId])
 }
 
-// --- Splitwise flat payload (internal, route handler only) ---
+model Guest {
+  id             Int      @id @default(autoincrement())
+  label          String?
+  registrationId Int
 
-export type SplitwiseFlatPayload = Record<string, string | number>;
+  registration MatchRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+}
 ```
 
 ---
 
-## 3. Calculation Logic (`lib/calculations.ts`)
-
-### 3.1 Weight Formula
+## 3. Core Types (`lib/types.ts`)
 
 ```typescript
-export function computeWeight(hours: number, guests: number): number {
-  return hours * (1 + guests);
+// Prisma-shaped response types returned from API routes
+
+export interface MemberDTO {
+  id: number;
+  name: string;
+  avatarUrl: string | null;
+  splitwiseId: number | null;
 }
+
+export interface GuestDTO {
+  id: number;
+  label: string | null;
+}
+
+export interface RegistrationDTO {
+  id: number;
+  memberId: number;
+  member: MemberDTO;
+  guests: GuestDTO[];
+}
+
+export interface MatchDTO {
+  id: number;
+  title: string;
+  venue: string;
+  scheduledAt: string;           // ISO string (serialised from DateTime)
+  hours: number | null;
+  totalCost: number | null;
+  paidByMemberId: number | null;
+  isRecurring: boolean;
+  recurDayOfWeek: number | null;
+  synced: boolean;
+  registrations: RegistrationDTO[];
+}
+
+// Calculation types (unchanged from v1)
+
+export interface CalculatedShare {
+  memberId: number;
+  name: string;
+  guestCount: number;
+  weight: number;
+  owedShare: number;
+}
+
+export interface CreateExpenseRequest {
+  totalCost: number;
+  description: string;
+  groupId: number;
+  paidById: number;
+  participants: Array<{ userId: number; owedShare: number }>;
+}
+
+export type SplitwiseFlatPayload = Record<string, string | number | boolean>;
 ```
 
-### 3.2 Share Calculation with Rounding Fix (US-07, US-08)
+---
+
+## 4. Calculation Logic (`lib/calculations.ts`)
+
+Unchanged from v1 — `computeWeight(hours, guests)` and `calculateShares(registrations, totalCost)`.
+
+The function signature changes slightly to accept `RegistrationDTO[]` instead of the old `AttendanceRecord[]`:
 
 ```typescript
-import { AttendanceRecord, CalculatedShare } from './types';
-import { computeWeight } from './calculations';
-
 export function calculateShares(
-  attendance: AttendanceRecord[],
-  totalCost: number
+  registrations: RegistrationDTO[],
+  totalCost: number,
+  hours: number
 ): CalculatedShare[] {
-  const participants = attendance.filter((r) => r.present);
+  const participants = registrations.map((r) => ({
+    memberId: r.memberId,
+    name: r.member.name,
+    guestCount: r.guests.length,
+    weight: computeWeight(hours, r.guests.length),
+  }));
 
-  const totalWeight = participants.reduce(
-    (sum, r) => sum + computeWeight(r.hours, r.guests),
-    0
-  );
+  const totalWeight = participants.reduce((s, p) => s + p.weight, 0);
 
-  // Step 1 – raw rounded shares
-  const shares: CalculatedShare[] = participants.map((r) => {
-    const weight = computeWeight(r.hours, r.guests);
-    const rawOwed = (totalCost * weight) / totalWeight;
-    return {
-      memberId: r.memberId,
-      firstName: r.firstName,
-      lastName: r.lastName,
-      weight,
-      owedShare: Math.round(rawOwed * 100) / 100,
-    };
-  });
+  const shares = participants.map((p) => ({
+    ...p,
+    owedShare: Math.round((totalCost * p.weight / totalWeight) * 100) / 100,
+  }));
 
-  // Step 2 – rounding correction applied to index 0
-  const sumOwed = shares.reduce((s, r) => s + r.owedShare, 0);
-  // Use integer arithmetic to avoid floating-point drift
-  const diffCents = Math.round(totalCost * 100) - Math.round(sumOwed * 100);
+  // Cent-integer rounding correction on index 0
+  const diffCents =
+    Math.round(totalCost * 100) -
+    shares.reduce((s, p) => s + Math.round(p.owedShare * 100), 0);
   if (diffCents !== 0) {
-    shares[0].owedShare =
-      Math.round((shares[0].owedShare + diffCents / 100) * 100) / 100;
+    shares[0].owedShare = Math.round((shares[0].owedShare + diffCents / 100) * 100) / 100;
   }
 
   return shares;
 }
 ```
 
-**Invariant:** `shares.reduce((s, r) => s + r.owedShare, 0) === totalCost` always holds after this function.
-
 ---
 
-## 4. API Route Specifications
-
-### 4.1 `GET /api/splitwise/members` (`app/api/splitwise/members/route.ts`)
-
-**Purpose:** Proxy to Splitwise to avoid CORS (US-03). Reads `SPLITWISE_GROUP_ID` from env.
-
-**Flow:**
-1. Read `SPLITWISE_API_KEY` and `SPLITWISE_GROUP_ID` from `process.env`.
-2. `GET https://secure.splitwise.com/api/v3.0/get_group/:groupId` with `Authorization: Bearer <key>`.
-3. Parse `response.group.members` array.
-4. Return `{ members: SplitwiseMember[] }` to the client.
-5. On failure, return `{ error: string }` with appropriate HTTP status.
-
-**Error handling:** 401 → "Invalid API key", 404 → "Group not found", network → "Could not reach Splitwise".
-
----
-
-### 4.2 `POST /api/splitwise/expense` (`app/api/splitwise/expense/route.ts`)
-
-**Purpose:** Receive the validated session data, apply rounding, construct the Splitwise flat payload, and POST it server-to-server (US-10, US-11).
-
-**Expected client request body:** `CreateExpenseRequest` (defined in §2)
-
-**Transformation: client → Splitwise flat payload**
+## 5. Database Client (`lib/db.ts`)
 
 ```typescript
-function buildSplitwisePayload(
-  req: CreateExpenseRequest
-): SplitwiseFlatPayload {
-  const payload: SplitwiseFlatPayload = {
-    cost: req.totalCost.toFixed(2),
-    description: req.description,
-    group_id: req.groupId,
-    currency_code: 'THB',   // adjust per deployment env
-    split_equally: false,
-  };
+import { PrismaClient } from "@prisma/client";
 
-  req.participants.forEach((p, i) => {
-    payload[`users__${i}__user_id`] = p.userId;
-    payload[`users__${i}__owed_share`] = p.owedShare.toFixed(2);
-    payload[`users__${i}__paid_share`] =
-      p.userId === req.paidById
-        ? req.totalCost.toFixed(2)
-        : '0.00';
-  });
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-  return payload;
-}
-```
+export const db =
+  globalForPrisma.prisma ??
+  new PrismaClient({ log: process.env.NODE_ENV === "development" ? ["query"] : [] });
 
-**Rounding note:** The `owedShare` values arriving from the client have already been corrected by `calculateShares()` on the client. The route handler performs a **final server-side re-verification** before forwarding: sum all `owed_share` values and assert they equal `cost`. If not (e.g. client bug), abort with 422.
-
-**Splitwise API call:**
-
-```
-POST https://secure.splitwise.com/api/v3.0/create_expense
-Authorization: Bearer <SPLITWISE_API_KEY>
-Content-Type: application/x-www-form-urlencoded
-
-cost=1000.00&description=Badminton+...&group_id=12345&
-users__0__user_id=101&users__0__paid_share=1000.00&users__0__owed_share=400.00&
-users__1__user_id=102&users__1__paid_share=0.00&users__1__owed_share=350.00&
-...
-```
-
-**Response handling:**
-- 200/201 → return `{ success: true, expenseId: data.expense.id }` to client.
-- 4xx from Splitwise → forward the Splitwise error message to the client.
-- Network failure → return 502 with `{ error: "Could not reach Splitwise" }`.
-
----
-
-## 5. UI Components
-
-### 5.1 `SessionForm` (US-01, US-02)
-
-**Props:** `members: SplitwiseMember[]`, `onSubmit(totalCost: number, paidById: number): void`
-
-**Renders:**
-- `<input type="number">` for Total Cost — validates `> 0`, shows inline error.
-- `<select>` for "Paid by" — populated from `members`, required.
-- "Next" button disabled until both fields are valid.
-
----
-
-### 5.2 `MemberList` (US-03, US-14)
-
-**Props:** `loading: boolean`, `error: string | null`, `attendance: AttendanceRecord[]`, `onRetry(): void`, `onToggle(id): void`, `onHoursChange(id, v): void`, `onGuestsChange(id, v): void`
-
-**Renders:**
-- While `loading` → `<LoadingSpinner />`
-- While `error` → `<ErrorBanner message={error} onRetry={onRetry} />`
-- Otherwise → list of `<MemberRow />` for each record.
-- Footer: "Next: Review" button — disabled when 0 members are present (US-12).
-
----
-
-### 5.3 `MemberRow` (US-04, US-05, US-06)
-
-**Props:** `record: AttendanceRecord`, `onToggle(): void`, `onHoursChange(v: number): void`, `onGuestsChange(v: number): void`
-
-**Renders:**
-- Checkbox — toggles `present`.
-- Member name (first + last).
-- "Hours" input — enabled only when `present`; validates `> 0`; inline error if invalid.
-- "Guests" input — enabled only when `present`; default `0`; validates `>= 0` integer.
-- Unchecking clears hours back to `0` and guests to `0`.
-
----
-
-### 5.4 `ReviewSummary` (US-07, US-08, US-09)
-
-**Props:** `shares: CalculatedShare[]`, `totalCost: number`, `paidByName: string`, `onBack(): void`
-
-**Renders:**
-- Session metadata: Total Cost, Paid by.
-- Table columns: Name | Hours | Guests | Weight | Owes
-- Footer row: Total | — | — | — | `totalCost`
-- "Back" button → returns to attendance step.
-- "Sync to Splitwise" → rendered as `<SyncButton />`.
-
----
-
-### 5.5 `SyncButton` (US-10, US-13, US-15)
-
-**Props:** `status: SyncStatus`, `error: string | null`, `onClick(): void`, `onReset(): void`
-
-**State rendering:**
-- `idle` → enabled button "Sync to Splitwise".
-- `syncing` → disabled button + `<LoadingSpinner />` inside.
-- `success` → green checkmark + "Synced!" text + "Start New Session" button (calls `onReset`).
-- `error` → red error message from `error` prop + "Retry" button re-enables.
-
----
-
-### 5.6 `ErrorBanner` (US-13, US-14)
-
-**Props:** `message: string`, `onRetry?(): void`
-
-**Renders:** Red alert banner with the message and an optional "Retry" button.
-
----
-
-### 5.7 `LoadingSpinner`
-
-Simple animated SVG spinner, no props.
-
----
-
-## 6. State Management (`hooks/useSessionState.ts`)
-
-Single hook that owns all application state and exposes typed actions. No external state library needed.
-
-**State shape:** `SessionState` (see §2).
-
-**Exported actions:**
-
-| Action | Description |
-|---|---|
-| `setTotalCost(v)` | Update total cost field |
-| `setPaidBy(id)` | Set payer; auto-marks them as present |
-| `loadMembers()` | Fetch `/api/splitwise/members`, populate `attendance` |
-| `retryLoadMembers()` | Clears error and calls `loadMembers()` |
-| `toggleAttendance(id)` | Toggle present; clear hours/guests on uncheck |
-| `setHours(id, v)` | Update hours for a member |
-| `setGuests(id, v)` | Update guests for a member |
-| `goToReview()` | Validate all present members have hours > 0, advance step |
-| `goBack()` | Return from review to attendance |
-| `syncExpense()` | Run `calculateShares`, POST to `/api/splitwise/expense` |
-| `reset()` | Return all state to initial values |
-
-**Derived values** (computed inside the hook, not stored):
-
-```typescript
-const presentMembers = attendance.filter((r) => r.present);
-const shares = presentMembers.length > 0
-  ? calculateShares(attendance, totalCost as number)
-  : [];
-const canReview =
-  typeof totalCost === 'number' &&
-  totalCost > 0 &&
-  paidById !== null &&
-  presentMembers.length > 0 &&
-  presentMembers.every((r) => r.hours > 0);
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
 ```
 
 ---
 
-## 7. Page Assembly (`app/page.tsx`)
+## 6. API Route Specifications
 
-Step-based rendering — no router navigation needed (single page):
+### 6.1 Members
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| GET | `/api/members` | — | `MemberDTO[]` |
+| POST | `/api/members` | `{ name, avatarUrl?, splitwiseId? }` | `MemberDTO` |
+| PUT | `/api/members/[id]` | same as POST | `MemberDTO` |
+| DELETE | `/api/members/[id]` | — | `{ success: true }` or 409 |
+
+**DELETE guard:** If the member has any `MatchRegistration` rows, return 409.
+
+---
+
+### 6.2 Matches
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| GET | `/api/matches` | — | `MatchDTO[]` (with registrations) |
+| POST | `/api/matches` | `{ title, venue, scheduledAt, isRecurring?, recurDayOfWeek? }` | `MatchDTO[]` (1 or N for recurring) |
+| GET | `/api/matches/[id]` | — | `MatchDTO` |
+| PUT | `/api/matches/[id]` | Partial match fields | `MatchDTO` |
+| DELETE | `/api/matches/[id]` | — | `{ success: true }` |
+
+**Recurring match creation:** When `isRecurring = true`, generate 4 weekly occurrences. Each is a separate row; `isRecurring` and `recurDayOfWeek` are stored on each row so they are identifiable.
+
+---
+
+### 6.3 Registration
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| POST | `/api/matches/[id]/register` | `{ memberId }` | `RegistrationDTO` |
+| DELETE | `/api/matches/[id]/register` | `{ memberId }` | `{ success: true }` |
+
+---
+
+### 6.4 Guests
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| POST | `/api/matches/[id]/guests` | `{ memberId, label? }` | `GuestDTO` |
+| DELETE | `/api/matches/[id]/guests/[guestId]` | — | `{ success: true }` |
+
+---
+
+### 6.5 Splitwise (unchanged from v1)
+
+- `GET /api/splitwise/members` — proxy to Splitwise group members
+- `POST /api/splitwise/expense` — builds flat payload, forwards to Splitwise
+
+Both return 503 if env vars are missing.
+
+---
+
+## 7. Key UI Components
+
+### 7.1 `MatchCard` (homepage)
+Props: `match: MatchDTO`
+Shows title, venue, formatted date/time, player count badge, recurring badge, "Synced" badge for past matches.
+Links to `/matches/[id]`.
+
+### 7.2 `MatchTabs` (homepage)
+Client component. Reads `?tab=` from the URL and renders the correct subset of matches.
+Tabs: "Upcoming" | "Past".
+
+### 7.3 `MemberRoster` (`/matches/[id]`)
+Client component.
+Shows all `Member` rows as `AvatarTile` grid.
+Tiles for registered members are highlighted; tapping toggles registration.
+
+### 7.4 `AvatarTile`
+Props: `member: MemberDTO`, `registered: boolean`, `onToggle(): void`
+Renders avatar image (or initials fallback), name below, checkmark overlay when registered.
+Calls `POST` or `DELETE /api/matches/[id]/register` on tap.
+
+### 7.5 `RegistrationRow`
+Props: `registration: RegistrationDTO`, `matchId: number`
+Shows member avatar + name, guest count, "+ Guest" button, and per-guest remove buttons.
+
+### 7.6 `SettleForm` (`/matches/[id]`, past matches only)
+Props: `match: MatchDTO`, `registrations: RegistrationDTO[]`
+Fields: Total Cost, Paid By (dropdown of registered members), Hours Played.
+On save → `PUT /api/matches/[id]`.
+Derives and displays `CalculatedShare[]` table below.
+Shows `SyncButton` once cost + hours are set.
+
+### 7.7 `MemberForm` (`/management`)
+Add or edit a member. Name, Avatar URL, Splitwise ID fields.
+On submit → `POST /api/members` or `PUT /api/members/[id]`.
+
+### 7.8 `MatchForm` (`/management`)
+Create or edit a match. Title, Venue, Date, Time, Recurring toggle.
+When recurring is on, day-of-week label appears ("Will repeat every Tuesday").
+On submit → `POST /api/matches` or `PUT /api/matches/[id]`.
+
+---
+
+## 8. Page Architecture
+
+### 8.1 Homepage (`app/page.tsx`)
+**Server Component** — fetches all matches from DB via Prisma, passes them as props to `MatchTabs` (Client Component for tab interaction).
 
 ```
-step === 'init'       → <SessionForm />
-step === 'attendance' → <MemberList />
-step === 'review'     → <ReviewSummary /> + <SyncButton />
-step === 'done'       → handled inside <SyncButton status="success" />
+HomePage (Server)
+└── MatchTabs (Client) — reads ?tab param
+    ├── [Upcoming] → MatchCard list
+    └── [Past]     → MatchCard list
+```
+
+### 8.2 Match Detail (`app/matches/[id]/page.tsx`)
+**Server Component** — fetches match + registrations + all members. Renders:
+- Match header (title, venue, datetime)
+- `MemberRoster` (Client) — for self-registration
+- `RegistrationRow` list (Client) — shows registrations + guest controls
+- `SettleForm` (Client, past matches only) — cost entry + sync
+
+### 8.3 Management (`app/management/page.tsx`)
+**Server Component** — fetches all members and matches. Renders two sections:
+- Members: `MemberCard` list + `MemberForm`
+- Matches: `MatchManageRow` list + `MatchForm`
+
+---
+
+## 9. Environment Variables (`.env.local`)
+
+```bash
+# Vercel Postgres (required)
+POSTGRES_URL=
+POSTGRES_PRISMA_URL=
+POSTGRES_URL_NON_POOLING=
+
+# Splitwise (optional — only needed to sync expenses)
+SPLITWISE_API_KEY=
+SPLITWISE_GROUP_ID=
 ```
 
 ---
 
-## 8. Environment Variables (`.env.local`)
+## 10. Implementation Steps
 
-```
-SPLITWISE_API_KEY=your_api_key_here
-SPLITWISE_GROUP_ID=your_group_id_here
-```
+### Step 1 — Prisma Setup
 
-These are **never** sent to the client. Next.js enforces this — they have no `NEXT_PUBLIC_` prefix.
+1. `npm install prisma @prisma/client`
+2. `npx prisma init --datasource-provider postgresql`
+3. Write `prisma/schema.prisma` (see §2).
+4. Add Vercel Postgres env vars to `.env.local`.
+5. `npx prisma migrate dev --name init` to create tables.
+6. Write `lib/db.ts` singleton.
 
----
-
-## 9. Implementation Steps
-
-### Step 1 — Project Setup
-
-1. Bootstrap: `npx create-next-app@16 . --typescript --tailwind --app --no-src-dir --import-alias "@/*" --no-eslint --yes`
-2. Install: `npm install lucide-react`
-3. Create `.env.local` with the two env vars.
-4. Clean the default `app/page.tsx` and `globals.css`.
+**Covers:** database foundation for all epics.
 
 ---
 
-### Step 2 — Types & Calculation Utilities
+### Step 2 — Member API Routes
 
-**Files:** `lib/types.ts`, `lib/calculations.ts`
+**Files:** `app/api/members/route.ts`, `app/api/members/[id]/route.ts`
 
-1. Write all interfaces from §2 into `lib/types.ts`.
-2. Implement `computeWeight` and `calculateShares` from §3 into `lib/calculations.ts`.
-3. Manually verify with example: `totalCost=100`, two members each 1.5h 0 guests → each owes 50.00. Three members (1h/0g, 1.5h/1g, 1h/0g) → weights 1, 3, 1 → shares 20.00, 60.00, 20.00.
+1. `GET /api/members` → `db.member.findMany({ orderBy: { name: 'asc' } })`.
+2. `POST /api/members` → validate name, create member.
+3. `PUT /api/members/[id]` → update fields.
+4. `DELETE /api/members/[id]` → check for registrations first (409 guard), then delete.
 
-**Covers:** US-07, US-08, US-16
-
----
-
-### Step 3 — API Route Handlers
-
-**Files:** `app/api/splitwise/members/route.ts`, `app/api/splitwise/expense/route.ts`, `lib/splitwise.ts`
-
-1. Write `lib/splitwise.ts` — a thin server-side fetch wrapper that attaches `Authorization: Bearer` and handles Splitwise error shapes.
-2. Write `GET /api/splitwise/members`:
-   - Call `GET https://secure.splitwise.com/api/v3.0/get_group/{SPLITWISE_GROUP_ID}`
-   - Return `{ members }` or `{ error }`.
-3. Write `POST /api/splitwise/expense`:
-   - Parse and validate `CreateExpenseRequest` body.
-   - Server-side re-verify rounding invariant.
-   - Call `buildSplitwisePayload()`.
-   - POST to Splitwise as `application/x-www-form-urlencoded`.
-   - Return success or structured error.
-
-**Covers:** US-03, US-10, US-11, US-13, US-14
+**Covers:** US-21, US-24.
 
 ---
 
-### Step 4 — Shared UI Components
+### Step 3 — Match API Routes
 
-**Files:** `components/ui/ErrorBanner.tsx`, `components/ui/LoadingSpinner.tsx`
+**Files:** `app/api/matches/route.ts`, `app/api/matches/[id]/route.ts`
 
-1. Build `LoadingSpinner` — animated Lucide `Loader2` icon with `animate-spin`.
-2. Build `ErrorBanner` — red border div, message text, optional "Retry" button.
+1. `GET /api/matches` → `db.match.findMany` with `registrations.member` and `registrations.guests` included.
+2. `POST /api/matches` → create 1 match (or 4 weekly occurrences if `isRecurring`).
+3. `PUT /api/matches/[id]` → update cost/hours/paidBy (settlement fields) or title/venue (edit).
+4. `DELETE /api/matches/[id]` → cascade deletes registrations and guests.
 
----
-
-### Step 5 — Feature UI Components
-
-**Files:** `components/SessionForm.tsx`, `components/MemberRow.tsx`, `components/MemberList.tsx`, `components/ReviewSummary.tsx`, `components/SyncButton.tsx`
-
-Build in this order (each depends on the previous being testable):
-
-1. `SessionForm` — controlled inputs, inline validation, "Next" gating (US-01, US-02).
-2. `MemberRow` — checkbox toggles, conditional input enable/disable, inline errors (US-04, US-05, US-06).
-3. `MemberList` — wraps rows, shows loading/error/retry states, gates "Next" button (US-03, US-12, US-14).
-4. `ReviewSummary` — renders `CalculatedShare[]` in a table with a footer total (US-07, US-09).
-5. `SyncButton` — four visual states: idle, syncing, success, error (US-10, US-13, US-15).
+**Covers:** US-22, US-23, US-25, US-27.
 
 ---
 
-### Step 6 — State Hook & Page Wiring
+### Step 4 — Registration & Guest API Routes
 
-**Files:** `hooks/useSessionState.ts`, `app/page.tsx`
+**Files:** `app/api/matches/[id]/register/route.ts`, `app/api/matches/[id]/guests/route.ts`, `app/api/matches/[id]/guests/[guestId]/route.ts`
 
-1. Implement `useSessionState` with all actions and derived values from §6.
-2. Wire the step-based rendering in `app/page.tsx`.
-3. Verify the full happy path end-to-end manually in the browser.
+1. `POST /api/matches/[id]/register` → upsert `MatchRegistration`.
+2. `DELETE /api/matches/[id]/register` → delete registration (cascades guests).
+3. `POST /api/matches/[id]/guests` → find registration by `memberId`, create `Guest`.
+4. `DELETE /api/matches/[id]/guests/[guestId]` → delete guest.
 
-**Covers:** US-02 (payer auto-check), US-04 (uncheck clears fields), US-09 (back navigation), US-15 (reset after success).
-
----
-
-### Step 7 — Edge Cases & Hardening
-
-1. **US-12** — Confirm "Next: Review" and "Sync" are disabled with 0 present members.
-2. **US-15** — Confirm button is disabled on click and replaced by success state post-sync.
-3. **US-16** — Test with exactly 1 participant; assert `owedShare === totalCost`.
-4. **US-08** — Test rounding with a case like `totalCost=10`, 3 members equal weight → 3.33 + 3.33 + 3.33 = 9.99; verify adjustment gives 3.34 + 3.33 + 3.33 = 10.00.
-5. **US-13** — Simulate Splitwise 401 and network failure; verify error banner appears and form is not wiped.
+**Covers:** US-19, US-20.
 
 ---
 
-## 10. User Story → File Cross-reference
+### Step 5 — Homepage
+
+**Files:** `app/page.tsx`, `components/matches/MatchTabs.tsx`, `components/matches/MatchCard.tsx`
+
+1. `app/page.tsx` (Server) → fetch matches sorted by `scheduledAt`.
+2. `MatchTabs` (Client) → read `?tab` from `useSearchParams`, filter matches by past/upcoming, render `MatchCard` list.
+3. `MatchCard` → display match info, link to `/matches/[id]`.
+
+**Covers:** US-17, US-18.
+
+---
+
+### Step 6 — Match Detail Page
+
+**Files:** `app/matches/[id]/page.tsx`, `components/matches/MemberRoster.tsx`, `components/matches/AvatarTile.tsx`, `components/matches/RegistrationRow.tsx`, `components/matches/SettleForm.tsx`
+
+1. Server page → fetch match with all relations + full member list.
+2. `MemberRoster` (Client) → avatar grid with toggle registration on tap.
+3. `RegistrationRow` (Client) → show per-player guests + add/remove guest buttons.
+4. `SettleForm` (Client, past matches only) → cost/hours/payer form + calculated share table + `SyncButton`.
+
+**Covers:** US-19, US-20, US-26, US-27, US-28.
+
+---
+
+### Step 7 — Management Page
+
+**Files:** `app/management/page.tsx`, `components/management/MemberForm.tsx`, `components/management/MemberCard.tsx`, `components/management/MatchForm.tsx`, `components/management/MatchManageRow.tsx`
+
+1. Server page → fetch all members and matches.
+2. `MemberForm` → add/edit member; inline validation.
+3. `MemberCard` → member row with edit/delete; delete shows confirm dialog.
+4. `MatchForm` → create/edit match; recurring toggle derives day-of-week label.
+5. `MatchManageRow` → match row with edit/delete; "Synced ✓" badge for synced matches.
+
+**Covers:** US-21, US-22, US-23, US-24, US-25.
+
+---
+
+### Step 8 — Splitwise Sync (updated)
+
+**Files:** `app/api/splitwise/expense/route.ts` (update), `lib/calculations.ts` (update signature)
+
+1. Update `calculateShares` to accept `RegistrationDTO[]` + `hours`.
+2. Sync route validates that all present members have `splitwiseId` set; returns 422 with a list of members missing IDs if not.
+3. Match is updated to `synced = true` on success.
+
+**Covers:** US-28.
+
+---
+
+## 11. User Story → File Cross-reference
 
 | US | Files |
 |---|---|
-| US-01 | `components/SessionForm.tsx`, `hooks/useSessionState.ts` |
-| US-02 | `components/SessionForm.tsx`, `hooks/useSessionState.ts` |
-| US-03 | `app/api/splitwise/members/route.ts`, `components/MemberList.tsx` |
-| US-04 | `components/MemberRow.tsx`, `hooks/useSessionState.ts` |
-| US-05 | `components/MemberRow.tsx` |
-| US-06 | `components/MemberRow.tsx` |
-| US-07 | `lib/calculations.ts`, `components/ReviewSummary.tsx` |
-| US-08 | `lib/calculations.ts`, `app/api/splitwise/expense/route.ts` |
-| US-09 | `components/ReviewSummary.tsx`, `hooks/useSessionState.ts` |
-| US-10 | `app/api/splitwise/expense/route.ts`, `components/SyncButton.tsx` |
+| US-01 | `components/matches/SettleForm.tsx` |
+| US-02 | `components/matches/SettleForm.tsx` |
+| US-03 | `app/api/splitwise/members/route.ts`, `app/management/page.tsx` |
+| US-04 | `components/matches/MemberRoster.tsx`, `app/api/matches/[id]/register/route.ts` |
+| US-05 | `components/matches/SettleForm.tsx` |
+| US-06 | `components/matches/RegistrationRow.tsx`, `app/api/matches/[id]/guests/route.ts` |
+| US-07 | `lib/calculations.ts`, `components/matches/SettleForm.tsx` |
+| US-08 | `lib/calculations.ts` |
+| US-09 | `components/matches/SettleForm.tsx` |
+| US-10 | `app/api/splitwise/expense/route.ts`, `components/ui/SyncButton.tsx` |
 | US-11 | `app/api/splitwise/expense/route.ts` |
-| US-12 | `components/MemberList.tsx` |
-| US-13 | `components/SyncButton.tsx`, `components/ui/ErrorBanner.tsx` |
-| US-14 | `components/MemberList.tsx`, `components/ui/ErrorBanner.tsx` |
-| US-15 | `components/SyncButton.tsx`, `hooks/useSessionState.ts` |
+| US-12 | `components/matches/SettleForm.tsx` |
+| US-13 | `components/ui/SyncButton.tsx`, `components/ui/ErrorBanner.tsx` |
+| US-14 | `components/ui/ErrorBanner.tsx` |
+| US-15 | `components/ui/SyncButton.tsx` |
 | US-16 | `lib/calculations.ts` |
+| US-17 | `app/page.tsx`, `components/matches/MatchCard.tsx` |
+| US-18 | `app/page.tsx`, `components/matches/MatchTabs.tsx` |
+| US-19 | `components/matches/MemberRoster.tsx`, `components/matches/AvatarTile.tsx`, `app/api/matches/[id]/register/route.ts` |
+| US-20 | `components/matches/RegistrationRow.tsx`, `app/api/matches/[id]/guests/route.ts`, `app/api/matches/[id]/guests/[guestId]/route.ts` |
+| US-21 | `app/management/page.tsx`, `components/management/MemberForm.tsx`, `app/api/members/route.ts` |
+| US-22 | `app/management/page.tsx`, `components/management/MatchForm.tsx`, `app/api/matches/route.ts` |
+| US-23 | `components/management/MatchForm.tsx`, `app/api/matches/route.ts` |
+| US-24 | `components/management/MemberCard.tsx`, `app/api/members/[id]/route.ts` |
+| US-25 | `components/management/MatchManageRow.tsx`, `app/api/matches/[id]/route.ts` |
+| US-26 | `app/matches/[id]/page.tsx`, `components/matches/MatchCard.tsx` |
+| US-27 | `components/matches/SettleForm.tsx`, `app/api/matches/[id]/route.ts` |
+| US-28 | `components/ui/SyncButton.tsx`, `app/api/splitwise/expense/route.ts`, `app/api/matches/[id]/route.ts` |

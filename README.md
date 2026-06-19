@@ -1,36 +1,171 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bestminton — Badminton Session Manager
+
+A mobile-first web app for managing badminton team sessions end-to-end: scheduling, self-registration, guest tracking, and automated cost splitting via Splitwise.
+
+---
+
+## Features
+
+- **Match scheduling** — Create one-off or recurring weekly sessions with title, venue, and time
+- **Self-registration** — Players tap their avatar on the match page to join; no login required
+- **Guest management** — Add named or anonymous guests with Full / Half-time flags; cost shares accordingly
+- **Half/Full playtime** — Each player and guest can be marked Full or Half time, factoring into their cost share
+- **Upcoming / Past tabs** — Both the homepage and management page split matches by date with nearest-first sorting
+- **Post-match settlement** — Enter total court cost + who paid + hours played; the app calculates each share with exact cent rounding
+- **Splitwise sync** — One-click expense creation to a Splitwise group (optional; app runs fully without it)
+- **Dual storage** — Runs on IndexedDB (browser, zero setup) or Vercel Postgres (production)
+- **Dark mode** — System preference detected on load; toggleable in the header
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+| --- | --- |
+| Framework | Next.js 16 (App Router) |
+| Frontend | React 19, TailwindCSS v4, Lucide Icons |
+| Language | TypeScript |
+| Database | Vercel Postgres via Prisma ORM (SQLite for local dev) |
+| Local fallback | IndexedDB (browser) |
+| Deployment | Vercel |
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Set up environment variables
+
+Copy `.env.example` to `.env.local` and fill in the values:
+
+```bash
+cp .env.example .env.local
+```
+
+```env
+# Database (Vercel Postgres — leave blank to use IndexedDB browser fallback)
+POSTGRES_URL=
+POSTGRES_PRISMA_URL=
+POSTGRES_URL_NON_POOLING=
+
+# Splitwise (optional — only needed for expense sync)
+SPLITWISE_API_KEY=
+SPLITWISE_GROUP_ID=
+```
+
+### 3. Run database migrations (if using Postgres)
+
+```bash
+npx prisma migrate deploy
+npx prisma generate
+```
+
+### 4. Start the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> Without any env vars, the app uses IndexedDB automatically — no database setup required for local testing.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Usage
 
-To learn more about Next.js, take a look at the following resources:
+### Players (homepage)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Open `/` — see the **Upcoming** tab with scheduled matches
+2. Tap a match card → match detail page
+3. Tap your avatar to register / unregister
+4. Tap **+ Guest** to add a guest with an optional name and Full/Half-time flag
+5. Toggle your own playtime (Full / ½ time) if needed
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Captain (management page)
 
-## Deploy on Vercel
+Access `/management` directly in the browser (not linked in the nav — captain only).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Members** — Add, edit, or remove team members; optionally link Splitwise IDs
+- **Matches** — Create one-off or recurring matches; view upcoming and past matches in separate tabs
+- **Settle** — On a past match row, tap the clipboard icon to open the settlement page:
+  1. Enter Total Cost (฿), Who Paid, and Hours Played
+  2. Review calculated shares per player
+  3. Click **Sync to Splitwise** to create the group expense
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Cost Calculation Formula
+
+Total court fee is split weighted by playtime and headcount:
+
+```text
+playerFactor_i  = 1.0  if player played full time, else 0.5
+guestsFactor_i  = Σ (1.0 if guest played full time, else 0.5)  for each guest of player i
+
+W_i             = hours × (playerFactor_i + guestsFactor_i)
+W_total         = Σ W_i
+
+Owed_i          = TotalCost × (W_i / W_total)
+```
+
+**Rounding:** Shares are rounded to 2 decimal places. Any cent discrepancy is added to / subtracted from the first participant's share so the sum equals `TotalCost` exactly (required by Splitwise).
+
+---
+
+## Project Structure
+
+```text
+app/
+  page.tsx                  # Homepage — upcoming & past matches
+  layout.tsx                # Root layout — header, dark mode init
+  management/page.tsx       # Captain admin page (hidden from nav)
+  matches/[id]/
+    page.tsx                # Match detail server component
+    MatchDetailClient.tsx   # Match detail client (registration, settle)
+  api/
+    health/                 # DB availability check
+    members/                # GET list, POST create, PUT/DELETE by id
+    matches/                # GET list, POST create
+    matches/[id]/           # GET detail, PUT update, DELETE
+    matches/[id]/register/  # POST register, DELETE unregister
+    matches/[id]/guests/    # POST add guest
+    matches/[id]/guests/[guestId]/  # PUT update, DELETE remove
+    splitwise/members/      # GET Splitwise group members
+    splitwise/expense/      # POST create Splitwise expense
+
+components/
+  matches/                  # MatchCard, MatchTabs, MemberRoster, RegistrationRow, SettleForm
+  management/               # MatchesSection, MatchManageRow, MatchForm, MembersSection, ...
+  ui/                       # Avatar, DarkModeToggle, ConfirmDialog, ErrorBanner
+
+lib/
+  db.ts                     # Prisma client singleton
+  idb.ts                    # IndexedDB primitives (browser)
+  localDb.ts                # Full CRUD returning same DTOs as API
+  dataService.ts            # Unified service — routes to API or IDB based on /api/health
+  calculations.ts           # calculateShares() — weighted cost split with rounding fix
+  splitwise.ts              # Splitwise API helpers
+  types.ts                  # Shared DTO types
+
+prisma/
+  schema.prisma
+  migrations/
+```
+
+---
+
+## Deployment
+
+Deploy to Vercel with one click. Set the Postgres and Splitwise env vars in the Vercel dashboard, then run:
+
+```bash
+npx prisma migrate deploy
+```
+
+via the Vercel build command or a post-deploy hook.

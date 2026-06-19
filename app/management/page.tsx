@@ -1,0 +1,46 @@
+import { db } from "@/lib/db";
+import MembersSection from "@/components/management/MembersSection";
+import MatchesSection from "@/components/management/MatchesSection";
+import type { MemberDTO, MatchDTO } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
+
+export default async function ManagementPage() {
+  let members: MemberDTO[] = [];
+  let matches: MatchDTO[] = [];
+  let dbAvailable = false;
+
+  try {
+    const [rawMembers, rawMatches] = await Promise.all([
+      db.member.findMany({ orderBy: { name: "asc" } }),
+      db.match.findMany({
+        include: {
+          registrations: {
+            include: { member: true, guests: true },
+            orderBy: { joinedAt: "asc" },
+          },
+        },
+        orderBy: { scheduledAt: "desc" },
+      }),
+    ]);
+    members = JSON.parse(JSON.stringify(rawMembers));
+    matches = JSON.parse(JSON.stringify(rawMatches));
+    dbAvailable = true;
+  } catch {
+    // DB not configured — client will load from IndexedDB
+  }
+
+  return (
+    <div className="mx-auto max-w-lg px-4 py-6 space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Management</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Manage team members and schedule matches.
+        </p>
+      </div>
+
+      <MembersSection initialMembers={members} dbAvailable={dbAvailable} />
+      <MatchesSection initialMatches={matches} dbAvailable={dbAvailable} />
+    </div>
+  );
+}
