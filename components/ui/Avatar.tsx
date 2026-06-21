@@ -14,13 +14,13 @@ const SIZE_MAP = {
 };
 
 const BG_COLOURS = [
-  "bg-emerald-500",
-  "bg-blue-500",
-  "bg-violet-500",
-  "bg-orange-500",
-  "bg-rose-500",
-  "bg-teal-500",
+  "bg-emerald-600",
   "bg-amber-500",
+  "bg-red-700",
+  "bg-orange-500",
+  "bg-rose-600",
+  "bg-amber-600",
+  "bg-emerald-700",
 ];
 
 function nameToColour(name: string): string {

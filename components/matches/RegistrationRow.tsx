@@ -110,10 +110,10 @@ export default function RegistrationRow({
             type="button"
             onClick={handleTogglePlaytime}
             disabled={togglingPlaytime}
-            className={`cursor-pointer flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-colors disabled:cursor-wait disabled:opacity-60 select-none ${
+                className={`cursor-pointer flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-colors duration-200 disabled:cursor-wait disabled:opacity-60 select-none ${
               isFullTime
-                ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900"
-                : "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900"
+                ? "tet-pill-full hover:bg-emerald-100 dark:hover:bg-emerald-900"
+                : "tet-pill-half hover:bg-amber-100 dark:hover:bg-amber-900"
             }`}
             title="Tap to toggle full / half time"
           >
@@ -134,7 +134,7 @@ export default function RegistrationRow({
             return (
               <span
                 key={guest.id}
-                className="inline-flex items-center gap-0.5 rounded-full bg-gray-100 dark:bg-gray-800 pl-2.5 pr-1 py-0.5 text-xs text-gray-600 dark:text-gray-300"
+                className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 dark:bg-gray-800 pl-2.5 pr-1 py-0.5 text-xs text-gray-700 dark:text-gray-300 ring-1 ring-amber-200/40 dark:ring-gray-700"
               >
                 {guest.label || "Guest"}
 
@@ -176,7 +176,7 @@ export default function RegistrationRow({
             <button
               type="button"
               onClick={() => setAddingGuest(true)}
-              className="flex items-center gap-1 rounded-full border border-dashed border-gray-300 dark:border-gray-600 px-2.5 py-0.5 text-xs text-gray-400 dark:text-gray-500 hover:border-emerald-400 hover:text-emerald-600 dark:hover:border-emerald-500 dark:hover:text-emerald-400"
+              className="flex cursor-pointer items-center gap-1 rounded-full border border-dashed border-amber-300/70 dark:border-amber-800/50 px-2.5 py-0.5 text-xs text-gray-500 dark:text-gray-400 transition-colors duration-200 hover:border-emerald-400 hover:text-emerald-600 dark:hover:border-amber-500 dark:hover:text-amber-400"
             >
               <UserPlus size={10} />
               + Guest
@@ -184,7 +184,7 @@ export default function RegistrationRow({
           )}
 
           {!isPast && addingGuest && (
-            <div className="mt-1 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-2.5 flex flex-col gap-2">
+            <div className="mt-1 w-full rounded-xl border border-amber-200/60 dark:border-gray-700 bg-amber-50/50 dark:bg-gray-800/60 p-2.5 flex flex-col gap-2">
               <input
                 autoFocus
                 type="text"
@@ -199,7 +199,7 @@ export default function RegistrationRow({
                     setGuestPlayedFull(true);
                   }
                 }}
-                className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2.5 py-1 text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-200"
+                className="tet-input rounded-lg px-2.5 py-1 text-xs focus:ring-1"
               />
 
               {/* Playtime toggle */}
@@ -234,7 +234,7 @@ export default function RegistrationRow({
                   type="button"
                   onClick={handleAddGuest}
                   disabled={saving}
-                  className="flex-1 rounded-lg bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-60 flex items-center justify-center gap-1"
+                  className="tet-btn-primary flex-1 rounded-lg px-2 py-1 text-xs"
                 >
                   {saving ? <Loader2 size={10} className="animate-spin" /> : "Add Guest"}
                 </button>
@@ -245,7 +245,7 @@ export default function RegistrationRow({
                     setGuestLabel("");
                     setGuestPlayedFull(true);
                   }}
-                  className="rounded-lg border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="tet-btn-ghost rounded-lg px-2 py-1 text-xs"
                 >
                   Cancel
                 </button>

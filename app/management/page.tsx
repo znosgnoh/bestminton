@@ -33,8 +33,8 @@ export default async function ManagementPage() {
   return (
     <div className="mx-auto max-w-lg px-4 py-6 space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Management</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <h1 className="tet-page-title">Management</h1>
+        <p className="mt-1 tet-muted">
           Manage team members and schedule matches.
         </p>
       </div>

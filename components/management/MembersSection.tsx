@@ -139,7 +139,7 @@ export default function MembersSection({
           onClick={() => setListExpanded((v) => !v)}
           aria-expanded={listExpanded}
           aria-controls="members-section-content"
-          className="flex items-center gap-1.5 rounded-lg -ml-1 px-1 py-0.5 text-left hover:bg-gray-100 dark:hover:bg-gray-800"
+          className="flex cursor-pointer items-center gap-1.5 rounded-lg -ml-1 px-1 py-0.5 text-left transition-colors duration-200 hover:bg-amber-50 dark:hover:bg-gray-800"
         >
           <ChevronDown
             size={18}
@@ -148,7 +148,7 @@ export default function MembersSection({
             }`}
             aria-hidden
           />
-          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+          <h2 className="tet-section-title">
             Members ({members.length})
           </h2>
         </button>
@@ -161,7 +161,7 @@ export default function MembersSection({
               return next;
             });
           }}
-          className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 active:bg-emerald-800"
+          className="tet-btn-primary"
         >
           <UserPlus size={15} />
           {showForm ? (
@@ -190,38 +190,38 @@ export default function MembersSection({
             type="button"
             onClick={handleImportFromSplitwise}
             disabled={importing || !dbAvailable}
-            className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-60"
+            className="tet-btn-ghost border border-gray-200 dark:border-gray-700 bg-white/85 dark:bg-gray-900/85 px-3 py-2.5 disabled:opacity-60"
           >
             {importing ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
             {importing ? "Loading from Splitwise…" : "Load from Splitwise"}
           </button>
         </div>
       ) : (
-        <div className="mb-4 flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-950 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+        <div className="mb-4 tet-alert-info">
           <Info size={15} className="mt-0.5 shrink-0" />
           Add SPLITWISE_API_KEY and SPLITWISE_GROUP_ID to enable member import and expense sync.
         </div>
       )}
 
       {importError && (
-        <p className="mb-4 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 px-4 py-2 text-sm text-red-700 dark:text-red-300">
+        <p className="mb-4 tet-alert-error">
           {importError}
         </p>
       )}
       {importMessage && (
-        <p className="mb-4 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950 px-4 py-2 text-sm text-emerald-700 dark:text-emerald-300">
+        <p className="mb-4 tet-alert-success">
           {importMessage}
         </p>
       )}
 
       {showForm && (
-        <div className="mb-4 rounded-2xl border border-emerald-100 dark:border-emerald-900 bg-white dark:bg-gray-900 p-4 shadow-sm">
+        <div className="mb-4 tet-panel">
           <MemberForm onSaved={handleSaved} onCancel={() => setShowForm(false)} />
         </div>
       )}
 
       {members.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 py-8 text-center text-sm text-gray-400 dark:text-gray-500">
+        <p className="tet-empty">
           No members yet. Add the first one above or load from Splitwise.
         </p>
       ) : (

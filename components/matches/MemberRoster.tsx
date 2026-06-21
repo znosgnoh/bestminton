@@ -77,10 +77,10 @@ export default function MemberRoster({
 
   if (allMembers.length === 0) {
     return (
-      <div className="rounded-2xl bg-white dark:bg-gray-900 p-5 shadow-sm ring-1 ring-gray-100 dark:ring-gray-800">
-        <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
+      <div className="tet-card p-5">
+        <p className="text-sm text-gray-600 dark:text-gray-400 text-center py-4">
           No members added yet. Ask the captain to add members in{" "}
-          <a href="/management" className="text-emerald-600 dark:text-emerald-400 underline">
+          <a href="/management" className="tet-link-accent">
             Management
           </a>
           .
@@ -90,8 +90,8 @@ export default function MemberRoster({
   }
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-gray-900 p-4 shadow-sm ring-1 ring-gray-100 dark:ring-gray-800">
-      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+    <div className="tet-card p-4">
+      <h2 className="tet-section-title text-sm mb-3">
         {isPast ? "Players" : "Tap to register"}
       </h2>
       {error && (

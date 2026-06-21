@@ -1,10 +1,25 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import ShuttlecockIcon from "@/components/ui/ShuttlecockIcon";
+import { Be_Vietnam_Pro, Noto_Sans } from "next/font/google";
+import BadmintonRacketIcon from "@/components/ui/BadmintonRacketIcon";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
 import "./globals.css";
 
-export const SITE_TITLE = "Bestminton - Shuttle Happens — Split the Court Fee";
+const beVietnamPro = Be_Vietnam_Pro({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-be-vietnam-pro",
+  display: "swap",
+});
+
+const notoSans = Noto_Sans({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-noto-sans",
+  display: "swap",
+});
+
+export const SITE_TITLE = "Bestminton — Split the Court Fee";
 export const SITE_SHORT = "Bestminton";
 
 export const metadata: Metadata = {
@@ -18,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+    <html lang="en" className={`h-full antialiased ${beVietnamPro.variable} ${notoSans.variable}`} suppressHydrationWarning>
       <head>
         {/* Prevent flash of wrong theme on load */}
         <script
@@ -27,15 +42,12 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-gray-50 dark:bg-gray-950 font-sans transition-colors">
-        <header className="sticky top-0 z-40 border-b border-amber-200/60 dark:border-amber-900/40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm">
+      <body className="min-h-full flex flex-col">
+        <header className="tet-header">
           <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
-            <Link
-              href="/"
-              className="flex items-center gap-2 text-gray-900 dark:text-gray-100 hover:text-emerald-700 dark:hover:text-emerald-400"
-            >
-              <ShuttlecockIcon size={22} className="text-emerald-600 dark:text-amber-400" />
-              <span className="text-lg font-bold leading-tight">{SITE_SHORT}</span>
+            <Link href="/" className="tet-brand">
+              <BadmintonRacketIcon size={22} className="text-emerald-600 dark:text-amber-400" />
+              <span className="font-heading text-lg font-bold leading-tight tracking-tight">{SITE_SHORT}</span>
             </Link>
             <DarkModeToggle />
           </div>

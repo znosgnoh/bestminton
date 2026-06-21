@@ -36,7 +36,7 @@ export default function MemberCard({ member, onUpdated, onDeleted }: MemberCardP
 
   if (mode === "editing") {
     return (
-      <div className="rounded-2xl border border-emerald-100 dark:border-emerald-900 bg-white dark:bg-gray-900 p-4 shadow-sm">
+      <div className="tet-panel">
         <MemberForm
           initial={member}
           onSaved={(m) => {
@@ -51,13 +51,13 @@ export default function MemberCard({ member, onUpdated, onDeleted }: MemberCardP
 
   return (
     <>
-      <div className="flex items-center gap-3 rounded-2xl bg-white dark:bg-gray-900 p-4 shadow-sm ring-1 ring-gray-100 dark:ring-gray-800">
+      <div className="tet-card flex items-center gap-3 p-4">
         <Avatar name={member.name} avatarUrl={member.avatarUrl} size="md" />
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{member.name}</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             {member.splitwiseId ? (
-              <span className="text-emerald-600 dark:text-emerald-400">SW: {member.splitwiseId}</span>
+              <span className="text-emerald-600 dark:text-amber-400">SW: {member.splitwiseId}</span>
             ) : (
               "No Splitwise ID"
             )}
@@ -66,14 +66,16 @@ export default function MemberCard({ member, onUpdated, onDeleted }: MemberCardP
         <div className="flex gap-1 shrink-0">
           <button
             onClick={() => setMode("editing")}
-            className="rounded-xl p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
+            aria-label={`Edit ${member.name}`}
+            className="tet-btn-icon"
           >
             <Pencil size={16} />
           </button>
           <button
             onClick={() => setMode("deleting")}
             disabled={deleting}
-            className="rounded-xl p-2 text-gray-400 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-500 disabled:opacity-50"
+            aria-label={`Delete ${member.name}`}
+            className="tet-btn-icon-danger"
           >
             {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
           </button>

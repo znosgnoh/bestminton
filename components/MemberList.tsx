@@ -58,13 +58,12 @@ export default function MemberList({
 
   return (
     <div className="space-y-4">
-      {/* Splitwise loader */}
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={onLoadFromSplitwise}
           disabled={loading}
-          className="flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="tet-btn-ghost border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm disabled:opacity-50"
         >
           {loading ? (
             <LoadingSpinner size={14} />
@@ -73,31 +72,29 @@ export default function MemberList({
           )}
           Load from Splitwise
         </button>
-        <span className="text-xs text-gray-400">or add manually below</span>
+        <span className="text-xs text-gray-500 dark:text-gray-500">or add manually below</span>
       </div>
 
       {error && <ErrorBanner message={error} onRetry={onRetry} />}
 
-      {/* Manual add form */}
       <form onSubmit={handleAdd} className="flex gap-2">
         <input
           type="text"
           placeholder="Member name"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
-          className="flex-1 rounded-xl border border-gray-300 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+          className="tet-input flex-1"
         />
         <button
           type="submit"
           disabled={!newName.trim()}
-          className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-40"
+          className="tet-btn-primary px-4 disabled:opacity-40"
         >
           <UserPlus size={14} />
           Add
         </button>
       </form>
 
-      {/* Member rows */}
       {attendance.length > 0 && (
         <div className="space-y-3">
           {attendance.map((record) => (
@@ -115,29 +112,25 @@ export default function MemberList({
         </div>
       )}
 
-      {/* Payer validation hint */}
       {presentMembers.length > 0 && !payerSelected && (
-        <p className="text-center text-sm text-amber-600">
+        <p className="text-center text-sm text-amber-700 dark:text-amber-400">
           Select who paid by tapping the ★ next to their name.
         </p>
       )}
       {presentMembers.length === 0 && (
-        <p className="text-center text-sm text-gray-400">
+        <p className="text-center text-sm text-gray-500 dark:text-gray-500">
           Add or check at least one participant.
         </p>
       )}
 
       <div className="flex gap-3 pt-2">
-        <button
-          onClick={onBack}
-          className="flex-1 rounded-xl border border-gray-300 py-4 text-base font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100"
-        >
+        <button onClick={onBack} className="tet-btn-ghost flex-1 py-4 text-base">
           Back
         </button>
         <button
           onClick={onNext}
           disabled={!canReview}
-          className="flex-2 rounded-xl bg-emerald-600 py-4 text-base font-semibold text-white transition hover:bg-emerald-700 active:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-40"
+          className="tet-btn-primary flex-2 py-4 text-base disabled:opacity-40"
         >
           Review Split
         </button>

@@ -26,7 +26,6 @@ function MatchTabsInner({ upcoming: initialUpcoming, past: initialPast, dbAvaila
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  // Load from API or IndexedDB when server had no Postgres configured (local dev only)
   useEffect(() => {
     if (!dbAvailable) {
       dataService.getMatches().then((matches) => {
@@ -42,7 +41,6 @@ function MatchTabsInner({ upcoming: initialUpcoming, past: initialPast, dbAvaila
   const list = allItems.slice(0, displayCount);
   const hasMore = displayCount < allItems.length;
 
-  // Reset page when tab changes
   useEffect(() => {
     setDisplayCount(PAGE_SIZE);
   }, [activeTab]);
@@ -51,7 +49,6 @@ function MatchTabsInner({ upcoming: initialUpcoming, past: initialPast, dbAvaila
     setDisplayCount((prev) => prev + PAGE_SIZE);
   }, []);
 
-  // IntersectionObserver for infinite scroll
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el || !hasMore) return;
@@ -70,34 +67,28 @@ function MatchTabsInner({ upcoming: initialUpcoming, past: initialPast, dbAvaila
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 size={24} className="animate-spin text-gray-400 dark:text-gray-500" />
+        <Loader2 size={24} className="animate-spin text-emerald-500 dark:text-amber-400" />
       </div>
     );
   }
 
   return (
     <div>
-      {/* Tab bar */}
-      <div className="flex border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+      <div className="tet-tab-bar">
         {(["upcoming", "past"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => switchTab(tab)}
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${
-              activeTab === tab
-                ? "border-b-2 border-emerald-600 text-emerald-700 dark:text-emerald-400"
-                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-            }`}
+            className={`tet-tab ${activeTab === tab ? "tet-tab-active" : "tet-tab-inactive"}`}
           >
             {tab === "upcoming" ? `Upcoming (${upcoming.length})` : `Past (${past.length})`}
           </button>
         ))}
       </div>
 
-      {/* Match list */}
       <div className="space-y-3 p-4">
         {list.length === 0 ? (
-          <p className="py-12 text-center text-sm text-gray-400 dark:text-gray-500">
+          <p className="tet-empty py-12">
             {activeTab === "upcoming"
               ? "No upcoming matches scheduled."
               : "No past matches yet."}
@@ -108,17 +99,16 @@ function MatchTabsInner({ upcoming: initialUpcoming, past: initialPast, dbAvaila
               <MatchCard key={match.id} match={match} />
             ))}
 
-            {/* Sentinel for IntersectionObserver */}
             <div ref={sentinelRef} className="h-1" />
 
             {hasMore && (
               <div className="flex justify-center py-4">
-                <Loader2 size={20} className="animate-spin text-gray-400 dark:text-gray-500" />
+                <Loader2 size={20} className="animate-spin text-emerald-500 dark:text-amber-400" />
               </div>
             )}
 
             {!hasMore && list.length > PAGE_SIZE && (
-              <p className="py-2 text-center text-xs text-gray-400 dark:text-gray-600">
+              <p className="py-2 text-center text-xs text-gray-500 dark:text-gray-500">
                 All {list.length} matches loaded
               </p>
             )}
@@ -133,8 +123,8 @@ export default function MatchTabs(props: MatchTabsProps) {
   return (
     <Suspense
       fallback={
-        <div className="flex border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-          <div className="flex-1 py-3 text-center text-sm text-gray-400">Loading…</div>
+        <div className="tet-tab-bar">
+          <div className="flex-1 py-3 text-center text-sm text-gray-500">Loading…</div>
         </div>
       }
     >

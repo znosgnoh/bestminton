@@ -119,19 +119,18 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
     }
   }
 
-  const inputCls =
-    "w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-base text-gray-900 dark:text-gray-100 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900";
+  const inputCls = "tet-input-lg";
 
   const cur = currencyLabel(currencyCode);
   const curSym = getCurrencySymbol(currencyCode);
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-gray-900 p-5 shadow-sm ring-1 ring-gray-100 dark:ring-gray-800 space-y-5">
-      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Settle Match</h2>
+    <div className="tet-card p-5 space-y-5">
+      <h2 className="tet-section-title">Settle Match</h2>
 
       <div className="space-y-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="tet-label text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Total Court Cost ({cur})
           </label>
           <input
@@ -142,7 +141,7 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="tet-label text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Hours Played
           </label>
           <input
@@ -153,7 +152,7 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Paid By</label>
+          <label className="tet-label text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Paid By</label>
           <select
             value={paidByMemberId ?? ""}
             onChange={(e) => { setPaidByMemberId(e.target.value ? Number(e.target.value) : null); setSavedOk(false); }}
@@ -167,14 +166,14 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
         </div>
 
         {saveError && (
-          <p className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 px-4 py-2 text-sm text-red-700 dark:text-red-300">
+          <p className="tet-alert-error">
             {saveError}
           </p>
         )}
 
         <button
           onClick={handleSave} disabled={saving}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-60 flex items-center justify-center gap-2"
+          className="tet-btn-primary-lg"
         >
           {saving && <Loader2 size={15} className="animate-spin" />}
           {saving ? "Saving…" : "Save Settlement Data"}
@@ -183,18 +182,18 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
 
       {shares.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Cost Split Preview</h3>
-          <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-800">
+          <h3 className="tet-section-title text-sm">Cost Split Preview</h3>
+          <div className="overflow-x-auto rounded-xl border border-amber-200/50 dark:border-gray-800">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 dark:bg-gray-800 text-xs font-medium text-gray-500 dark:text-gray-400">
+                <tr className="bg-amber-50/80 dark:bg-gray-800 text-xs font-medium text-gray-600 dark:text-gray-400">
                   <th className="px-3 py-2 text-left">Name</th>
                   <th className="px-3 py-2 text-center">Time</th>
                   <th className="px-3 py-2 text-center">+Guests</th>
                   <th className="px-3 py-2 text-right">Owes ({curSym})</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+              <tbody className="divide-y divide-amber-100/50 dark:divide-gray-800">
                 {shares.map((s) => {
                   const guestLabel =
                     s.guestCount === 0
@@ -206,11 +205,7 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
                   <tr key={s.memberId}>
                     <td className="px-3 py-2.5 font-medium text-gray-900 dark:text-gray-100">{s.name}</td>
                     <td className="px-3 py-2.5 text-center">
-                      <span className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${
-                        s.playedFull
-                          ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
-                          : "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300"
-                      }`}>
+                      <span className={s.playedFull ? "tet-pill-full" : "tet-pill-half"}>
                         {s.playedFull ? "Full" : "½"}
                       </span>
                     </td>
@@ -223,7 +218,7 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
                 })}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 font-semibold">
+                <tr className="border-t-2 border-amber-200/60 dark:border-gray-700 bg-amber-50/80 dark:bg-gray-800 font-semibold">
                   <td className="px-3 py-2 text-gray-700 dark:text-gray-300" colSpan={3}>Total</td>
                   <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
                     {typeof totalCost === "number" ? formatAmount(totalCost) : "—"}
@@ -233,24 +228,24 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
             </table>
           </div>
 
-          <div className="rounded-xl border border-gray-100 dark:border-gray-800 p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Sync to Splitwise</h3>
+          <div className="rounded-xl border border-amber-200/50 dark:border-gray-800 p-4 space-y-3">
+            <h3 className="tet-section-title text-sm">Sync to Splitwise</h3>
 
             {synced || syncStatus === "success" ? (
-              <div className="flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-950 px-4 py-3 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+              <div className="tet-alert-success">
                 <CheckCircle size={16} />
                 Synced to Splitwise successfully.
               </div>
             ) : (
               <>
                 {!splitwiseConfigured && (
-                  <div className="flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-950 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+                  <div className="tet-alert-info">
                     <Info size={15} className="mt-0.5 shrink-0" />
                     Splitwise sync is disabled. Add SPLITWISE_API_KEY and SPLITWISE_GROUP_ID to your environment.
                   </div>
                 )}
                 {splitwiseConfigured && missingSplitwiseIds.length > 0 && (
-                  <div className="flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-950 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+                  <div className="tet-alert-info">
                     <AlertTriangle size={15} className="mt-0.5 shrink-0" />
                     <span>
                       Missing Splitwise ID for: <strong>{missingSplitwiseIds.join(", ")}</strong>. Update in Management.
@@ -258,19 +253,19 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
                   </div>
                 )}
                 {splitwiseConfigured && !savedOk && (
-                  <div className="flex items-start gap-2 rounded-xl bg-gray-50 dark:bg-gray-800 px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                  <div className="tet-alert-info bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 ring-gray-200 dark:ring-gray-700">
                     <Info size={15} className="mt-0.5 shrink-0" />
                     Save settlement data first before syncing.
                   </div>
                 )}
                 {syncStatus === "error" && syncError && (
-                  <p className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 px-4 py-2 text-sm text-red-700 dark:text-red-300">
+                  <p className="tet-alert-error">
                     {syncError}
                   </p>
                 )}
                 <button
                   onClick={handleSync} disabled={!canSync}
-                  className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-gray-200 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-600 flex items-center justify-center gap-2"
+                  className="tet-btn-primary-lg disabled:cursor-not-allowed disabled:bg-gray-200 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-600"
                 >
                   {syncStatus === "syncing" && <Loader2 size={15} className="animate-spin" />}
                   {syncStatus === "syncing" ? "Syncing…" : "Sync to Splitwise"}

@@ -132,13 +132,12 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
   const displayAvatarUrl = previewUrl || avatarUrl || null;
   const busy = saving || uploading;
 
-  const inputCls =
-    "w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900";
+  const inputCls = "tet-input";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div>
-        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+        <label className="tet-label">
           Name <span className="text-red-500">*</span>
         </label>
         <input
@@ -151,7 +150,7 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+        <label className="tet-label">
           Avatar (optional)
         </label>
         <div className="flex items-center gap-3">
@@ -205,7 +204,7 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+        <label className="tet-label">
           Splitwise ID (optional)
         </label>
         <input
@@ -220,7 +219,7 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
       </div>
 
       {error && (
-        <p className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 px-3 py-2 text-xs text-red-700 dark:text-red-300">
+        <p className="tet-alert-error px-3 py-2 text-xs">
           {error}
         </p>
       )}
@@ -230,7 +229,7 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+            className="tet-btn-ghost flex-1"
           >
             Cancel
           </button>
@@ -238,7 +237,7 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
         <button
           type="submit"
           disabled={busy}
-          className="flex-1 rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 flex items-center justify-center gap-2"
+          className="tet-btn-primary flex-1"
         >
           {(saving || uploading) && <Loader2 size={14} className="animate-spin" />}
           {uploading ? "Uploading…" : saving ? "Saving…" : initial ? "Save Changes" : "Add Member"}

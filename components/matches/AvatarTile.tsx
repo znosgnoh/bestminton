@@ -17,17 +17,17 @@ export default function AvatarTile({ member, registered, playedFull, disabled, o
     <button
       onClick={disabled ? undefined : onToggle}
       disabled={disabled}
-      className={`flex flex-col items-center gap-1.5 rounded-xl p-2 transition ${
+      className={`flex flex-col items-center gap-1.5 rounded-xl p-2 transition-colors duration-200 ${
         disabled
           ? "cursor-default opacity-50"
-          : "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100 dark:active:bg-gray-700"
+          : "cursor-pointer hover:bg-amber-50/80 dark:hover:bg-gray-800 active:bg-amber-100/60 dark:active:bg-gray-700"
       }`}
     >
       <div className="relative">
         <div
           className={`rounded-full ${
             registered
-              ? "ring-2 ring-emerald-500 ring-offset-2 dark:ring-offset-gray-950"
+              ? "ring-2 ring-emerald-600 ring-offset-2 dark:ring-amber-400 dark:ring-offset-gray-950"
               : "ring-2 ring-transparent ring-offset-2"
           }`}
         >
@@ -36,19 +36,19 @@ export default function AvatarTile({ member, registered, playedFull, disabled, o
         {registered && (
           <CheckCircle
             size={18}
-            className="absolute -bottom-1 -right-1 rounded-full bg-white dark:bg-gray-950 text-emerald-500"
+            className="absolute -bottom-1 -right-1 rounded-full bg-white dark:bg-gray-950 text-emerald-600 dark:text-amber-400"
             aria-label="Registered"
           />
         )}
         {registered && playedFull === false && (
-          <span className="absolute -top-1 -left-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[9px] font-bold text-white leading-none">
+          <span className="absolute -top-1 -left-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white leading-none">
             ½
           </span>
         )}
       </div>
       <span
         className={`max-w-18 truncate text-center text-xs font-medium ${
-          registered ? "text-emerald-700 dark:text-emerald-400" : "text-gray-600 dark:text-gray-400"
+          registered ? "text-emerald-700 dark:text-amber-400" : "text-gray-600 dark:text-gray-400"
         }`}
       >
         {member.name}

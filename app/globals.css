@@ -4,29 +4,259 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* Vietnamese Tet — warm ivory backgrounds */
-  --color-gray-50: #fffbf7;
-  --color-gray-100: #f7f0e8;
-  --color-gray-200: #ebe0d4;
-  --color-gray-950: #140e0e;
-  --color-gray-900: #1f1515;
-  --color-gray-800: #2d2020;
+  /* Vietnamese Tet — warm ivory / cream neutrals */
+  --color-gray-50: #fff5f0;
+  --color-gray-100: #f7ede4;
+  --color-gray-200: #ead9cc;
+  --color-gray-300: #d4c4b5;
+  --color-gray-400: #a89888;
+  --color-gray-500: #7a6b5e;
+  --color-gray-600: #5c4f44;
+  --color-gray-700: #453a32;
+  --color-gray-800: #2d221c;
+  --color-gray-900: #1f1612;
+  --color-gray-950: #140c0a;
 
-  /* Lucky red remaps emerald accent across the app */
-  --color-emerald-50: #fff5f5;
-  --color-emerald-100: #ffe8e8;
-  --color-emerald-200: #ffd0d0;
-  --color-emerald-300: #ffb0b0;
-  --color-emerald-400: #f07070;
-  --color-emerald-500: #d93838;
-  --color-emerald-600: #c41e3a;
-  --color-emerald-700: #a01830;
-  --color-emerald-800: #7d1326;
-  --color-emerald-900: #5c101c;
-  --color-emerald-950: #3a0a12;
+  /* Lucky red — primary accent (emerald utilities map here) */
+  --color-emerald-50: #fff1f1;
+  --color-emerald-100: #ffe4e4;
+  --color-emerald-200: #ffcaca;
+  --color-emerald-300: #ffa8a8;
+  --color-emerald-400: #f87171;
+  --color-emerald-500: #ef4444;
+  --color-emerald-600: #dc2626;
+  --color-emerald-700: #b91c1c;
+  --color-emerald-800: #991b1b;
+  --color-emerald-900: #7f1d1d;
+  --color-emerald-950: #450a0a;
 
-  /* Tet gold for secondary accents */
-  --color-amber-400: #e8c547;
-  --color-amber-500: #d4af37;
-  --color-amber-600: #b8922e;
+  /* Tet gold — secondary / CTA accents */
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+  --color-amber-800: #92400e;
+  --color-amber-900: #78350f;
+  --color-amber-950: #451a03;
+
+  /* Map blue utilities to gold for recurring / info badges */
+  --color-blue-50: #fffbeb;
+  --color-blue-100: #fef3c7;
+  --color-blue-300: #fcd34d;
+  --color-blue-700: #b45309;
+  --color-blue-900: #78350f;
+  --color-blue-950: #451a03;
+
+  /* Slightly warm white for surfaces */
+  --color-white: #fffbf7;
+
+  --font-heading: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-noto-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading);
+  }
+
+  html {
+    min-height: 100%;
+  }
+
+  body {
+    min-height: 100%;
+    font-family: var(--font-sans);
+    color: var(--color-gray-900);
+    transition: background-color 200ms, color 200ms;
+    background-color: var(--color-gray-50);
+    background-image:
+      radial-gradient(ellipse 90% 60% at 50% -10%, rgba(251, 191, 36, 0.14), transparent 55%),
+      radial-gradient(circle at 100% 0%, rgba(220, 38, 38, 0.07), transparent 42%),
+      radial-gradient(circle at 0% 100%, rgba(251, 191, 36, 0.1), transparent 42%),
+      repeating-linear-gradient(
+        135deg,
+        transparent,
+        transparent 24px,
+        rgba(220, 38, 38, 0.018) 24px,
+        rgba(220, 38, 38, 0.018) 25px
+      );
+  }
+
+  .dark body {
+    color: var(--color-gray-100);
+    background-color: var(--color-gray-950);
+    background-image:
+      radial-gradient(ellipse 90% 60% at 50% -10%, rgba(251, 191, 36, 0.07), transparent 55%),
+      radial-gradient(circle at 100% 0%, rgba(220, 38, 38, 0.1), transparent 42%),
+      radial-gradient(circle at 0% 100%, rgba(180, 83, 9, 0.06), transparent 42%),
+      repeating-linear-gradient(
+        135deg,
+        transparent,
+        transparent 24px,
+        rgba(251, 191, 36, 0.025) 24px,
+        rgba(251, 191, 36, 0.025) 25px
+      );
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* ── Surfaces ── */
+  .tet-card {
+    @apply rounded-2xl bg-white/92 dark:bg-gray-900/92 shadow-sm ring-1 ring-amber-200/55 dark:ring-amber-900/35 backdrop-blur-sm transition-colors duration-200;
+  }
+
+  .tet-card-hover {
+    @apply rounded-2xl bg-white/92 dark:bg-gray-900/92 shadow-sm ring-1 ring-amber-200/55 dark:ring-amber-900/35 backdrop-blur-sm transition-colors duration-200 cursor-pointer hover:shadow-md hover:ring-amber-300/70 dark:hover:ring-amber-700/45;
+  }
+
+  .tet-panel {
+    @apply rounded-2xl border border-emerald-100/80 dark:border-emerald-900/50 bg-white/92 dark:bg-gray-900/92 p-4 shadow-sm backdrop-blur-sm;
+  }
+
+  /* ── Header ── */
+  .tet-header {
+    @apply sticky top-0 z-40 border-b border-amber-300/55 dark:border-amber-800/45 bg-white/88 dark:bg-gray-900/88 backdrop-blur-md;
+  }
+
+  .tet-brand {
+    @apply flex cursor-pointer items-center gap-2 text-gray-900 dark:text-gray-100 transition-colors duration-200 hover:text-emerald-700 dark:hover:text-amber-400;
+  }
+
+  /* ── Typography ── */
+  .tet-page-title {
+    @apply font-heading text-2xl font-bold text-gray-900 dark:text-gray-100;
+  }
+
+  .tet-section-title {
+    @apply font-heading text-base font-semibold text-gray-900 dark:text-gray-100;
+  }
+
+  .tet-muted {
+    @apply text-sm text-gray-600 dark:text-gray-400;
+  }
+
+  /* ── Tabs ── */
+  .tet-tab-bar {
+    @apply flex border-b border-amber-200/60 dark:border-amber-900/40 bg-white/85 dark:bg-gray-900/85 backdrop-blur-sm;
+  }
+
+  .tet-tab {
+    @apply flex-1 cursor-pointer py-3 text-sm font-medium transition-colors duration-200;
+  }
+
+  .tet-tab-active {
+    @apply border-b-2 border-emerald-600 text-emerald-700 dark:border-amber-500 dark:text-amber-400;
+  }
+
+  .tet-tab-inactive {
+    @apply text-gray-600 dark:text-gray-400 hover:text-emerald-700 dark:hover:text-amber-300;
+  }
+
+  /* ── Forms ── */
+  .tet-label {
+    @apply block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1;
+  }
+
+  .tet-input {
+    @apply w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white/85 dark:bg-gray-800/85 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 outline-none transition-colors duration-200 focus:border-amber-400 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900/60;
+  }
+
+  .tet-input-lg {
+    @apply w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white/85 dark:bg-gray-800/85 px-4 py-3 text-base text-gray-900 dark:text-gray-100 outline-none transition-colors duration-200 focus:border-amber-400 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900/60;
+  }
+
+  /* ── Buttons ── */
+  .tet-btn-primary {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-emerald-700 active:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .tet-btn-primary-lg {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-600 w-full py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-emerald-700 active:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .tet-btn-ghost {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .tet-btn-icon {
+    @apply cursor-pointer rounded-xl p-2 text-gray-500 transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .tet-btn-icon-danger {
+    @apply cursor-pointer rounded-xl p-2 text-gray-500 transition-colors duration-200 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* ── Badges ── */
+  .tet-badge-upcoming {
+    @apply shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-950 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300;
+  }
+
+  .tet-badge-past {
+    @apply shrink-0 rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-400;
+  }
+
+  .tet-badge-gold {
+    @apply inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300 ring-1 ring-amber-200/50 dark:ring-amber-800/40;
+  }
+
+  .tet-badge-synced {
+    @apply inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-200/50 dark:ring-emerald-800/40;
+  }
+
+  .tet-badge-count {
+    @apply inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/50 px-2.5 py-1 text-xs font-medium text-amber-800 dark:text-amber-300 ring-1 ring-amber-200/40 dark:ring-amber-800/30;
+  }
+
+  /* ── Alerts & empty states ── */
+  .tet-empty {
+    @apply rounded-2xl border border-dashed border-amber-200/70 dark:border-amber-900/45 py-8 text-center text-sm text-gray-500 dark:text-gray-400;
+  }
+
+  .tet-alert-info {
+    @apply flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 px-4 py-3 text-sm text-amber-800 dark:text-amber-300 ring-1 ring-amber-200/50 dark:ring-amber-800/40;
+  }
+
+  .tet-alert-success {
+    @apply flex items-center gap-2 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950 px-4 py-3 text-sm font-medium text-emerald-700 dark:text-emerald-300;
+  }
+
+  .tet-alert-error {
+    @apply rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 px-4 py-2 text-sm text-red-700 dark:text-red-300;
+  }
+
+  /* ── Links ── */
+  .tet-link {
+    @apply inline-flex cursor-pointer items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 transition-colors duration-200 hover:text-emerald-700 dark:hover:text-amber-400;
+  }
+
+  .tet-link-accent {
+    @apply text-emerald-600 dark:text-amber-400 underline transition-colors duration-200 hover:text-emerald-700 dark:hover:text-amber-300;
+  }
+
+  /* ── Playtime pills ── */
+  .tet-pill-full {
+    @apply rounded-full bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300;
+  }
+
+  .tet-pill-half {
+    @apply rounded-full bg-amber-50 dark:bg-amber-950 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300;
+  }
 }

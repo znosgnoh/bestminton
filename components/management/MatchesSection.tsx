@@ -57,10 +57,10 @@ export default function MatchesSection({ initialMatches, dbAvailable }: MatchesS
   return (
     <section>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Matches</h2>
+        <h2 className="tet-section-title">Matches</h2>
         <button
           onClick={() => setShowForm((v) => !v)}
-          className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 active:bg-emerald-800"
+          className="tet-btn-primary"
         >
           <CalendarPlus size={15} />
           {showForm ? (
@@ -76,22 +76,18 @@ export default function MatchesSection({ initialMatches, dbAvailable }: MatchesS
       </div>
 
       {showForm && (
-        <div className="mb-4 rounded-2xl border border-emerald-100 dark:border-emerald-900 bg-white dark:bg-gray-900 p-4 shadow-sm">
+        <div className="mb-4 tet-panel">
           <MatchForm onSaved={handleSaved} onCancel={() => setShowForm(false)} />
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-t-2xl overflow-hidden mb-0">
+      <div className="tet-tab-bar rounded-t-2xl overflow-hidden mb-0">
         {(["upcoming", "past"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${
-              activeTab === tab
-                ? "border-b-2 border-emerald-600 text-emerald-700 dark:text-emerald-400"
-                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-            }`}
+            className={`tet-tab ${activeTab === tab ? "tet-tab-active" : "tet-tab-inactive"}`}
           >
             {tab === "upcoming" ? `Upcoming (${upcoming.length})` : `Past (${past.length})`}
           </button>
@@ -99,7 +95,7 @@ export default function MatchesSection({ initialMatches, dbAvailable }: MatchesS
       </div>
 
       {list.length === 0 ? (
-        <p className="rounded-b-2xl border border-t-0 border-dashed border-gray-200 dark:border-gray-700 py-8 text-center text-sm text-gray-400 dark:text-gray-500">
+        <p className="tet-empty rounded-b-2xl border border-t-0 border-solid border-amber-200/50 dark:border-amber-900/40">
           {activeTab === "upcoming" ? "No upcoming matches." : "No past matches yet."}
         </p>
       ) : (

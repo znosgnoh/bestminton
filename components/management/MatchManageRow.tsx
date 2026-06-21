@@ -50,7 +50,7 @@ export default function MatchManageRow({ match, onUpdated, onDeleted }: MatchMan
 
   if (mode === "editing") {
     return (
-      <div className="rounded-2xl border border-emerald-100 dark:border-emerald-900 bg-white dark:bg-gray-900 p-4 shadow-sm">
+      <div className="tet-panel">
         <MatchForm
           initial={match}
           onSaved={([updated]) => {
@@ -68,30 +68,30 @@ export default function MatchManageRow({ match, onUpdated, onDeleted }: MatchMan
 
   return (
     <>
-      <div className="rounded-2xl bg-white dark:bg-gray-900 p-4 shadow-sm ring-1 ring-gray-100 dark:ring-gray-800">
+      <div className="tet-card p-4">
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{match.title}</p>
               {match.isRecurring && (
-                <span className="flex items-center gap-1 rounded-full bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300 shrink-0">
+                <span className="tet-badge-gold shrink-0">
                   <RefreshCw size={10} />
                   Weekly
                 </span>
               )}
               {match.synced && (
-                <span className="flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-900/40 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 shrink-0">
+                <span className="tet-badge-synced shrink-0">
                   <CheckCircle size={10} />
                   Synced
                 </span>
               )}
             </div>
-            <p className="mt-1 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-              <MapPin size={11} />
+            <p className="mt-1 flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+              <MapPin size={11} className="text-amber-600 dark:text-amber-400" />
               {match.venue}
             </p>
-            <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{formatDate(match.scheduledAt)}</p>
-            <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-500">{formatDate(match.scheduledAt)}</p>
+            <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-500">
               <Users size={11} />
               {headcount} {headcount === 1 ? "player" : "players"}
             </p>
@@ -100,22 +100,19 @@ export default function MatchManageRow({ match, onUpdated, onDeleted }: MatchMan
             {isPast && (
               <Link
                 href={`/matches/${match.id}?manage=1`}
-                className="rounded-xl p-2 text-gray-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 hover:text-emerald-600 dark:hover:text-emerald-400"
+                className="tet-btn-icon hover:bg-emerald-50 dark:hover:bg-emerald-950 hover:text-emerald-600 dark:hover:text-amber-400"
                 title="Settle match"
               >
                 <ClipboardList size={16} />
               </Link>
             )}
-            <button
-              onClick={() => setMode("editing")}
-              className="rounded-xl p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200"
-            >
+            <button onClick={() => setMode("editing")} className="tet-btn-icon">
               <Pencil size={16} />
             </button>
             <button
               onClick={() => setMode("deleting")}
               disabled={deleting}
-              className="rounded-xl p-2 text-gray-400 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-500 disabled:opacity-50"
+              className="tet-btn-icon-danger"
             >
               {deleting ? (
                 <Loader2 size={16} className="animate-spin" />
