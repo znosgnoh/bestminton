@@ -13,6 +13,7 @@ import {
 } from "@/lib/splitwise";
 import type { CreateExpenseRequest } from "@/lib/types";
 import { db } from "@/lib/db";
+import { revalidateMatchPages } from "@/lib/revalidate";
 
 export async function POST(request: NextRequest) {
   if (!isSplitwiseConfigured()) {
@@ -110,6 +111,7 @@ export async function POST(request: NextRequest) {
   if (matchId) {
     try {
       await db.match.update({ where: { id: matchId }, data: { synced: true } });
+      revalidateMatchPages(matchId);
     } catch {
       console.error(`Failed to mark match ${matchId} as synced`);
     }

@@ -50,6 +50,8 @@ export default function Avatar({ name, avatarUrl, size = "md", className = "" }:
         alt={name}
         width={px}
         height={px}
+        loading="lazy"
+        sizes={`${px}px`}
         className={`rounded-full object-cover ${className}`}
         style={{ width: px, height: px }}
       />

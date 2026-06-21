@@ -12,7 +12,7 @@ async function detectMode(): Promise<StorageMode> {
   if (typeof window === "undefined") return "api";
   if (!allowsIndexedDbFallback()) return "api";
   try {
-    const res = await fetch("/api/health", { cache: "no-store" });
+    const res = await fetch("/api/health");
     const data = (await res.json()) as { db: boolean };
     return data.db ? "api" : "local";
   } catch {
@@ -21,6 +21,9 @@ async function detectMode(): Promise<StorageMode> {
 }
 
 export function getStorageMode(): Promise<StorageMode> {
+  if (typeof window !== "undefined" && !allowsIndexedDbFallback()) {
+    return Promise.resolve("api");
+  }
   if (_mode) return Promise.resolve(_mode);
   if (!_modePromise) {
     _modePromise = detectMode().then((m) => {

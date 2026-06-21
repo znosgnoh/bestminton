@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Pencil, Trash2, Loader2, MapPin, Users, RefreshCw, CheckCircle, ClipboardList } from "lucide-react";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ErrorBanner from "@/components/ui/ErrorBanner";
@@ -30,9 +31,16 @@ function totalHeadcount(match: MatchDTO): number {
 }
 
 export default function MatchManageRow({ match, onUpdated, onDeleted }: MatchManageRowProps) {
+  const pathname = usePathname();
   const [mode, setMode] = useState<"view" | "editing" | "deleting">("view");
   const [deleting, setDeleting] = useState(false);
+  const [settling, setSettling] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const settleHref = `/matches/${match.id}?manage=1`;
+
+  useEffect(() => {
+    setSettling(false);
+  }, [pathname]);
 
   async function handleDelete() {
     setDeleting(true);
@@ -99,11 +107,19 @@ export default function MatchManageRow({ match, onUpdated, onDeleted }: MatchMan
           <div className="flex gap-1 shrink-0">
             {isPast && (
               <Link
-                href={`/matches/${match.id}?manage=1`}
-                className="tet-btn-icon hover:bg-emerald-50 dark:hover:bg-emerald-950 hover:text-emerald-600 dark:hover:text-amber-400"
+                href={settleHref}
+                onClick={() => setSettling(true)}
+                aria-busy={settling}
+                className={`tet-btn-icon hover:bg-emerald-50 dark:hover:bg-emerald-950 hover:text-emerald-600 dark:hover:text-amber-400 ${
+                  settling ? "pointer-events-none opacity-60" : ""
+                }`}
                 title="Settle match"
               >
-                <ClipboardList size={16} />
+                {settling ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <ClipboardList size={16} />
+                )}
               </Link>
             )}
             <button onClick={() => setMode("editing")} className="tet-btn-icon">

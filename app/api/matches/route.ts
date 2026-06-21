@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { MATCH_FULL_INCLUDE } from "@/lib/prismaIncludes";
+import { revalidateMatchPages } from "@/lib/revalidate";
+import { toDTO } from "@/lib/serialize";
 
-const FULL_INCLUDE = {
-  registrations: {
-    include: { member: true, guests: true },
-    orderBy: { joinedAt: "asc" as const },
-  },
+export const revalidate = 30;
+
+const CACHE_HEADERS = {
+  "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
 };
 
 function addDays(date: Date, days: number): Date {
@@ -16,10 +18,10 @@ function addDays(date: Date, days: number): Date {
 
 export async function GET() {
   const matches = await db.match.findMany({
-    include: FULL_INCLUDE,
+    include: MATCH_FULL_INCLUDE,
     orderBy: { scheduledAt: "asc" },
   });
-  return NextResponse.json(JSON.parse(JSON.stringify(matches)));
+  return NextResponse.json(toDTO(matches), { headers: CACHE_HEADERS });
 }
 
 export async function POST(request: NextRequest) {
@@ -53,9 +55,10 @@ export async function POST(request: NextRequest) {
   if (!isRecurring) {
     const match = await db.match.create({
       data: { title, venue, scheduledAt, isRecurring: false, recurDayOfWeek: null },
-      include: FULL_INCLUDE,
+      include: MATCH_FULL_INCLUDE,
     });
-    return NextResponse.json(JSON.parse(JSON.stringify([match])), { status: 201 });
+    revalidateMatchPages(match.id);
+    return NextResponse.json(toDTO([match]), { status: 201 });
   }
 
   const dates = [0, 7, 14, 21].map((offset) => addDays(scheduledAt, offset));
@@ -63,9 +66,10 @@ export async function POST(request: NextRequest) {
     dates.map((date) =>
       db.match.create({
         data: { title, venue, scheduledAt: date, isRecurring: true, recurDayOfWeek },
-        include: FULL_INCLUDE,
+        include: MATCH_FULL_INCLUDE,
       })
     )
   );
-  return NextResponse.json(JSON.parse(JSON.stringify(created)), { status: 201 });
+  revalidateMatchPages();
+  return NextResponse.json(toDTO(created), { status: 201 });
 }

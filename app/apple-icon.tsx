@@ -1,10 +1,10 @@
 import { racketIconSvg } from "@/lib/racketIconSvg";
 
-export const size = { width: 32, height: 32 };
+export const size = { width: 180, height: 180 };
 export const contentType = "image/svg+xml";
 
-export default function Icon() {
-  return new Response(racketIconSvg(32), {
+export default function AppleIcon() {
+  return new Response(racketIconSvg(180, 40), {
     headers: { "Content-Type": "image/svg+xml" },
   });
 }

@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Be_Vietnam_Pro, Noto_Sans } from "next/font/google";
 import BadmintonRacketIcon from "@/components/ui/BadmintonRacketIcon";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
+import PwaRegister from "@/components/PwaRegister";
 import "./globals.css";
 
 const beVietnamPro = Be_Vietnam_Pro({
@@ -25,6 +26,22 @@ export const SITE_SHORT = "Bestminton";
 export const metadata: Metadata = {
   title: SITE_TITLE,
   description: "Manage badminton sessions and split court fees with your team",
+  applicationName: SITE_SHORT,
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: SITE_SHORT,
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#dc2626" },
+    { media: "(prefers-color-scheme: dark)", color: "#1f1612" },
+  ],
 };
 
 export default function RootLayout({
@@ -53,6 +70,7 @@ export default function RootLayout({
           </div>
         </header>
         <main className="flex-1">{children}</main>
+        <PwaRegister />
       </body>
     </html>
   );

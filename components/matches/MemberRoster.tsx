@@ -109,6 +109,7 @@ export default function MemberRoster({
               registered={!!reg}
               playedFull={reg?.playedFull}
               disabled={isPast || pending.has(member.id)}
+              pending={pending.has(member.id)}
               onToggle={() => handleToggle(member)}
             />
           );

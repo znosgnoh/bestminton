@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { revalidateMemberPages } from "@/lib/revalidate";
 import { Prisma } from "@prisma/client";
 
 export async function PUT(
@@ -50,6 +51,7 @@ export async function PUT(
         ...(splitwiseId !== undefined && { splitwiseId }),
       },
     });
+    revalidateMemberPages();
     return NextResponse.json(member);
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -87,6 +89,7 @@ export async function DELETE(
 
   try {
     await db.member.delete({ where: { id } });
+    revalidateMemberPages();
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { revalidateMatchPages } from "@/lib/revalidate";
 import { Prisma } from "@prisma/client";
 
 const REG_INCLUDE = { member: true, guests: true };
@@ -44,6 +45,7 @@ export async function POST(
       update: {},
       include: REG_INCLUDE,
     });
+    revalidateMatchPages(matchId);
     return NextResponse.json(JSON.parse(JSON.stringify(registration)), { status: 201 });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
@@ -84,6 +86,7 @@ export async function PUT(
       data: { playedFull: body.playedFull },
       include: REG_INCLUDE,
     });
+    revalidateMatchPages(matchId);
     return NextResponse.json(JSON.parse(JSON.stringify(updated)));
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
@@ -119,6 +122,7 @@ export async function DELETE(
     await db.matchRegistration.delete({
       where: { matchId_memberId: { matchId, memberId } },
     });
+    revalidateMatchPages(matchId);
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {

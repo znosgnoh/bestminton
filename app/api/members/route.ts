@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { revalidateMemberPages } from "@/lib/revalidate";
 import { Prisma } from "@prisma/client";
+
+export const revalidate = 30;
+
+const CACHE_HEADERS = {
+  "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+};
 
 export async function GET() {
   const members = await db.member.findMany({ orderBy: { name: "asc" } });
-  return NextResponse.json(members);
+  return NextResponse.json(members, { headers: CACHE_HEADERS });
 }
 
 export async function POST(request: NextRequest) {
@@ -39,6 +46,7 @@ export async function POST(request: NextRequest) {
         splitwiseId,
       },
     });
+    revalidateMemberPages();
     return NextResponse.json(member, { status: 201 });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {

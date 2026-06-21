@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { revalidateMatchPages } from "@/lib/revalidate";
 import { Prisma } from "@prisma/client";
 
 const REG_INCLUDE = { member: true, guests: true };
@@ -8,7 +9,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; guestId: string }> }
 ) {
-  const { guestId: guestIdStr } = await params;
+  const { id: idStr, guestId: guestIdStr } = await params;
+  const matchId = parseInt(idStr);
   const guestId = parseInt(guestIdStr);
   if (isNaN(guestId)) {
     return NextResponse.json({ error: "Invalid guest ID." }, { status: 400 });
@@ -35,6 +37,7 @@ export async function PUT(
       where: { id: guest.registrationId },
       include: REG_INCLUDE,
     });
+    if (!isNaN(matchId)) revalidateMatchPages(matchId);
     return NextResponse.json(JSON.parse(JSON.stringify(updated)));
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
@@ -48,7 +51,8 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string; guestId: string }> }
 ) {
-  const { guestId: guestIdStr } = await params;
+  const { id: idStr, guestId: guestIdStr } = await params;
+  const matchId = parseInt(idStr);
   const guestId = parseInt(guestIdStr);
   if (isNaN(guestId)) {
     return NextResponse.json({ error: "Invalid guest ID." }, { status: 400 });
@@ -68,6 +72,7 @@ export async function DELETE(
       where: { id: registrationId },
       include: REG_INCLUDE,
     });
+    if (!isNaN(matchId)) revalidateMatchPages(matchId);
     return NextResponse.json(JSON.parse(JSON.stringify(updated)));
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {

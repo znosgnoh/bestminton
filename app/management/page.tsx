@@ -1,11 +1,13 @@
 import { db } from "@/lib/db";
 import { isDatabaseConfigured } from "@/lib/dbConfig";
 import { isSplitwiseConfigured } from "@/lib/splitwise";
+import { MATCH_LIST_INCLUDE } from "@/lib/prismaIncludes";
+import { toDTO } from "@/lib/serialize";
 import MembersSection from "@/components/management/MembersSection";
 import MatchesSection from "@/components/management/MatchesSection";
 import type { MemberDTO, MatchDTO } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function ManagementPage() {
   let members: MemberDTO[] = [];
@@ -13,21 +15,20 @@ export default async function ManagementPage() {
   let dbAvailable = false;
 
   if (isDatabaseConfigured()) {
-    const [rawMembers, rawMatches] = await Promise.all([
-      db.member.findMany({ orderBy: { name: "asc" } }),
-      db.match.findMany({
-        include: {
-          registrations: {
-            include: { member: true, guests: true },
-            orderBy: { joinedAt: "asc" },
-          },
-        },
-        orderBy: { scheduledAt: "desc" },
-      }),
-    ]);
-    members = JSON.parse(JSON.stringify(rawMembers));
-    matches = JSON.parse(JSON.stringify(rawMatches));
-    dbAvailable = true;
+    try {
+      const [rawMembers, rawMatches] = await Promise.all([
+        db.member.findMany({ orderBy: { name: "asc" } }),
+        db.match.findMany({
+          include: MATCH_LIST_INCLUDE,
+          orderBy: { scheduledAt: "desc" },
+        }),
+      ]);
+      members = toDTO<MemberDTO[]>(rawMembers);
+      matches = toDTO<MatchDTO[]>(rawMatches);
+      dbAvailable = true;
+    } catch {
+      // DB unreachable — client falls back to local/API mode
+    }
   }
 
   return (

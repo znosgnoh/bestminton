@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { Loader2 } from "lucide-react";
+import { HomePageSkeleton } from "@/components/ui/Skeleton";
 import MatchCard from "./MatchCard";
 import * as dataService from "@/lib/dataService";
 import type { MatchDTO } from "@/lib/types";
@@ -65,11 +66,7 @@ function MatchTabsInner({ upcoming: initialUpcoming, past: initialPast, dbAvaila
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 size={24} className="animate-spin text-emerald-500 dark:text-amber-400" />
-      </div>
-    );
+    return <HomePageSkeleton />;
   }
 
   return (
@@ -121,13 +118,7 @@ function MatchTabsInner({ upcoming: initialUpcoming, past: initialPast, dbAvaila
 
 export default function MatchTabs(props: MatchTabsProps) {
   return (
-    <Suspense
-      fallback={
-        <div className="tet-tab-bar">
-          <div className="flex-1 py-3 text-center text-sm text-gray-500">Loading…</div>
-        </div>
-      }
-    >
+    <Suspense fallback={<HomePageSkeleton />}>
       <MatchTabsInner {...props} />
     </Suspense>
   );

@@ -1,10 +1,12 @@
 import { db } from "@/lib/db";
 import { isDatabaseConfigured } from "@/lib/dbConfig";
 import { isSplitwiseConfigured, getCurrencyCode } from "@/lib/splitwise";
+import { MATCH_FULL_INCLUDE } from "@/lib/prismaIncludes";
+import { toDTO } from "@/lib/serialize";
 import MatchDetailClient from "./MatchDetailClient";
 import type { MatchDTO, MemberDTO } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function MatchPage({
   params,
@@ -37,24 +39,23 @@ export default async function MatchPage({
   let dbAvailable = false;
 
   if (isDatabaseConfigured()) {
-    const [rawMatch, rawMembers] = await Promise.all([
-      db.match.findUnique({
-        where: { id: matchId },
-        include: {
-          registrations: {
-            include: { member: true, guests: true },
-            orderBy: { joinedAt: "asc" },
-          },
-        },
-      }),
-      db.member.findMany({ orderBy: { name: "asc" } }),
-    ]);
+    try {
+      const [rawMatch, rawMembers] = await Promise.all([
+        db.match.findUnique({
+          where: { id: matchId },
+          include: MATCH_FULL_INCLUDE,
+        }),
+        db.member.findMany({ orderBy: { name: "asc" } }),
+      ]);
 
-    if (rawMatch) {
-      initialMatch = JSON.parse(JSON.stringify(rawMatch));
+      if (rawMatch) {
+        initialMatch = toDTO<MatchDTO>(rawMatch);
+      }
+      initialMembers = toDTO<MemberDTO[]>(rawMembers);
+      dbAvailable = true;
+    } catch {
+      // DB unreachable — client falls back to local/API mode
     }
-    initialMembers = JSON.parse(JSON.stringify(rawMembers));
-    dbAvailable = true;
   }
 
   return (

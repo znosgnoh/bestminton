@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, MapPin, Clock, Calendar, Loader2 } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, Calendar } from "lucide-react";
+import { MatchDetailSkeleton } from "@/components/ui/Skeleton";
 import MemberRoster from "@/components/matches/MemberRoster";
 import RegistrationRow from "@/components/matches/RegistrationRow";
 import SettleForm from "@/components/matches/SettleForm";
@@ -70,17 +71,7 @@ export default function MatchDetailClient({
   }
 
   if (loading) {
-    return (
-      <div className="mx-auto max-w-lg px-4 py-4">
-        <Link href="/" className="tet-link">
-          <ArrowLeft size={15} />
-          All Matches
-        </Link>
-        <div className="flex justify-center py-16">
-          <Loader2 size={28} className="animate-spin text-emerald-500 dark:text-amber-400" />
-        </div>
-      </div>
-    );
+    return <MatchDetailSkeleton />;
   }
 
   if (!match) {

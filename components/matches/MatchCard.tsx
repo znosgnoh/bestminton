@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
-import { MapPin, Users, RefreshCw, CheckCircle } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { MapPin, Users, RefreshCw, CheckCircle, Loader2 } from "lucide-react";
 import type { MatchDTO } from "@/lib/types";
 
 interface MatchCardProps {
@@ -21,10 +25,30 @@ function totalHeadcount(match: MatchDTO): number {
 }
 
 export default function MatchCard({ match }: MatchCardProps) {
+  const pathname = usePathname();
+  const [navigating, setNavigating] = useState(false);
   const headcount = totalHeadcount(match);
+  const href = `/matches/${match.id}`;
+
+  useEffect(() => {
+    setNavigating(false);
+  }, [pathname]);
 
   return (
-    <Link href={`/matches/${match.id}`} className="tet-card-hover block p-4">
+    <Link
+      href={href}
+      onClick={() => setNavigating(true)}
+      aria-busy={navigating}
+      className={`tet-card-hover relative block p-4 transition-opacity duration-200 ${
+        navigating ? "pointer-events-none opacity-70" : ""
+      }`}
+    >
+      {navigating && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/50 dark:bg-gray-950/50">
+          <Loader2 size={22} className="animate-spin text-emerald-600 dark:text-amber-400" />
+        </div>
+      )}
+
       <div className="flex items-start justify-between gap-2">
         <h3 className="flex-1 font-heading text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
           {match.title}

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { revalidateMatchPages } from "@/lib/revalidate";
 
 const REG_INCLUDE = { member: true, guests: true };
 
@@ -49,5 +50,6 @@ export async function POST(
     include: REG_INCLUDE,
   });
 
+  revalidateMatchPages(matchId);
   return NextResponse.json(JSON.parse(JSON.stringify(updated)), { status: 201 });
 }

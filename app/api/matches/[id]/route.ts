@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
+import { MATCH_FULL_INCLUDE } from "@/lib/prismaIncludes";
+import { revalidateMatchPages } from "@/lib/revalidate";
+import { toDTO } from "@/lib/serialize";
 
-const FULL_INCLUDE = {
-  registrations: {
-    include: { member: true, guests: true },
-    orderBy: { joinedAt: "asc" as const },
-  },
+export const revalidate = 30;
+
+const CACHE_HEADERS = {
+  "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
 };
 
 export async function GET(
@@ -19,11 +21,11 @@ export async function GET(
     return NextResponse.json({ error: "Invalid match ID." }, { status: 400 });
   }
 
-  const match = await db.match.findUnique({ where: { id }, include: FULL_INCLUDE });
+  const match = await db.match.findUnique({ where: { id }, include: MATCH_FULL_INCLUDE });
   if (!match) {
     return NextResponse.json({ error: "Match not found." }, { status: 404 });
   }
-  return NextResponse.json(JSON.parse(JSON.stringify(match)));
+  return NextResponse.json(toDTO(match), { headers: CACHE_HEADERS });
 }
 
 export async function PUT(
@@ -79,8 +81,9 @@ export async function PUT(
         : { disconnect: true };
     }
 
-    const match = await db.match.update({ where: { id }, data, include: FULL_INCLUDE });
-    return NextResponse.json(JSON.parse(JSON.stringify(match)));
+    const match = await db.match.update({ where: { id }, data, include: MATCH_FULL_INCLUDE });
+    revalidateMatchPages(id);
+    return NextResponse.json(toDTO(match));
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
       return NextResponse.json({ error: "Match not found." }, { status: 404 });
@@ -120,6 +123,7 @@ export async function DELETE(
     }
 
     await db.match.delete({ where: { id } });
+    revalidateMatchPages(id);
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {

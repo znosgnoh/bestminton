@@ -27,9 +27,11 @@ export default function RegistrationRow({
   const [togglingGuest, setTogglingGuest] = useState<Set<number>>(new Set());
   const [togglingPlaytime, setTogglingPlaytime] = useState(false);
   const [playtimeError, setPlaytimeError] = useState<string | null>(null);
+  const [guestError, setGuestError] = useState<string | null>(null);
 
   async function handleAddGuest() {
     setSaving(true);
+    setGuestError(null);
     try {
       const updated = await dataService.addGuest(matchId, registration.memberId, {
         label: guestLabel.trim() || null,
@@ -39,8 +41,8 @@ export default function RegistrationRow({
       setGuestLabel("");
       setGuestPlayedFull(true);
       setAddingGuest(false);
-    } catch {
-      // keep form open on error
+    } catch (err) {
+      setGuestError(err instanceof Error ? err.message : "Failed to add guest.");
     } finally {
       setSaving(false);
     }
@@ -228,6 +230,10 @@ export default function RegistrationRow({
                   ½ time
                 </button>
               </div>
+
+              {guestError && (
+                <p className="text-[10px] text-red-500 dark:text-red-400">{guestError}</p>
+              )}
 
               <div className="flex items-center gap-1.5 pt-0.5">
                 <button
