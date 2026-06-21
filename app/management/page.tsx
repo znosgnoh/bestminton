@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { isDatabaseConfigured } from "@/lib/dbConfig";
+import { isSplitwiseConfigured } from "@/lib/splitwise";
 import MembersSection from "@/components/management/MembersSection";
 import MatchesSection from "@/components/management/MatchesSection";
 import type { MemberDTO, MatchDTO } from "@/lib/types";
@@ -38,7 +39,11 @@ export default async function ManagementPage() {
         </p>
       </div>
 
-      <MembersSection initialMembers={members} dbAvailable={dbAvailable} />
+      <MembersSection
+        initialMembers={members}
+        dbAvailable={dbAvailable}
+        splitwiseConfigured={isSplitwiseConfigured()}
+      />
       <MatchesSection initialMatches={matches} dbAvailable={dbAvailable} />
     </div>
   );

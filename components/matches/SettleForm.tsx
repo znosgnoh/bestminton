@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Loader2, CheckCircle, AlertTriangle, Info } from "lucide-react";
 import { calculateShares } from "@/lib/calculations";
+import { currencyLabel, formatAmount, getCurrencySymbol } from "@/lib/currency";
 import * as dataService from "@/lib/dataService";
 import type { MatchDTO, RegistrationDTO, CalculatedShare } from "@/lib/types";
 
@@ -10,9 +11,10 @@ interface SettleFormProps {
   match: MatchDTO;
   registrations: RegistrationDTO[];
   splitwiseConfigured: boolean;
+  currencyCode: string;
 }
 
-export default function SettleForm({ match, registrations, splitwiseConfigured }: SettleFormProps) {
+export default function SettleForm({ match, registrations, splitwiseConfigured, currencyCode }: SettleFormProps) {
   const [totalCost, setTotalCost] = useState<number | "">(match.totalCost ?? "");
   const [hours, setHours] = useState<number | "">(match.hours ?? "");
   const [paidByMemberId, setPaidByMemberId] = useState<number | null>(match.paidByMemberId);
@@ -97,6 +99,8 @@ export default function SettleForm({ match, registrations, splitwiseConfigured }
           matchId: match.id,
           totalCost,
           description: match.title,
+          date: match.scheduledAt,
+          details: match.venue ? `Venue: ${match.venue}` : undefined,
           groupId: 0,
           paidById: paidByReg.member.splitwiseId,
           participants: shares.map((s) => {
@@ -118,6 +122,9 @@ export default function SettleForm({ match, registrations, splitwiseConfigured }
   const inputCls =
     "w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-base text-gray-900 dark:text-gray-100 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900";
 
+  const cur = currencyLabel(currencyCode);
+  const curSym = getCurrencySymbol(currencyCode);
+
   return (
     <div className="rounded-2xl bg-white dark:bg-gray-900 p-5 shadow-sm ring-1 ring-gray-100 dark:ring-gray-800 space-y-5">
       <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Settle Match</h2>
@@ -125,7 +132,7 @@ export default function SettleForm({ match, registrations, splitwiseConfigured }
       <div className="space-y-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Total Court Cost (฿)
+            Total Court Cost ({cur})
           </label>
           <input
             type="number" min="0" step="1" value={totalCost}
@@ -184,7 +191,7 @@ export default function SettleForm({ match, registrations, splitwiseConfigured }
                   <th className="px-3 py-2 text-left">Name</th>
                   <th className="px-3 py-2 text-center">Time</th>
                   <th className="px-3 py-2 text-center">+Guests</th>
-                  <th className="px-3 py-2 text-right">Owes (฿)</th>
+                  <th className="px-3 py-2 text-right">Owes ({curSym})</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
@@ -210,7 +217,7 @@ export default function SettleForm({ match, registrations, splitwiseConfigured }
                     <td className="px-3 py-2.5 text-center text-gray-500 dark:text-gray-400">
                       {guestLabel}
                     </td>
-                    <td className="px-3 py-2.5 text-right font-semibold text-gray-900 dark:text-gray-100">{s.owedShare.toFixed(2)}</td>
+                    <td className="px-3 py-2.5 text-right font-semibold text-gray-900 dark:text-gray-100">{formatAmount(s.owedShare)}</td>
                   </tr>
                   );
                 })}
@@ -219,7 +226,7 @@ export default function SettleForm({ match, registrations, splitwiseConfigured }
                 <tr className="border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 font-semibold">
                   <td className="px-3 py-2 text-gray-700 dark:text-gray-300" colSpan={3}>Total</td>
                   <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
-                    {typeof totalCost === "number" ? totalCost.toFixed(2) : "—"}
+                    {typeof totalCost === "number" ? formatAmount(totalCost) : "—"}
                   </td>
                 </tr>
               </tfoot>

@@ -6,6 +6,7 @@ export interface SplitwiseMember {
   last_name: string;
   email: string;
   picture: { small: string; medium: string; large: string };
+  displayName?: string;
 }
 
 // --- Legacy SPA domain models (kept for backward compat with existing hooks/components) ---
@@ -94,6 +95,10 @@ export interface CreateExpenseRequest {
   matchId?: number;
   totalCost: number;
   description: string;
+  /** ISO 8601 date-time for when the expense occurred */
+  date?: string;
+  /** Splitwise "notes" field */
+  details?: string;
   groupId: number;
   paidById: number;
   participants: Array<{

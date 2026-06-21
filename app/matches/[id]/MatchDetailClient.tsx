@@ -15,6 +15,7 @@ interface MatchDetailClientProps {
   initialMembers: MemberDTO[];
   dbAvailable: boolean;
   splitwiseConfigured: boolean;
+  currencyCode: string;
   isManage: boolean;
 }
 
@@ -40,6 +41,7 @@ export default function MatchDetailClient({
   initialMembers,
   dbAvailable,
   splitwiseConfigured,
+  currencyCode,
   isManage,
 }: MatchDetailClientProps) {
   const [match, setMatch] = useState<MatchDTO | null>(initialMatch);
@@ -181,6 +183,7 @@ export default function MatchDetailClient({
           match={match}
           registrations={registrations}
           splitwiseConfigured={splitwiseConfigured}
+          currencyCode={currencyCode}
         />
       )}
     </div>

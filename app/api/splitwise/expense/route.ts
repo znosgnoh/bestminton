@@ -1,33 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isSplitwiseConfigured, splitwiseFetch, getGroupId } from "@/lib/splitwise";
-import type { CreateExpenseRequest, SplitwiseFlatPayload } from "@/lib/types";
+import {
+  isSplitwiseConfigured,
+  splitwiseFetch,
+  getGroupId,
+  buildCreateExpensePayload,
+  toFormUrlEncoded,
+  validateExpenseShares,
+  parseSplitwiseErrors,
+  hasSplitwiseErrors,
+  getSplitwiseExpenseId,
+  type SplitwiseCreateExpenseResponse,
+} from "@/lib/splitwise";
+import type { CreateExpenseRequest } from "@/lib/types";
 import { db } from "@/lib/db";
-
-function buildSplitwisePayload(req: CreateExpenseRequest): SplitwiseFlatPayload {
-  const payload: SplitwiseFlatPayload = {
-    cost: req.totalCost.toFixed(2),
-    description: req.description,
-    group_id: req.groupId,
-    currency_code: "THB",
-    split_equally: false,
-  };
-
-  req.participants.forEach((p, i) => {
-    payload[`users__${i}__user_id`] = p.userId;
-    payload[`users__${i}__owed_share`] = p.owedShare.toFixed(2);
-    payload[`users__${i}__paid_share`] =
-      p.userId === req.paidById ? req.totalCost.toFixed(2) : "0.00";
-  });
-
-  return payload;
-}
 
 export async function POST(request: NextRequest) {
   if (!isSplitwiseConfigured()) {
     return NextResponse.json(
       {
         error:
-          "Splitwise is not configured. Add SPLITWISE_API_KEY and SPLITWISE_GROUP_ID to .env.local.",
+          "Splitwise is not configured. Add SPLITWISE_API_KEY and SPLITWISE_GROUP_ID to your environment.",
       },
       { status: 503 }
     );
@@ -45,16 +37,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
   }
 
-  // Server-side rounding invariant check
-  const sumCents = participants.reduce((s, p) => s + Math.round(p.owedShare * 100), 0);
-  const totalCents = Math.round(totalCost * 100);
-  if (sumCents !== totalCents) {
-    return NextResponse.json(
-      {
-        error: `Rounding mismatch: shares sum to ${(sumCents / 100).toFixed(2)} but total is ${totalCost.toFixed(2)}.`,
-      },
-      { status: 422 }
-    );
+  const shareError = validateExpenseShares(totalCost, paidById, participants);
+  if (shareError) {
+    return NextResponse.json({ error: shareError }, { status: 422 });
+  }
+
+  if (matchId) {
+    const match = await db.match.findUnique({ where: { id: matchId }, select: { synced: true } });
+    if (!match) {
+      return NextResponse.json({ error: "Match not found." }, { status: 404 });
+    }
+    if (match.synced) {
+      return NextResponse.json(
+        { error: "This match has already been synced to Splitwise." },
+        { status: 409 }
+      );
+    }
   }
 
   let groupId: string;
@@ -67,17 +65,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const payload = buildSplitwisePayload({ ...body, groupId: Number(groupId) });
-  const formBody = Object.entries(payload)
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
-    .join("&");
+  const payload = buildCreateExpensePayload({ ...body, groupId: Number(groupId) });
 
   let res: Response;
   try {
     res = await splitwiseFetch("/create_expense", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formBody,
+      body: toFormUrlEncoded(payload),
     });
   } catch {
     return NextResponse.json(
@@ -86,28 +81,39 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const data = (await res.json()) as {
-    expense?: { id: number };
-    errors?: Record<string, string[]>;
-  };
-
-  if (!res.ok) {
-    const errMsg =
-      data.errors && Object.values(data.errors).flat().length > 0
-        ? Object.values(data.errors).flat().join(", ")
-        : `Splitwise error: ${res.statusText}`;
-    return NextResponse.json({ error: errMsg }, { status: res.status });
+  let data: SplitwiseCreateExpenseResponse;
+  try {
+    data = (await res.json()) as SplitwiseCreateExpenseResponse;
+  } catch {
+    return NextResponse.json(
+      { error: "Splitwise returned an invalid response." },
+      { status: 502 }
+    );
   }
 
-  // Mark the match as synced
+  const splitwiseError = parseSplitwiseErrors(data.errors);
+  if (!res.ok || hasSplitwiseErrors(data)) {
+    return NextResponse.json(
+      { error: splitwiseError ?? `Splitwise error: ${res.statusText}` },
+      { status: res.ok ? 422 : res.status }
+    );
+  }
+
+  const expenseId = getSplitwiseExpenseId(data);
+  if (!expenseId) {
+    return NextResponse.json(
+      { error: "Splitwise accepted the request but did not return an expense ID." },
+      { status: 502 }
+    );
+  }
+
   if (matchId) {
     try {
       await db.match.update({ where: { id: matchId }, data: { synced: true } });
     } catch {
-      // Non-fatal — expense was created, log and continue
       console.error(`Failed to mark match ${matchId} as synced`);
     }
   }
 
-  return NextResponse.json({ success: true, expenseId: data.expense?.id });
+  return NextResponse.json({ success: true, expenseId });
 }

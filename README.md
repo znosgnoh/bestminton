@@ -56,6 +56,10 @@ POSTGRES_URL_NON_POOLING=
 # Splitwise (optional — only needed for expense sync)
 SPLITWISE_API_KEY=
 SPLITWISE_GROUP_ID=
+SPLITWISE_CURRENCY_CODE=USD
+
+# Vercel Blob (optional — only needed for avatar file uploads)
+BLOB_READ_WRITE_TOKEN=
 ```
 
 ### 3. Run database migrations (if using Postgres)
@@ -94,7 +98,7 @@ Access `/management` directly in the browser (not linked in the nav — captain 
 - **Members** — Add, edit, or remove team members; optionally link Splitwise IDs
 - **Matches** — Create one-off or recurring matches; view upcoming and past matches in separate tabs
 - **Settle** — On a past match row, tap the clipboard icon to open the settlement page:
-  1. Enter Total Cost (฿), Who Paid, and Hours Played
+  1. Enter Total Cost ($), Who Paid, and Hours Played
   2. Review calculated shares per player
   3. Click **Sync to Splitwise** to create the group expense
 
@@ -157,6 +161,25 @@ prisma/
   schema.prisma
   migrations/
 ```
+
+---
+
+## Vercel Blob (avatar uploads)
+
+Avatar file uploads in `/management` are stored in [Vercel Blob](https://vercel.com/docs/storage/vercel-blob). URL paste still works without Blob configured.
+
+### Setup
+
+1. In the [Vercel dashboard](https://vercel.com/dashboard), open your project → **Storage** → **Create Database / Store** → **Blob**.
+2. Name the store (e.g. `bestminton-avatars`) and connect it to this project.
+3. Vercel adds `BLOB_READ_WRITE_TOKEN` to the project automatically.
+4. For local dev, pull env vars:
+   ```bash
+   vercel env pull .env.local
+   ```
+   Or copy `BLOB_READ_WRITE_TOKEN` from the Blob store settings into `.env.local`.
+
+Without `BLOB_READ_WRITE_TOKEN`, the upload API returns 503; members can still use avatar URLs (including Splitwise import).
 
 ---
 

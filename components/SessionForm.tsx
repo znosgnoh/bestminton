@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { DollarSign } from "lucide-react";
+import { currencyLabel } from "@/lib/currency";
 
 interface SessionFormProps {
   onSubmit: (totalCost: number) => void;
+  currencyCode?: string;
 }
 
-export default function SessionForm({ onSubmit }: SessionFormProps) {
+export default function SessionForm({ onSubmit, currencyCode }: SessionFormProps) {
+  const cur = currencyLabel(currencyCode);
   const [totalCost, setTotalCost] = useState("");
   const [touched, setTouched] = useState(false);
 
@@ -27,13 +29,15 @@ export default function SessionForm({ onSubmit }: SessionFormProps) {
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
         <label className="mb-1.5 block text-sm font-medium text-gray-700">
-          Total Cost (THB)
+          Total Cost ({cur})
         </label>
         <div className="relative">
-          <DollarSign
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
+          <span
+            aria-hidden
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-gray-400"
+          >
+            {cur}
+          </span>
           <input
             type="number"
             inputMode="decimal"

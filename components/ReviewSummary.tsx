@@ -1,31 +1,31 @@
 "use client";
 
 import type { CalculatedShare } from "@/lib/types";
+import { currencyLabel, formatAmount, formatCurrency } from "@/lib/currency";
 
 interface ReviewSummaryProps {
   shares: CalculatedShare[];
   totalCost: number;
   paidByName: string;
+  currencyCode?: string;
   onBack: () => void;
-}
-
-function fmt(n: number) {
-  return n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function ReviewSummary({
   shares,
   totalCost,
   paidByName,
+  currencyCode,
   onBack,
 }: ReviewSummaryProps) {
+  const cur = currencyLabel(currencyCode);
   return (
     <div className="space-y-4">
       {/* Session meta */}
       <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
         <div className="flex justify-between">
           <span className="text-gray-500">Total cost</span>
-          <span className="font-semibold text-gray-800">฿{fmt(totalCost)}</span>
+          <span className="font-semibold text-gray-800">{formatCurrency(totalCost, currencyCode)}</span>
         </div>
         <div className="mt-1 flex justify-between">
           <span className="text-gray-500">Paid by</span>
@@ -42,7 +42,7 @@ export default function ReviewSummary({
               <th className="px-3 py-2.5 text-center font-medium text-gray-600">Hrs</th>
               <th className="px-3 py-2.5 text-center font-medium text-gray-600">+G</th>
               <th className="px-3 py-2.5 text-center font-medium text-gray-600">Wt</th>
-              <th className="px-3 py-2.5 text-right font-medium text-gray-600">Owes (฿)</th>
+              <th className="px-3 py-2.5 text-right font-medium text-gray-600">Owes ({cur})</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -59,7 +59,7 @@ export default function ReviewSummary({
                   {s.weight.toFixed(1)}
                 </td>
                 <td className="px-3 py-3 text-right font-semibold text-emerald-700">
-                  {fmt(s.owedShare)}
+                  {formatAmount(s.owedShare)}
                 </td>
               </tr>
             ))}
@@ -70,7 +70,7 @@ export default function ReviewSummary({
                 Total
               </td>
               <td className="px-3 py-2.5 text-right font-bold text-gray-900">
-                {fmt(totalCost)}
+                {formatAmount(totalCost)}
               </td>
             </tr>
           </tfoot>

@@ -113,6 +113,7 @@ Total court fee is split weighted by playtime and headcount per player.
 | `/api/matches/[id]/guests/[guestId]` | Route | `PUT` update guest (playtime), `DELETE` remove |
 | `/api/splitwise/members` | Route | `GET` fetch Splitwise group members |
 | `/api/splitwise/expense` | Route | `POST` create Splitwise expense |
+| `/api/upload/avatar` | Route | `POST` upload member avatar (JPG/PNG, max 2MB) to Vercel Blob |
 
 ---
 
@@ -136,7 +137,7 @@ Total court fee is split weighted by playtime and headcount per player.
 
 1. Open `/management`
 2. In the **Past** tab, tap the clipboard icon on a past match → `/matches/[id]?manage=1`
-3. Enter Total Cost (฿), Who Paid, Hours Played → Save
+3. Enter Total Cost ($), Who Paid, Hours Played → Save
 4. Review calculated shares per player (with playtime and guest breakdown)
 5. Click **Sync to Splitwise** → expense created in the group
 
@@ -148,6 +149,7 @@ Total court fee is split weighted by playtime and headcount per player.
 - **Member import:** `/management` can import members from Splitwise via `GET /api/splitwise/members` to pre-fill Splitwise IDs.
 - **Expense creation:** `POST /api/splitwise/expense` receives the calculated shares and transforms them into Splitwise's `users__i__field` flat payload format.
 - **Env vars required for sync only:** `SPLITWISE_API_KEY` and `SPLITWISE_GROUP_ID`. The app runs fully without these; the sync button is disabled if they are absent.
+- **Avatar uploads:** Stored in Vercel Blob via `POST /api/upload/avatar`. Requires `BLOB_READ_WRITE_TOKEN` (auto-set when a Blob store is linked in Vercel). Without it, captains can still paste avatar URLs.
 
 ---
 
@@ -162,6 +164,10 @@ POSTGRES_URL_NON_POOLING=
 # Splitwise (optional — only needed for expense sync)
 SPLITWISE_API_KEY=
 SPLITWISE_GROUP_ID=
+SPLITWISE_CURRENCY_CODE=USD
+
+# Vercel Blob (optional — only needed for avatar file uploads)
+BLOB_READ_WRITE_TOKEN=
 ```
 
 ---

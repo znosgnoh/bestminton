@@ -2,3 +2,31 @@
 
 /* Enable dark mode via .dark class on <html> */
 @custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Vietnamese Tet — warm ivory backgrounds */
+  --color-gray-50: #fffbf7;
+  --color-gray-100: #f7f0e8;
+  --color-gray-200: #ebe0d4;
+  --color-gray-950: #140e0e;
+  --color-gray-900: #1f1515;
+  --color-gray-800: #2d2020;
+
+  /* Lucky red remaps emerald accent across the app */
+  --color-emerald-50: #fff5f5;
+  --color-emerald-100: #ffe8e8;
+  --color-emerald-200: #ffd0d0;
+  --color-emerald-300: #ffb0b0;
+  --color-emerald-400: #f07070;
+  --color-emerald-500: #d93838;
+  --color-emerald-600: #c41e3a;
+  --color-emerald-700: #a01830;
+  --color-emerald-800: #7d1326;
+  --color-emerald-900: #5c101c;
+  --color-emerald-950: #3a0a12;
+
+  /* Tet gold for secondary accents */
+  --color-amber-400: #e8c547;
+  --color-amber-500: #d4af37;
+  --color-amber-600: #b8922e;
+}

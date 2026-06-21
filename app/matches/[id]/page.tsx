@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { isDatabaseConfigured } from "@/lib/dbConfig";
-import { isSplitwiseConfigured } from "@/lib/splitwise";
+import { isSplitwiseConfigured, getCurrencyCode } from "@/lib/splitwise";
 import MatchDetailClient from "./MatchDetailClient";
 import type { MatchDTO, MemberDTO } from "@/lib/types";
 
@@ -26,6 +26,7 @@ export default async function MatchPage({
         initialMembers={[]}
         dbAvailable={false}
         splitwiseConfigured={isSplitwiseConfigured()}
+        currencyCode={getCurrencyCode()}
         isManage={isManage}
       />
     );
@@ -63,6 +64,7 @@ export default async function MatchPage({
       initialMembers={initialMembers}
       dbAvailable={dbAvailable}
       splitwiseConfigured={isSplitwiseConfigured()}
+      currencyCode={getCurrencyCode()}
       isManage={isManage}
     />
   );
