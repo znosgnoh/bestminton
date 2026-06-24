@@ -23,7 +23,7 @@ export async function GET(
   const { id: idStr } = await params;
   const id = parseInt(idStr);
   if (isNaN(id)) {
-    return NextResponse.json({ error: "Invalid challenge ID." }, { status: 400 });
+    return NextResponse.json({ error: "ID kèo không hợp lệ." }, { status: 400 });
   }
 
   try {
@@ -33,7 +33,7 @@ export async function GET(
     });
 
     if (!challenge) {
-      return NextResponse.json({ error: "Challenge not found." }, { status: 404 });
+      return NextResponse.json({ error: "Không tìm thấy kèo." }, { status: 404 });
     }
 
     return NextResponse.json(serializeChallenge(challenge));
@@ -52,7 +52,7 @@ export async function PATCH(
   const { id: idStr } = await params;
   const challengeId = parseInt(idStr);
   if (isNaN(challengeId)) {
-    return NextResponse.json({ error: "Invalid challenge ID." }, { status: 400 });
+    return NextResponse.json({ error: "ID kèo không hợp lệ." }, { status: 400 });
   }
 
   let body: UpdateChallengeRequest;
@@ -62,8 +62,28 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  if (typeof body.isDrinkChallenge !== "boolean") {
-    return NextResponse.json({ error: "isDrinkChallenge must be a boolean." }, { status: 400 });
+  if (body.isDrinkChallenge === undefined && body.handicapPoints === undefined) {
+    return NextResponse.json({ error: "No fields to update." }, { status: 400 });
+  }
+
+  const data: { isDrinkChallenge?: boolean; handicapPoints?: number } = {};
+
+  if (body.isDrinkChallenge !== undefined) {
+    if (typeof body.isDrinkChallenge !== "boolean") {
+      return NextResponse.json({ error: "isDrinkChallenge must be a boolean." }, { status: 400 });
+    }
+    data.isDrinkChallenge = body.isDrinkChallenge;
+  }
+
+  if (body.handicapPoints !== undefined) {
+    const parsed = Number(body.handicapPoints);
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 21) {
+      return NextResponse.json(
+        { error: "handicapPoints must be a non-negative integer up to 21." },
+        { status: 400 }
+      );
+    }
+    data.handicapPoints = parsed;
   }
 
   try {
@@ -73,19 +93,19 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: "Challenge not found." }, { status: 404 });
+      return NextResponse.json({ error: "Không tìm thấy kèo." }, { status: 404 });
     }
 
     if (existing.status !== "PENDING") {
       return NextResponse.json(
-        { error: "Drink challenge setting can only be changed before the match starts." },
+        { error: "Chỉ có thể đổi cài đặt kèo trước khi trận bắt đầu." },
         { status: 409 }
       );
     }
 
     const updated = await db.challenge.update({
       where: { id: challengeId },
-      data: { isDrinkChallenge: body.isDrinkChallenge },
+      data,
       include: CHALLENGE_FULL_INCLUDE,
     });
 
@@ -106,7 +126,7 @@ export async function PUT(
   const { id: idStr } = await params;
   const challengeId = parseInt(idStr);
   if (isNaN(challengeId)) {
-    return NextResponse.json({ error: "Invalid challenge ID." }, { status: 400 });
+    return NextResponse.json({ error: "ID kèo không hợp lệ." }, { status: 400 });
   }
 
   let body: AdminEditChallengeRequest;
@@ -135,11 +155,11 @@ export async function PUT(
   } catch (err) {
     const message = err instanceof Error ? err.message : "";
     if (message === "NOT_FOUND") {
-      return NextResponse.json({ error: "Challenge not found." }, { status: 404 });
+      return NextResponse.json({ error: "Không tìm thấy kèo." }, { status: 404 });
     }
     if (message === "INVALID_STATUS") {
       return NextResponse.json(
-        { error: "Only completed challenges can have their winner edited." },
+        { error: "Chỉ có thể sửa người thắng của kèo đã xong." },
         { status: 409 }
       );
     }
@@ -148,7 +168,7 @@ export async function PUT(
     }
     if (message === "NO_SNAPSHOT") {
       return NextResponse.json(
-        { error: "Challenge has no resolution snapshot — edit member Elo manually." },
+        { error: "Kèo không có dữ liệu chốt — hãy sửa Elo thành viên thủ công." },
         { status: 409 }
       );
     }
@@ -166,7 +186,7 @@ export async function DELETE(
   const { id: idStr } = await params;
   const challengeId = parseInt(idStr);
   if (isNaN(challengeId)) {
-    return NextResponse.json({ error: "Invalid challenge ID." }, { status: 400 });
+    return NextResponse.json({ error: "ID kèo không hợp lệ." }, { status: 400 });
   }
 
   let body: AdminDeleteChallengeRequest = {};
@@ -190,7 +210,7 @@ export async function DELETE(
       select: { resolutionSnapshot: true },
     });
     if (!challenge) {
-      return NextResponse.json({ error: "Challenge not found." }, { status: 404 });
+      return NextResponse.json({ error: "Không tìm thấy kèo." }, { status: 404 });
     }
 
     const snapshot = challenge.resolutionSnapshot as { debts?: unknown[] } | null;
@@ -198,7 +218,7 @@ export async function DELETE(
     if (debtCount > 0 && !body.confirmDebts) {
       return NextResponse.json(
         {
-          error: `This challenge created ${debtCount} drink debt record(s). Confirm deletion to proceed — debts in the ledger will NOT be reversed.`,
+          error: `Kèo này đã tạo ${debtCount} bản ghi nợ nước cam. Xác nhận xóa để tiếp tục — nợ trong sổ sẽ KHÔNG được hoàn tác.`,
           debtCount,
           requiresConfirm: true,
         },
@@ -213,7 +233,7 @@ export async function DELETE(
   } catch (err) {
     const message = err instanceof Error ? err.message : "";
     if (message === "NOT_FOUND") {
-      return NextResponse.json({ error: "Challenge not found." }, { status: 404 });
+      return NextResponse.json({ error: "Không tìm thấy kèo." }, { status: 404 });
     }
     return NextResponse.json({ error: "Database unavailable." }, { status: 503 });
   }

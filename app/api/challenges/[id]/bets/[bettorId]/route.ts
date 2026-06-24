@@ -25,11 +25,11 @@ export async function DELETE(
   try {
     const challenge = await db.challenge.findUnique({ where: { id: challengeId } });
     if (!challenge) {
-      return NextResponse.json({ error: "Challenge not found." }, { status: 404 });
+      return NextResponse.json({ error: "Không tìm thấy kèo." }, { status: 404 });
     }
     if (challenge.status !== "PENDING") {
       return NextResponse.json(
-        { error: "Bets can only be removed while challenge is pending." },
+        { error: "Chỉ có thể hủy cược khi kèo đang chờ gạ." },
         { status: 409 }
       );
     }

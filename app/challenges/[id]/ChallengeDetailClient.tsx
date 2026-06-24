@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import ChallengeMatchInfo from "@/components/challenges/ChallengeMatchInfo";
+import HandicapEditor from "@/components/challenges/HandicapEditor";
 import BettingBoard from "@/components/challenges/BettingBoard";
 import ChallengeAdminControls from "@/components/challenges/ChallengeAdminControls";
 import DrinkChallengeToggle from "@/components/challenges/DrinkChallengeToggle";
@@ -141,11 +142,11 @@ export default function ChallengeDetailClient({
       <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
         <Link href="/challenges" className="tet-link">
           <ArrowLeft size={15} />
-          All Challenges
+          Tất cả kèo
         </Link>
         <div className="tet-card p-8 text-center">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Challenges require a live database connection.
+            Kèo cần kết nối cơ sở dữ liệu trực tiếp.
           </p>
         </div>
       </div>
@@ -157,10 +158,10 @@ export default function ChallengeDetailClient({
       <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
         <Link href="/challenges" className="tet-link">
           <ArrowLeft size={15} />
-          All Challenges
+          Tất cả kèo
         </Link>
         <div className="tet-card p-8 text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Challenge not found.</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Không tìm thấy kèo.</p>
         </div>
       </div>
     );
@@ -170,10 +171,12 @@ export default function ChallengeDetailClient({
     <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
       <Link href="/challenges" className="tet-link">
         <ArrowLeft size={15} />
-        All Challenges
+        Tất cả kèo
       </Link>
 
       <ChallengeMatchInfo challenge={challenge} />
+
+      <HandicapEditor challenge={challenge} onUpdated={handleChallengeUpdated} />
 
       <DrinkChallengeToggle challenge={challenge} onUpdated={handleChallengeUpdated} />
 

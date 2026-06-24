@@ -24,11 +24,11 @@ export default function NewChallengePageClient({
       <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
         <Link href="/challenges" className="tet-link">
           <ArrowLeft size={15} />
-          All Challenges
+          Tất cả kèo
         </Link>
         <div className="tet-card p-8 text-center">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Challenges require a live database connection.
+            Kèo cần kết nối cơ sở dữ liệu trực tiếp.
           </p>
         </div>
       </div>
@@ -39,10 +39,10 @@ export default function NewChallengePageClient({
     <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
       <Link href="/challenges" className="tet-link">
         <ArrowLeft size={15} />
-        All Challenges
+        Tất cả kèo
       </Link>
 
-      <h1 className="tet-page-title">New Challenge</h1>
+      <h1 className="tet-page-title">Gạ kèo</h1>
 
       <div className="tet-card p-5">
         <ChallengeForm
@@ -56,7 +56,7 @@ export default function NewChallengePageClient({
 
       {createdId && (
         <div className="tet-alert-success text-sm text-center">
-          Redirecting to challenge…
+          Đang chuyển đến kèo…
         </div>
       )}
     </div>

@@ -47,7 +47,7 @@ export default async function ManagementPage() {
       <div>
         <h1 className="tet-page-title">Management</h1>
         <p className="mt-1 tet-muted">
-          Manage team members, matches, and challenge history.
+          Quản lý thành viên, trận và lịch sử kèo.
         </p>
       </div>
 

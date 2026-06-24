@@ -5,7 +5,13 @@ import { Loader2, Trash2 } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
 import { DRINK_LABEL_SHORT, formatDrinkAmount } from "@/lib/constants";
-import type { BetDTO, ChallengeDTO, ChallengeSide, MemberDTO } from "@/lib/types";
+import type { BetDTO, ChallengeDTO, ChallengeSide, ChallengeStatus, MemberDTO } from "@/lib/types";
+
+const STATUS_LABELS: Record<ChallengeStatus, string> = {
+  PENDING: "chờ gạ",
+  ACTIVE: "đang đấu",
+  COMPLETED: "đã xong",
+};
 
 interface BettingBoardProps {
   challenge: ChallengeDTO;
@@ -187,7 +193,7 @@ export default function BettingBoard({
 
       {betsLocked && (
         <p className="text-xs text-amber-700 dark:text-amber-400">
-          Betting is locked — challenge is {status.toLowerCase()}.
+          Cược đã khóa — kèo đang {STATUS_LABELS[status]}.
         </p>
       )}
 

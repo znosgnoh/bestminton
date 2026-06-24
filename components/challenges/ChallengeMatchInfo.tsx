@@ -18,7 +18,7 @@ export default function ChallengeMatchInfo({ challenge }: ChallengeMatchInfoProp
     <div className="tet-card p-5 space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="tet-section-title">
-          {challenge.format === "DOUBLES" ? "Doubles" : "Singles"} Match
+          {challenge.format === "DOUBLES" ? "Kèo đôi" : "Kèo đơn"}
         </h2>
         <div className="flex items-center gap-2 shrink-0">
           {challenge.isDrinkChallenge && <DrinkChallengeBadge />}
@@ -43,10 +43,10 @@ export default function ChallengeMatchInfo({ challenge }: ChallengeMatchInfoProp
         </div>
       </div>
 
-      {handicapPoints > 0 && (
+      {challenge.status !== "PENDING" && handicapPoints > 0 && (
         <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-          Handicap: <strong>{handicapPoints}</strong> points to Side {handicapRecipientSide}
-          {challenge.format === "DOUBLES" && " (lower avg Elo)"}
+          Chấp điểm: <strong>{handicapPoints}</strong> điểm cho Side {handicapRecipientSide}
+          {challenge.format === "DOUBLES" && " (Elo trung bình thấp hơn)"}
         </p>
       )}
     </div>

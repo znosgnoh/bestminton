@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import AvatarTile from "@/components/matches/AvatarTile";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
 import { DRINK_CHALLENGE_LABEL } from "@/lib/constants";
+import { sideAverageElo, suggestedHandicap } from "@/lib/elo";
 import * as dataService from "@/lib/dataService";
 import type { ChallengeFormat, MemberDTO } from "@/lib/types";
 
@@ -21,6 +22,8 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
   const [playerBId, setPlayerBId] = useState<number | null>(null);
   const [playerB2Id, setPlayerB2Id] = useState<number | null>(null);
   const [isDrinkChallenge, setIsDrinkChallenge] = useState(false);
+  const [handicapPoints, setHandicapPoints] = useState(0);
+  const [handicapTouched, setHandicapTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -66,6 +69,41 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
         playerB2Id !== null &&
         new Set([playerAId, playerA2Id, playerBId, playerB2Id]).size === 4;
 
+  const sideAAvg = useMemo(() => {
+    if (format === "SINGLES") {
+      if (playerAId === null) return null;
+      return members.find((m) => m.id === playerAId)?.eloRating ?? null;
+    }
+    if (playerAId === null || playerA2Id === null) return null;
+    const ratings = [playerAId, playerA2Id]
+      .map((id) => members.find((m) => m.id === id)?.eloRating)
+      .filter((r): r is number => r !== undefined);
+    return ratings.length === 2 ? sideAverageElo(ratings) : null;
+  }, [format, playerAId, playerA2Id, members]);
+
+  const sideBAvg = useMemo(() => {
+    if (format === "SINGLES") {
+      if (playerBId === null) return null;
+      return members.find((m) => m.id === playerBId)?.eloRating ?? null;
+    }
+    if (playerBId === null || playerB2Id === null) return null;
+    const ratings = [playerBId, playerB2Id]
+      .map((id) => members.find((m) => m.id === id)?.eloRating)
+      .filter((r): r is number => r !== undefined);
+    return ratings.length === 2 ? sideAverageElo(ratings) : null;
+  }, [format, playerBId, playerB2Id, members]);
+
+  const suggested =
+    sideAAvg !== null && sideBAvg !== null ? suggestedHandicap(sideAAvg, sideBAvg) : null;
+  const handicapRecipientSide =
+    sideAAvg !== null && sideBAvg !== null ? (sideAAvg <= sideBAvg ? "A" : "B") : null;
+
+  useEffect(() => {
+    if (!handicapTouched && suggested !== null) {
+      setHandicapPoints(suggested);
+    }
+  }, [suggested, handicapTouched]);
+
   async function handleSubmit() {
     if (!canSubmit || submitting) return;
 
@@ -79,6 +117,7 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
         playerAId: playerAId!,
         playerBId: playerBId!,
         isDrinkChallenge,
+        handicapPoints,
         ...(format === "DOUBLES"
           ? { playerA2Id: playerA2Id!, playerB2Id: playerB2Id! }
           : {}),
@@ -86,7 +125,7 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
       setSuccess(true);
       onCreated(challenge.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create challenge.");
+      setError(err instanceof Error ? err.message : "Gạ kèo thất bại.");
     } finally {
       setSubmitting(false);
     }
@@ -130,6 +169,7 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
               setFormat(f);
               setPlayerA2Id(null);
               setPlayerB2Id(null);
+              setHandicapTouched(false);
             }}
             className={format === f ? "tet-tab-active flex-1 tet-tab" : "tet-tab-inactive flex-1 tet-tab"}
           >
@@ -142,6 +182,31 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
       {format === "DOUBLES" && renderPicker("Side A Partner", "A2", playerA2Id)}
       {renderPicker("Side B", "B", playerBId)}
       {format === "DOUBLES" && renderPicker("Side B Partner", "B2", playerB2Id)}
+
+      {suggested !== null && handicapRecipientSide !== null && (
+        <div>
+          <label className="tet-label block mb-2" htmlFor="handicap-points">
+            Chấp điểm
+          </label>
+          <input
+            id="handicap-points"
+            type="number"
+            min={0}
+            max={21}
+            step={1}
+            value={handicapPoints}
+            onChange={(e) => {
+              setHandicapTouched(true);
+              setHandicapPoints(parseInt(e.target.value, 10) || 0);
+            }}
+            className="tet-input w-full"
+          />
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Gợi ý: {suggested} điểm cho Side {handicapRecipientSide}
+            {format === "DOUBLES" && " (Elo trung bình thấp hơn)"}
+          </p>
+        </div>
+      )}
 
       <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-100/80 bg-amber-50/40 p-3 dark:border-gray-700 dark:bg-gray-800/40">
         <input
@@ -163,7 +228,7 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
 
       {error && <ErrorBanner message={error} onRetry={() => setError(null)} />}
       {success && (
-        <div className="tet-alert-success text-sm">Challenge created successfully.</div>
+        <div className="tet-alert-success text-sm">Gạ kèo thành công.</div>
       )}
 
       <button
@@ -175,7 +240,7 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
         {submitting ? (
           <Loader2 size={20} className="mx-auto animate-spin" />
         ) : (
-          "Create Challenge"
+          "Gạ kèo"
         )}
       </button>
     </div>

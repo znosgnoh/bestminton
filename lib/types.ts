@@ -145,10 +145,12 @@ export interface CreateChallengeRequest {
   playerBId: number;
   playerB2Id?: number;
   isDrinkChallenge?: boolean;
+  handicapPoints?: number;
 }
 
 export interface UpdateChallengeRequest {
-  isDrinkChallenge: boolean;
+  isDrinkChallenge?: boolean;
+  handicapPoints?: number;
 }
 
 export interface UpsertBetRequest {

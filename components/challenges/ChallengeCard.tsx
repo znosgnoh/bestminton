@@ -35,7 +35,7 @@ export default function ChallengeCard({ challenge }: ChallengeCardProps) {
             {formatPlayers(challenge)}
           </p>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {challenge.format === "DOUBLES" ? "Doubles" : "Singles"} · {formatDate(challenge.createdAt)}
+            {challenge.format === "DOUBLES" ? "Đôi" : "Đơn"} · {formatDate(challenge.createdAt)}
           </p>
         </div>
         <StatusBadge status={challenge.status} />

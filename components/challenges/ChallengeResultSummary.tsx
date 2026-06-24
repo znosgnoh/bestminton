@@ -44,7 +44,7 @@ export default function ChallengeResultSummary({ challenge }: ChallengeResultSum
         </h3>
 
         {(resolution.debts ?? []).length === 0 ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400">No drink debts from this challenge.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Kèo này không có nợ nước cam.</p>
         ) : (
           <div className="space-y-3">
             {matchDebts.length > 0 && (

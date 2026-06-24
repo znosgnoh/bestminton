@@ -80,7 +80,7 @@ export default function ChallengeManageRow({
       setDeleteNeedsDebtConfirm(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Action failed.";
-      if (action.type === "delete" && message.includes("drink debt")) {
+      if (action.type === "delete" && message.includes("nợ nước cam")) {
         setDeleteNeedsDebtConfirm(true);
         setShowDeleteConfirm(true);
       } else {
@@ -124,10 +124,10 @@ export default function ChallengeManageRow({
   }
 
   const deleteMessage = deleteNeedsDebtConfirm
-    ? `Delete this challenge? It created ${debtCount} ${DRINK_LABEL.toLowerCase()} debt record(s) that will NOT be reversed. Elo changes will be reverted.`
+    ? `Xóa kèo này? Kèo đã tạo ${debtCount} bản ghi nợ ${DRINK_LABEL.toLowerCase()} sẽ KHÔNG được hoàn tác. Điểm Elo sẽ được khôi phục.`
     : challenge.status === "COMPLETED"
-      ? "Delete this challenge? Elo changes will be reverted. This cannot be undone."
-      : "Delete this challenge? This cannot be undone.";
+      ? "Xóa kèo này? Điểm Elo sẽ được khôi phục. Không thể hoàn tác."
+      : "Xóa kèo này? Không thể hoàn tác.";
 
   return (
     <>
@@ -138,7 +138,7 @@ export default function ChallengeManageRow({
               {formatPlayers(challenge)}
             </p>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {challenge.format === "DOUBLES" ? "Doubles" : "Singles"} ·{" "}
+              {challenge.format === "DOUBLES" ? "Đôi" : "Đơn"} ·{" "}
               {formatDate(challenge.completedAt ?? challenge.createdAt)}
             </p>
             {challenge.status === "COMPLETED" && challenge.winnerSide && (
@@ -149,7 +149,7 @@ export default function ChallengeManageRow({
             )}
             {debtCount > 0 && (
               <p className="mt-1 text-xs text-orange-600 dark:text-orange-400">
-                {debtCount} drink debt record(s) on file
+                {debtCount} bản ghi nợ nước cam
               </p>
             )}
           </div>
@@ -226,7 +226,7 @@ export default function ChallengeManageRow({
 
       <ConfirmDialog
         open={showDeleteConfirm}
-        title="Delete Challenge"
+        title="Xóa kèo"
         message={deleteMessage}
         confirmLabel={deleteNeedsDebtConfirm ? "Delete anyway" : "Delete"}
         onConfirm={confirmDelete}

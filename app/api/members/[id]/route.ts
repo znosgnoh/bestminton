@@ -216,7 +216,7 @@ export async function DELETE(
   });
   if (activeChallengeCount > 0) {
     return NextResponse.json(
-      { error: "Member is in a pending or active challenge — resolve or remove them first." },
+      { error: "Thành viên đang trong kèo chờ gạ hoặc đang đấu — hãy chốt hoặc gỡ họ trước." },
       { status: 409 }
     );
   }
@@ -228,7 +228,7 @@ export async function DELETE(
     return NextResponse.json(
       {
         error:
-          "Member is a main player in challenge history and cannot be deleted.",
+          "Thành viên là tay chính trong lịch sử kèo và không thể xóa.",
       },
       { status: 409 }
     );
@@ -271,7 +271,7 @@ export async function DELETE(
         return NextResponse.json(
           {
             error:
-              "Member still has linked records and cannot be deleted. Remove bets, debts, or challenge links first.",
+              "Thành viên vẫn còn dữ liệu liên kết và không thể xóa. Hãy gỡ cược, nợ hoặc liên kết kèo trước.",
           },
           { status: 409 }
         );

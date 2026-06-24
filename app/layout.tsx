@@ -79,7 +79,7 @@ export default function RootLayout({
                 Matches
               </Link>
               <Link href="/challenges" className="shrink-0 text-gray-600 hover:text-emerald-700 dark:text-gray-400 dark:hover:text-amber-400">
-                Challenges
+                Kèo
               </Link>
               <Link href="/leaderboard" className="shrink-0 text-gray-600 hover:text-emerald-700 dark:text-gray-400 dark:hover:text-amber-400">
                 Leaderboard

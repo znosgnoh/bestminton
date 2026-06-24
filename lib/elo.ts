@@ -7,8 +7,23 @@ export function expectedScore(ratingA: number, ratingB: number): number {
   return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
 }
 
+/** Elo gap that maps to 6 handicap points under the legacy linear rule (diff / 50). */
+const HANDICAP_REFERENCE_DIFF = 300;
+const HANDICAP_REFERENCE_POINTS = 6;
+
+/**
+ * Sub-linear scaling exponent. Doubling the Elo gap yields 1.5× handicap (not 2×).
+ * Calibrated so 300 Elo → 6 pts and 600 Elo → 9 pts (adjacent-pair chain example).
+ */
+const HANDICAP_SUBLINEAR_EXPONENT = Math.log(1.5) / Math.log(2);
+
 export function suggestedHandicap(ratingA: number, ratingB: number): number {
-  return Math.round(Math.abs(ratingA - ratingB) / 50);
+  const diff = Math.abs(ratingA - ratingB);
+  if (diff === 0) return 0;
+  return Math.round(
+    HANDICAP_REFERENCE_POINTS *
+      Math.pow(diff / HANDICAP_REFERENCE_DIFF, HANDICAP_SUBLINEAR_EXPONENT)
+  );
 }
 
 export function kFactor(totalMatches: number): number {

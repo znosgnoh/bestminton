@@ -17,7 +17,7 @@ export async function POST(
   const { id: idStr } = await params;
   const challengeId = parseInt(idStr);
   if (isNaN(challengeId)) {
-    return NextResponse.json({ error: "Invalid challenge ID." }, { status: 400 });
+    return NextResponse.json({ error: "ID kèo không hợp lệ." }, { status: 400 });
   }
 
   let body: ResolveChallengeRequest;
@@ -46,11 +46,11 @@ export async function POST(
   } catch (err) {
     const message = err instanceof Error ? err.message : "";
     if (message === "NOT_FOUND") {
-      return NextResponse.json({ error: "Challenge not found." }, { status: 404 });
+      return NextResponse.json({ error: "Không tìm thấy kèo." }, { status: 404 });
     }
     if (message === "INVALID_STATUS") {
       return NextResponse.json(
-        { error: "Challenge must be active to resolve." },
+        { error: "Kèo phải đang đấu mới chốt được." },
         { status: 409 }
       );
     }

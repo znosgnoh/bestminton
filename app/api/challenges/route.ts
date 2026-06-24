@@ -10,6 +10,18 @@ import type { CreateChallengeRequest } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+function parseHandicapPoints(
+  value: unknown,
+  fallback: number
+): number | { error: string } {
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 21) {
+    return { error: "handicapPoints must be a non-negative integer up to 21." };
+  }
+  return parsed;
+}
+
 export async function GET(request: NextRequest) {
   const unavailable = requireDatabase();
   if (unavailable) return unavailable;
@@ -62,7 +74,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Players must be distinct." }, { status: 400 });
     }
     if (playerA2Id !== null || playerB2Id !== null) {
-      return NextResponse.json({ error: "Singles challenges cannot have partners." }, { status: 400 });
+      return NextResponse.json({ error: "Kèo đơn không được có đồng đội." }, { status: 400 });
     }
   } else {
     if (
@@ -105,7 +117,12 @@ export async function POST(request: NextRequest) {
         ? [ratingMap.get(playerBId)!]
         : [ratingMap.get(playerBId)!, ratingMap.get(playerB2Id!)!]
     );
-    const handicapPoints = suggestedHandicap(sideAAvg, sideBAvg);
+    const suggested = suggestedHandicap(sideAAvg, sideBAvg);
+    const handicapResult = parseHandicapPoints(body.handicapPoints, suggested);
+    if (typeof handicapResult === "object") {
+      return NextResponse.json({ error: handicapResult.error }, { status: 400 });
+    }
+    const handicapPoints = handicapResult;
     const isDrinkChallenge = body.isDrinkChallenge === true;
 
     const challenge = await db.challenge.create({
@@ -126,7 +143,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(serializeChallenge(challenge), { status: 201 });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      return NextResponse.json({ error: "Failed to create challenge." }, { status: 400 });
+      return NextResponse.json({ error: "Gạ kèo thất bại." }, { status: 400 });
     }
     return NextResponse.json({ error: "Database unavailable." }, { status: 503 });
   }

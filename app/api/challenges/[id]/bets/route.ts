@@ -19,7 +19,7 @@ export async function POST(
   const { id: idStr } = await params;
   const challengeId = parseInt(idStr);
   if (isNaN(challengeId)) {
-    return NextResponse.json({ error: "Invalid challenge ID." }, { status: 400 });
+    return NextResponse.json({ error: "ID kèo không hợp lệ." }, { status: 400 });
   }
 
   let body: UpsertBetRequest;
@@ -50,11 +50,11 @@ export async function POST(
   try {
     const challenge = await db.challenge.findUnique({ where: { id: challengeId } });
     if (!challenge) {
-      return NextResponse.json({ error: "Challenge not found." }, { status: 404 });
+      return NextResponse.json({ error: "Không tìm thấy kèo." }, { status: 404 });
     }
     if (challenge.status !== "PENDING") {
       return NextResponse.json(
-        { error: "Bets can only be placed while challenge is pending." },
+        { error: "Chỉ có thể đặt cược khi kèo đang chờ gạ." },
         { status: 409 }
       );
     }
@@ -104,7 +104,7 @@ export async function DELETE(
   const { id: idStr } = await params;
   const challengeId = parseInt(idStr);
   if (isNaN(challengeId)) {
-    return NextResponse.json({ error: "Invalid challenge ID." }, { status: 400 });
+    return NextResponse.json({ error: "ID kèo không hợp lệ." }, { status: 400 });
   }
 
   let bettorId: number;
@@ -126,11 +126,11 @@ async function removeBet(challengeId: number, bettorId: number) {
   try {
     const challenge = await db.challenge.findUnique({ where: { id: challengeId } });
     if (!challenge) {
-      return NextResponse.json({ error: "Challenge not found." }, { status: 404 });
+      return NextResponse.json({ error: "Không tìm thấy kèo." }, { status: 404 });
     }
     if (challenge.status !== "PENDING") {
       return NextResponse.json(
-        { error: "Bets can only be removed while challenge is pending." },
+        { error: "Chỉ có thể hủy cược khi kèo đang chờ gạ." },
         { status: 409 }
       );
     }

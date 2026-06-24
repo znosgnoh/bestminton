@@ -10,6 +10,13 @@ import type { ChallengeDTO } from "@/lib/types";
 
 type FilterStatus = "ALL" | "PENDING" | "ACTIVE" | "COMPLETED";
 
+const FILTER_LABELS: Record<FilterStatus, string> = {
+  ALL: "Tất cả",
+  PENDING: "Chờ gạ",
+  ACTIVE: "Đang đấu",
+  COMPLETED: "Đã xong",
+};
+
 interface ChallengesPageClientProps {
   initialChallenges: ChallengeDTO[];
   dbAvailable: boolean;
@@ -25,8 +32,8 @@ export default function ChallengesPageClient({
   if (!dbAvailable) {
     return (
       <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
-        <h1 className="tet-page-title">Challenges</h1>
-        <ErrorBanner message="Challenges require a live database connection." />
+        <h1 className="tet-page-title">Kèo</h1>
+        <ErrorBanner message="Kèo cần kết nối cơ sở dữ liệu trực tiếp." />
       </div>
     );
   }
@@ -37,10 +44,10 @@ export default function ChallengesPageClient({
   return (
     <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="tet-page-title">Challenges</h1>
+        <h1 className="tet-page-title">Kèo</h1>
         <Link href="/challenges/new" className="tet-btn-primary flex items-center gap-1.5 px-4 py-2 text-sm">
           <Plus size={16} />
-          New
+          Gạ kèo
         </Link>
       </div>
 
@@ -51,16 +58,16 @@ export default function ChallengesPageClient({
             onClick={() => setFilter(s)}
             className={filter === s ? "tet-tab-active tet-tab shrink-0" : "tet-tab-inactive tet-tab shrink-0"}
           >
-            {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
+            {FILTER_LABELS[s]}
           </button>
         ))}
       </div>
 
       {filtered.length === 0 ? (
         <div className="tet-empty">
-          <p>No challenges yet.</p>
+          <p>Chưa có kèo.</p>
           <Link href="/challenges/new" className="tet-link-accent mt-2 inline-block">
-            Create the first challenge
+            Gạ kèo đầu tiên
           </Link>
         </div>
       ) : (
@@ -75,5 +82,5 @@ export default function ChallengesPageClient({
 }
 
 export function ChallengesLoading() {
-  return <PageLoader label="Loading challenges…" />;
+  return <PageLoader label="Đang tải kèo…" />;
 }

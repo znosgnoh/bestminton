@@ -3,7 +3,7 @@ export const DEFAULT_BET_AMOUNT = 1;
 
 /** User-facing label for the betting currency (orange juice). */
 export const DRINK_LABEL = "Nước cam";
-export const DRINK_CHALLENGE_LABEL = "Nước cam challenge";
+export const DRINK_CHALLENGE_LABEL = "Kèo nước cam";
 export const DRINK_LABEL_SHORT = "";
 
 /** e.g. "3 ly nước cam" */

@@ -11,9 +11,9 @@ const STYLES: Record<ChallengeStatus, string> = {
 };
 
 const LABELS: Record<ChallengeStatus, string> = {
-  PENDING: "Pending",
-  ACTIVE: "Active",
-  COMPLETED: "Completed",
+  PENDING: "Chờ gạ",
+  ACTIVE: "Đang đấu",
+  COMPLETED: "Đã xong",
 };
 
 export default function StatusBadge({ status }: StatusBadgeProps) {

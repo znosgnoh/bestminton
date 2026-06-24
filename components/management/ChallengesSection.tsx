@@ -31,7 +31,7 @@ export default function ChallengesSection({
       .getChallenges(tab === "completed" ? "COMPLETED" : undefined)
       .then(setChallenges)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : "Failed to load challenges.")
+        setError(err instanceof Error ? err.message : "Tải kèo thất bại.")
       )
       .finally(() => setLoading(false));
   }, [expanded, tab, dbAvailable, initialChallenges.length]);
@@ -67,7 +67,7 @@ export default function ChallengesSection({
         />
         <h2 className="tet-section-title flex items-center gap-2">
           <Swords size={18} className="text-emerald-600 dark:text-amber-400" />
-          Challenge History
+          Lịch sử kèo
         </h2>
       </button>
 
@@ -81,7 +81,7 @@ export default function ChallengesSection({
         <div className="overflow-hidden">
           {!dbAvailable ? (
             <p className="tet-alert-info text-sm">
-              Challenge history requires a database connection.
+              Lịch sử kèo cần kết nối cơ sở dữ liệu.
             </p>
           ) : (
             <>
@@ -111,8 +111,8 @@ export default function ChallengesSection({
               ) : list.length === 0 ? (
                 <p className="tet-empty">
                   {tab === "completed"
-                    ? "No completed challenges yet."
-                    : "No challenges yet."}
+                    ? "Chưa có kèo đã xong."
+                    : "Chưa có kèo."}
                 </p>
               ) : (
                 <div className="space-y-2">

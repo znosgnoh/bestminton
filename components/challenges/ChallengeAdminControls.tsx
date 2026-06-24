@@ -39,7 +39,7 @@ export default function ChallengeAdminControls({
       let updated: ChallengeDTO;
       if (action === "start") {
         updated = await dataService.startChallenge(challenge.id, pin);
-        setSuccess("Challenge started — betting is now locked.");
+        setSuccess("Kèo đã bắt đầu — cược đã khóa.");
       } else {
         updated = await dataService.resolveChallenge(challenge.id, action.resolve, pin);
         setSuccess(
@@ -89,7 +89,7 @@ export default function ChallengeAdminControls({
           ) : (
             <>
               <Play size={18} />
-              Start Challenge
+              Bắt đầu kèo
             </>
           )}
         </button>
@@ -125,7 +125,7 @@ export default function ChallengeAdminControls({
 
       <AdminPinModal
         open={showPinModal}
-        title={pendingAction === "start" ? "PIN to Start" : "PIN to Resolve"}
+        title={pendingAction === "start" ? "PIN để bắt đầu kèo" : "PIN để chốt kèo"}
         onSubmit={handlePinSubmit}
         onCancel={() => {
           setShowPinModal(false);
