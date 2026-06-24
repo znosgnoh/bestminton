@@ -68,10 +68,12 @@
 
   html {
     min-height: 100%;
+    overflow-x: clip;
   }
 
   body {
     min-height: 100%;
+    overflow-x: clip;
     font-family: var(--font-sans);
     color: var(--color-gray-900);
     transition: background-color 200ms, color 200ms;
@@ -138,6 +140,15 @@
 
   .tet-brand {
     @apply flex cursor-pointer items-center gap-2 text-gray-900 dark:text-gray-100 transition-colors duration-200 hover:text-emerald-700 dark:hover:text-amber-400;
+  }
+
+  .tet-nav-scroll {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .tet-nav-scroll::-webkit-scrollbar {
+    display: none;
   }
 
   /* ── Typography ── */
@@ -258,5 +269,22 @@
 
   .tet-pill-half {
     @apply rounded-full bg-amber-50 dark:bg-amber-950 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300;
+  }
+
+  /* ── Pull to refresh (mobile PWA) ── */
+  .ptr-indicator {
+    will-change: transform, opacity;
+  }
+}
+
+/* Suppress native rubber-band while custom PTR is active (touch / narrow only). */
+@media (hover: none) and (pointer: coarse), (max-width: 767px) {
+  html.ptr-enabled {
+    overscroll-behavior-y: none;
+  }
+
+  html.ptr-enabled.ptr-standalone body {
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
   }
 }

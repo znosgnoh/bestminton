@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { revalidateMemberPages } from "@/lib/revalidate";
+import { memberToDTO, membersToDTOs } from "@/lib/memberSerialize";
 import { Prisma } from "@prisma/client";
 
 export const revalidate = 30;
@@ -11,7 +12,8 @@ const CACHE_HEADERS = {
 
 export async function GET() {
   const members = await db.member.findMany({ orderBy: { name: "asc" } });
-  return NextResponse.json(members, { headers: CACHE_HEADERS });
+  const dtos = await membersToDTOs(members);
+  return NextResponse.json(dtos, { headers: CACHE_HEADERS });
 }
 
 export async function POST(request: NextRequest) {
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest) {
       },
     });
     revalidateMemberPages();
-    return NextResponse.json(member, { status: 201 });
+    return NextResponse.json(await memberToDTO(member), { status: 201 });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
       return NextResponse.json(

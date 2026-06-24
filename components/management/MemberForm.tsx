@@ -3,7 +3,10 @@
 import { useRef, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
+import AdminPinModal from "@/components/ui/AdminPinModal";
+import { useAdminPin } from "@/hooks/useAdminPin";
 import * as dataService from "@/lib/dataService";
+import { DEFAULT_ELO } from "@/lib/elo";
 import type { MemberDTO } from "@/lib/types";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png"]);
@@ -26,16 +29,25 @@ function validateAvatarFile(file: File): string | null {
 }
 
 export default function MemberForm({ initial, onSaved, onCancel }: MemberFormProps) {
+  const { unlocked, pinRequired, unlock, getStoredPin } = useAdminPin();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(initial?.name ?? "");
   const [avatarUrl, setAvatarUrl] = useState(initial?.avatarUrl ?? "");
   const [splitwiseIdStr, setSplitiwseIdStr] = useState(
     initial?.splitwiseId?.toString() ?? ""
   );
+  const [eloRatingStr, setEloRatingStr] = useState(
+    initial?.eloRating?.toString() ?? String(DEFAULT_ELO)
+  );
+  const [totalMatchesStr, setTotalMatchesStr] = useState(initial?.totalMatches?.toString() ?? "0");
+  const [totalWinsStr, setTotalWinsStr] = useState(initial?.totalWins?.toString() ?? "0");
+  const [showStats, setShowStats] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState<Parameters<typeof dataService.updateMember>[1] | null>(null);
 
   async function uploadAvatarFile(file: File) {
     const validationError = validateAvatarFile(file);
@@ -94,6 +106,34 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
     }
   }
 
+  function statsChanged(): boolean {
+    if (!initial) return false;
+    const eloRating = Number(eloRatingStr);
+    const totalMatches = Number(totalMatchesStr);
+    const totalWins = Number(totalWinsStr);
+    return (
+      eloRating !== initial.eloRating ||
+      totalMatches !== initial.totalMatches ||
+      totalWins !== initial.totalWins
+    );
+  }
+
+  async function saveMember(payload: Parameters<typeof dataService.updateMember>[1]) {
+    setSaving(true);
+    setError(null);
+    try {
+      const saved = initial
+        ? await dataService.updateMember(initial.id, payload)
+        : await dataService.createMember(payload);
+      onSaved(saved);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save.");
+    } finally {
+      setSaving(false);
+      setPendingPayload(null);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) {
@@ -110,23 +150,61 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
       return;
     }
 
-    setSaving(true);
-    setError(null);
-    try {
-      const payload = {
-        name: name.trim(),
-        avatarUrl: avatarUrl.trim() || null,
-        splitwiseId: splitwiseId ?? null,
-      };
-      const saved = initial
-        ? await dataService.updateMember(initial.id, payload)
-        : await dataService.createMember(payload);
-      onSaved(saved);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save.");
-    } finally {
-      setSaving(false);
+    const payload: Parameters<typeof dataService.updateMember>[1] = {
+      name: name.trim(),
+      avatarUrl: avatarUrl.trim() || null,
+      splitwiseId: splitwiseId ?? null,
+    };
+
+    if (initial && (showStats || statsChanged())) {
+      const eloRating = Number(eloRatingStr);
+      const totalMatches = Number(totalMatchesStr);
+      const totalWins = Number(totalWinsStr);
+
+      if (!Number.isInteger(eloRating) || eloRating < 100 || eloRating > 3000) {
+        setError("Elo rating must be an integer between 100 and 3000.");
+        return;
+      }
+      if (!Number.isInteger(totalMatches) || totalMatches < 0) {
+        setError("Total matches must be a non-negative integer.");
+        return;
+      }
+      if (!Number.isInteger(totalWins) || totalWins < 0) {
+        setError("Total wins must be a non-negative integer.");
+        return;
+      }
+      if (totalWins > totalMatches) {
+        setError("Total wins cannot exceed total matches.");
+        return;
+      }
+
+      if (statsChanged()) {
+        payload.eloRating = eloRating;
+        payload.totalMatches = totalMatches;
+        payload.totalWins = totalWins;
+
+        if (pinRequired && !unlocked) {
+          setPendingPayload(payload);
+          setShowPinModal(true);
+          return;
+        }
+        if (pinRequired) {
+          payload.pin = getStoredPin();
+        }
+      }
     }
+
+    await saveMember(payload);
+  }
+
+  async function handlePinSubmit(pin: string): Promise<string | null> {
+    const pinError = await unlock(pin);
+    if (pinError) return pinError;
+    setShowPinModal(false);
+    if (pendingPayload) {
+      await saveMember({ ...pendingPayload, pin });
+    }
+    return null;
   }
 
   const displayAvatarUrl = previewUrl || avatarUrl || null;
@@ -218,6 +296,61 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
         />
       </div>
 
+      {initial && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowStats((v) => !v)}
+            className="text-xs font-medium text-emerald-700 dark:text-amber-400 hover:underline"
+          >
+            {showStats ? "Hide" : "Edit"} Elo & match stats (admin)
+          </button>
+          {showStats && (
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <div>
+                <label className="tet-label text-[11px]">Elo</label>
+                <input
+                  type="number"
+                  min="100"
+                  max="3000"
+                  step="1"
+                  value={eloRatingStr}
+                  onChange={(e) => setEloRatingStr(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="tet-label text-[11px]">Matches</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={totalMatchesStr}
+                  onChange={(e) => setTotalMatchesStr(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="tet-label text-[11px]">Wins</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={totalWinsStr}
+                  onChange={(e) => setTotalWinsStr(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+          )}
+          {showStats && pinRequired && (
+            <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-500">
+              Changing stats requires captain PIN.
+            </p>
+          )}
+        </div>
+      )}
+
       {error && (
         <p className="tet-alert-error px-3 py-2 text-xs">
           {error}
@@ -243,6 +376,16 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
           {uploading ? "Uploading…" : saving ? "Saving…" : initial ? "Save Changes" : "Add Member"}
         </button>
       </div>
+
+      <AdminPinModal
+        open={showPinModal}
+        title="PIN to Edit Stats"
+        onSubmit={handlePinSubmit}
+        onCancel={() => {
+          setShowPinModal(false);
+          setPendingPayload(null);
+        }}
+      />
     </form>
   );
 }

@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Pencil, Trash2, Loader2 } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
+import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
+import { formatDrinkAmount } from "@/lib/constants";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import MemberForm from "./MemberForm";
@@ -61,6 +64,36 @@ export default function MemberCard({ member, onUpdated, onDeleted }: MemberCardP
             ) : (
               "No Splitwise ID"
             )}
+            <span className="mx-1.5">·</span>
+            <span>{member.eloRating} Elo</span>
+            <span className="mx-1.5">·</span>
+            <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+              <OrangeJuiceIcon size={12} className="text-orange-500 dark:text-orange-400 shrink-0" />
+              {member.debtSummary.totalOwed > 0 && (
+                <span className="text-red-600 dark:text-red-400">
+                  Owes {formatDrinkAmount(member.debtSummary.totalOwed)}
+                </span>
+              )}
+              {member.debtSummary.totalOwing > 0 && (
+                <span className="text-emerald-600 dark:text-emerald-400">
+                  Owed {formatDrinkAmount(member.debtSummary.totalOwing)}
+                </span>
+              )}
+              {member.debtSummary.totalOwed === 0 && member.debtSummary.totalOwing === 0 && (
+                <span>Even</span>
+              )}
+              {(member.debtSummary.totalOwed > 0 || member.debtSummary.totalOwing > 0) && (
+                <>
+                  <span className="mx-1.5">·</span>
+                  <Link
+                    href={`/cam?member=${member.id}`}
+                    className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 underline-offset-2 hover:underline"
+                  >
+                    Settle
+                  </Link>
+                </>
+              )}
+            </span>
           </p>
         </div>
         <div className="flex gap-1 shrink-0">

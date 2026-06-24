@@ -1,7 +1,20 @@
 // Client-side only. Routes data operations to the real API or local IndexedDB.
 import { allowsIndexedDbFallback } from "./dbConfig";
 import * as localDb from "./localDb";
-import type { MemberDTO, MatchDTO, RegistrationDTO } from "./types";
+import type {
+  MemberDTO,
+  MatchDTO,
+  RegistrationDTO,
+  ChallengeDTO,
+  LeaderboardEntryDTO,
+  CreateChallengeRequest,
+  UpdateChallengeRequest,
+  ChallengeSide,
+  DrinkDebtDTO,
+  MemberDebtsResponse,
+  SettleDebtResult,
+  ResetEloResult,
+} from "./types";
 
 type StorageMode = "api" | "local";
 
@@ -69,7 +82,15 @@ export function createMember(data: {
 
 export function updateMember(
   id: number,
-  data: { name: string; avatarUrl?: string | null; splitwiseId?: number | null }
+  data: {
+    name: string;
+    avatarUrl?: string | null;
+    splitwiseId?: number | null;
+    eloRating?: number;
+    totalMatches?: number;
+    totalWins?: number;
+    pin?: string;
+  }
 ): Promise<MemberDTO> {
   return via(
     () => apiFetch<MemberDTO>(`/api/members/${id}`, { method: "PUT", headers: JSON_HEADERS, body: JSON.stringify(data) }),
@@ -230,4 +251,153 @@ export function removeGuest(matchId: number, guestId: number): Promise<Registrat
       }),
     () => localDb.removeGuest(guestId)
   );
+}
+
+// ---- Challenges (API-only — no IndexedDB fallback) ----
+
+async function challengeFetch<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  const data = (await res.json()) as T & { error?: string };
+  if (!res.ok) throw new Error((data as { error?: string }).error ?? `HTTP ${res.status}`);
+  return data;
+}
+
+export function getChallenges(status?: string): Promise<ChallengeDTO[]> {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+  return challengeFetch<ChallengeDTO[]>(`/api/challenges${qs}`);
+}
+
+export function getChallenge(id: number): Promise<ChallengeDTO> {
+  return challengeFetch<ChallengeDTO>(`/api/challenges/${id}`);
+}
+
+export function createChallenge(data: CreateChallengeRequest): Promise<ChallengeDTO> {
+  return challengeFetch<ChallengeDTO>("/api/challenges", {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateChallenge(
+  challengeId: number,
+  data: UpdateChallengeRequest
+): Promise<ChallengeDTO> {
+  return challengeFetch<ChallengeDTO>(`/api/challenges/${challengeId}`, {
+    method: "PATCH",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(data),
+  });
+}
+
+export function upsertBet(
+  challengeId: number,
+  bettorId: number,
+  side: ChallengeSide,
+  counterpartyId: number
+): Promise<ChallengeDTO> {
+  return challengeFetch<ChallengeDTO>(`/api/challenges/${challengeId}/bets`, {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ bettorId, side, counterpartyId }),
+  });
+}
+
+export function removeBet(challengeId: number, bettorId: number): Promise<ChallengeDTO> {
+  return challengeFetch<ChallengeDTO>(`/api/challenges/${challengeId}/bets/${bettorId}`, {
+    method: "DELETE",
+  });
+}
+
+export function startChallenge(challengeId: number, pin?: string): Promise<ChallengeDTO> {
+  return challengeFetch<ChallengeDTO>(`/api/challenges/${challengeId}/start`, {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(pin ? { pin } : {}),
+  });
+}
+
+export function resolveChallenge(
+  challengeId: number,
+  winnerSide: ChallengeSide,
+  pin?: string
+): Promise<ChallengeDTO> {
+  return challengeFetch<ChallengeDTO>(`/api/challenges/${challengeId}/resolve`, {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ winnerSide, ...(pin ? { pin } : {}) }),
+  });
+}
+
+export function adminEditChallengeWinner(
+  challengeId: number,
+  winnerSide: ChallengeSide,
+  pin?: string
+): Promise<ChallengeDTO> {
+  return challengeFetch<ChallengeDTO>(`/api/challenges/${challengeId}`, {
+    method: "PUT",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ winnerSide, ...(pin ? { pin } : {}) }),
+  });
+}
+
+export async function adminDeleteChallenge(
+  challengeId: number,
+  options?: { confirmDebts?: boolean; pin?: string }
+): Promise<{ success: boolean; debtCount: number }> {
+  return challengeFetch<{ success: boolean; debtCount: number }>(`/api/challenges/${challengeId}`, {
+    method: "DELETE",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({
+      confirmDebts: options?.confirmDebts,
+      ...(options?.pin ? { pin: options.pin } : {}),
+    }),
+  });
+}
+
+export function getLeaderboard(): Promise<LeaderboardEntryDTO[]> {
+  return challengeFetch<LeaderboardEntryDTO[]>("/api/leaderboard");
+}
+
+export function verifyAdminPin(pin: string): Promise<{ ok: boolean }> {
+  return challengeFetch<{ ok: boolean }>("/api/admin/verify-pin", {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ pin }),
+  });
+}
+
+export function getPinRequired(): Promise<{ pinRequired: boolean }> {
+  return challengeFetch<{ pinRequired: boolean }>("/api/admin/verify-pin");
+}
+
+export function resetAllElo(pin?: string): Promise<ResetEloResult> {
+  return challengeFetch<ResetEloResult>("/api/admin/reset-elo", {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(pin ? { pin } : {}),
+  });
+}
+
+// ---- Drink debts (API-only — no IndexedDB fallback) ----
+
+export function getDebts(): Promise<DrinkDebtDTO[]> {
+  return challengeFetch<DrinkDebtDTO[]>("/api/debts");
+}
+
+export function getMemberDebts(memberId: number): Promise<MemberDebtsResponse> {
+  return challengeFetch<MemberDebtsResponse>(`/api/members/${memberId}/debts`);
+}
+
+export function settleDebt(data: {
+  debtorId: number;
+  creditorId: number;
+  amount?: number;
+  pin?: string;
+}): Promise<SettleDebtResult> {
+  return challengeFetch<SettleDebtResult>("/api/debts/settle", {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(data),
+  });
 }

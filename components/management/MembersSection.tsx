@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { UserPlus, ChevronDown, ChevronUp, Download, Loader2, Info } from "lucide-react";
+import { UserPlus, ChevronDown, ChevronUp, Download, Loader2, Info, RotateCcw } from "lucide-react";
 import MemberCard from "./MemberCard";
 import MemberForm from "./MemberForm";
+import AdminPinModal from "@/components/ui/AdminPinModal";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { useAdminPin } from "@/hooks/useAdminPin";
 import * as dataService from "@/lib/dataService";
+import { DEFAULT_ELO } from "@/lib/elo";
 import type { MemberDTO, SplitwiseMember } from "@/lib/types";
 
 interface MembersSectionProps {
@@ -28,6 +32,12 @@ export default function MembersSection({
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importMessage, setImportMessage] = useState<string | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const { unlocked, pinRequired, unlock, getStoredPin } = useAdminPin();
 
   useEffect(() => {
     if (!dbAvailable) {
@@ -131,6 +141,43 @@ export default function MembersSection({
     }
   }
 
+  async function runResetElo(pin?: string) {
+    setResetting(true);
+    setResetError(null);
+    setResetMessage(null);
+
+    try {
+      const { count } = await dataService.resetAllElo(pin);
+      const refreshed = await dataService.getMembers();
+      setMembers(refreshed);
+      setResetMessage(
+        `Reset Elo to ${DEFAULT_ELO} for ${count} member${count === 1 ? "" : "s"}.`
+      );
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : "Reset failed.");
+    } finally {
+      setResetting(false);
+      setShowResetConfirm(false);
+    }
+  }
+
+  function handleResetEloConfirm() {
+    setShowResetConfirm(false);
+    if (pinRequired && !unlocked) {
+      setShowPinModal(true);
+    } else {
+      void runResetElo(pinRequired ? getStoredPin() : undefined);
+    }
+  }
+
+  async function handlePinSubmit(pin: string) {
+    const err = await unlock(pin);
+    if (err) return err;
+    setShowPinModal(false);
+    void runResetElo(pin);
+    return null;
+  }
+
   return (
     <section>
       <div className="flex items-center justify-between mb-3">
@@ -214,6 +261,31 @@ export default function MembersSection({
         </p>
       )}
 
+      {dbAvailable && members.length > 0 && (
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => setShowResetConfirm(true)}
+            disabled={resetting}
+            className="tet-btn-ghost border border-red-200 dark:border-red-900/50 bg-white/85 dark:bg-gray-900/85 px-3 py-2.5 text-red-600 dark:text-red-400 disabled:opacity-60"
+          >
+            {resetting ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : (
+              <RotateCcw size={15} />
+            )}
+            {resetting ? "Resetting Elo…" : `Reset all Elo to ${DEFAULT_ELO}`}
+          </button>
+        </div>
+      )}
+
+      {resetError && (
+        <p className="mb-4 tet-alert-error">{resetError}</p>
+      )}
+      {resetMessage && (
+        <p className="mb-4 tet-alert-success">{resetMessage}</p>
+      )}
+
       {showForm && (
         <div className="mb-4 tet-panel">
           <MemberForm onSaved={handleSaved} onCancel={() => setShowForm(false)} />
@@ -238,6 +310,22 @@ export default function MembersSection({
       )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showResetConfirm}
+        title={`Reset all Elo to ${DEFAULT_ELO}?`}
+        message={`Every member's Elo rating will be set to ${DEFAULT_ELO}. Win/loss records (total matches and wins) are not changed.`}
+        confirmLabel="Reset Elo"
+        onConfirm={handleResetEloConfirm}
+        onCancel={() => setShowResetConfirm(false)}
+      />
+
+      <AdminPinModal
+        open={showPinModal}
+        title="Confirm Elo reset"
+        onSubmit={handlePinSubmit}
+        onCancel={() => setShowPinModal(false)}
+      />
     </section>
   );
 }

@@ -25,7 +25,11 @@ export default function AvatarTile({
 
   return (
     <button
-      onClick={isDisabled ? undefined : onToggle}
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        if (!isDisabled) onToggle();
+      }}
       disabled={isDisabled}
       aria-busy={pending}
       className={`relative flex flex-col items-center gap-1.5 rounded-xl p-2 transition-colors duration-200 ${

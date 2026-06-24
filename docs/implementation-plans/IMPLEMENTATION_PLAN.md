@@ -1,6 +1,6 @@
 # Implementation Plan — Bestminton (v2)
 
-**Source:** US-01 – US-28 (see `docs/`) + `CLAUDE.md`
+**Source:** US-01 – US-28 (see `docs/backlog/phase-1/`) + `CLAUDE.md`
 **Stack:** Next.js 16 · React 19 · TypeScript · TailwindCSS v4 · Prisma · Vercel Postgres
 
 ---

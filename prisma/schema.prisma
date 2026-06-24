@@ -9,14 +9,26 @@ datasource db {
 }
 
 model Member {
-  id          Int      @id @default(autoincrement())
-  name        String
-  avatarUrl   String?
-  splitwiseId Int?     @unique
-  createdAt   DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  name         String
+  avatarUrl    String?
+  splitwiseId  Int?     @unique
+  eloRating    Int      @default(1000)
+  totalMatches Int      @default(0)
+  totalWins    Int      @default(0)
+  createdAt    DateTime @default(now())
 
-  registrations MatchRegistration[]
-  paidMatches   Match[]             @relation("MatchPayer")
+  registrations      MatchRegistration[]
+  paidMatches        Match[]             @relation("MatchPayer")
+  betsPlaced         Bet[]               @relation("BetBettor")
+  betsAsCounterparty Bet[]               @relation("BetCounterparty")
+  debtsOwed          DrinkDebt[]         @relation("DebtDebtor")
+  debtsOwing         DrinkDebt[]         @relation("DebtCreditor")
+  challengesWon      Challenge[]         @relation("ChallengeWinner")
+  challengesAsA      Challenge[]         @relation("ChallengePlayerA")
+  challengesAsA2     Challenge[]         @relation("ChallengePlayerA2")
+  challengesAsB      Challenge[]         @relation("ChallengePlayerB")
+  challengesAsB2     Challenge[]         @relation("ChallengePlayerB2")
 }
 
 model Match {
@@ -57,4 +69,72 @@ model Guest {
   playedFull     Boolean @default(true)
 
   registration MatchRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+}
+
+enum ChallengeFormat {
+  SINGLES
+  DOUBLES
+}
+
+enum ChallengeStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+}
+
+enum ChallengeSide {
+  A
+  B
+}
+
+model Challenge {
+  id                 Int             @id @default(autoincrement())
+  format             ChallengeFormat @default(SINGLES)
+  status             ChallengeStatus @default(PENDING)
+  playerAId          Int
+  playerA2Id         Int?
+  playerBId          Int
+  playerB2Id         Int?
+  handicapPoints     Int             @default(0)
+  isDrinkChallenge   Boolean         @default(false)
+  winnerSide         ChallengeSide?
+  winnerId           Int?
+  resolutionSnapshot Json?
+  createdAt          DateTime        @default(now())
+  completedAt        DateTime?
+
+  playerA  Member  @relation("ChallengePlayerA", fields: [playerAId], references: [id])
+  playerA2 Member? @relation("ChallengePlayerA2", fields: [playerA2Id], references: [id])
+  playerB  Member  @relation("ChallengePlayerB", fields: [playerBId], references: [id])
+  playerB2 Member? @relation("ChallengePlayerB2", fields: [playerB2Id], references: [id])
+  winner   Member? @relation("ChallengeWinner", fields: [winnerId], references: [id])
+  bets     Bet[]
+}
+
+model Bet {
+  id             Int           @id @default(autoincrement())
+  challengeId    Int
+  bettorId       Int
+  counterpartyId Int?
+  side           ChallengeSide
+  amount         Int           @default(1)
+  createdAt      DateTime      @default(now())
+
+  challenge    Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  bettor       Member    @relation("BetBettor", fields: [bettorId], references: [id])
+  counterparty Member?   @relation("BetCounterparty", fields: [counterpartyId], references: [id])
+
+  @@unique([challengeId, bettorId])
+}
+
+model DrinkDebt {
+  debtorId   Int
+  creditorId Int
+  amount     Int
+  updatedAt  DateTime @updatedAt
+
+  debtor   Member @relation("DebtDebtor", fields: [debtorId], references: [id])
+  creditor Member @relation("DebtCreditor", fields: [creditorId], references: [id])
+
+  @@id([debtorId, creditorId])
 }

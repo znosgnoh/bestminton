@@ -40,11 +40,171 @@ export interface SessionState {
 
 // --- Database DTO shapes (returned by API routes) ---
 
+export interface MemberDebtSummary {
+  totalOwed: number;
+  totalOwing: number;
+  netCam: number;
+}
+
 export interface MemberDTO {
   id: number;
   name: string;
   avatarUrl: string | null;
   splitwiseId: number | null;
+  eloRating: number;
+  totalMatches: number;
+  totalWins: number;
+  debtSummary: MemberDebtSummary;
+}
+
+export interface LeaderboardEntryDTO extends MemberDTO {
+  rank: number;
+  winRate: number;
+}
+
+export type ChallengeFormat = "SINGLES" | "DOUBLES";
+export type ChallengeStatus = "PENDING" | "ACTIVE" | "COMPLETED";
+export type ChallengeSide = "A" | "B";
+
+export interface ChallengePlayerDTO {
+  id: number;
+  name: string;
+  avatarUrl: string | null;
+  eloRating: number;
+}
+
+export interface ChallengeSideDTO {
+  players: ChallengePlayerDTO[];
+  averageElo: number;
+  winProbability: number;
+  poolTokens: number;
+  poolBets: number;
+}
+
+export interface DrinkDebtDTO {
+  debtorId: number;
+  creditorId: number;
+  amount: number;
+  debtorName: string;
+  creditorName: string;
+  updatedAt: string;
+}
+
+export interface BetDTO {
+  id: number;
+  challengeId: number;
+  bettorId: number;
+  counterpartyId: number | null;
+  side: ChallengeSide;
+  amount: number;
+  bettor: Pick<MemberDTO, "id" | "name" | "avatarUrl">;
+  counterparty: Pick<MemberDTO, "id" | "name" | "avatarUrl"> | null;
+}
+
+export interface ChallengeDebtRecord {
+  debtorId: number;
+  debtorName: string;
+  creditorId: number;
+  creditorName: string;
+  amount: number;
+  reason: "match" | "bet";
+}
+
+export interface ChallengeResolutionDTO {
+  eloChanges: Array<{
+    memberId: number;
+    name: string;
+    before: number;
+    after: number;
+    delta: number;
+  }>;
+  debts: ChallengeDebtRecord[];
+}
+
+export interface ChallengeDTO {
+  id: number;
+  format: ChallengeFormat;
+  status: ChallengeStatus;
+  isDrinkChallenge: boolean;
+  handicapPoints: number;
+  handicapRecipientSide: ChallengeSide;
+  winnerSide: ChallengeSide | null;
+  winnerId: number | null;
+  createdAt: string;
+  completedAt: string | null;
+  sideA: ChallengeSideDTO;
+  sideB: ChallengeSideDTO;
+  bets: BetDTO[];
+  resolution?: ChallengeResolutionDTO;
+}
+
+export interface CreateChallengeRequest {
+  format: ChallengeFormat;
+  playerAId: number;
+  playerA2Id?: number;
+  playerBId: number;
+  playerB2Id?: number;
+  isDrinkChallenge?: boolean;
+}
+
+export interface UpdateChallengeRequest {
+  isDrinkChallenge: boolean;
+}
+
+export interface UpsertBetRequest {
+  bettorId: number;
+  side: ChallengeSide;
+  counterpartyId: number;
+}
+
+export interface ResolveChallengeRequest {
+  winnerSide: ChallengeSide;
+  pin?: string;
+}
+
+export interface AdminEditChallengeRequest {
+  winnerSide: ChallengeSide;
+  pin?: string;
+}
+
+export interface AdminDeleteChallengeRequest {
+  confirmDebts?: boolean;
+  pin?: string;
+}
+
+export interface StartChallengeRequest {
+  pin?: string;
+}
+
+export interface VerifyPinRequest {
+  pin: string;
+}
+
+export interface ResetEloRequest {
+  pin?: string;
+}
+
+export interface ResetEloResult {
+  count: number;
+}
+
+export interface SettleDebtRequest {
+  debtorId: number;
+  creditorId: number;
+  amount?: number;
+  pin?: string;
+}
+
+export interface SettleDebtResult {
+  settled: number;
+  remaining: number;
+}
+
+export interface MemberDebtsResponse {
+  member: MemberDTO;
+  owes: DrinkDebtDTO[];
+  owedBy: DrinkDebtDTO[];
+  summary: MemberDebtSummary;
 }
 
 export interface GuestDTO {

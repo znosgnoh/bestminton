@@ -8,6 +8,7 @@ import {
   idbPut,
   idbDelete,
 } from "./idb";
+import { DEFAULT_ELO } from "./elo";
 import type { MemberDTO, MatchDTO, RegistrationDTO, GuestDTO } from "./types";
 
 // ---- Raw storage shapes (no relations) ----
@@ -17,7 +18,24 @@ interface RawMember {
   name: string;
   avatarUrl: string | null;
   splitwiseId: number | null;
+  eloRating?: number;
+  totalMatches?: number;
+  totalWins?: number;
+  debtSummary?: { totalOwed: number; totalOwing: number; netCam: number };
   createdAt: string;
+}
+
+function toMemberDTO(m: RawMember): MemberDTO {
+  return {
+    id: m.id,
+    name: m.name,
+    avatarUrl: m.avatarUrl,
+    splitwiseId: m.splitwiseId,
+    eloRating: m.eloRating ?? DEFAULT_ELO,
+    totalMatches: m.totalMatches ?? 0,
+    totalWins: m.totalWins ?? 0,
+    debtSummary: m.debtSummary ?? { totalOwed: 0, totalOwing: 0, netCam: 0 },
+  };
 }
 
 interface RawMatch {
@@ -60,9 +78,13 @@ async function buildRegistrationDTO(reg: RawRegistration): Promise<RegistrationD
     memberId: reg.memberId,
     joinedAt: reg.joinedAt,
     playedFull: reg.playedFull,
-    member: member
-      ? { id: member.id, name: member.name, avatarUrl: member.avatarUrl, splitwiseId: member.splitwiseId }
-      : { id: reg.memberId, name: "Unknown", avatarUrl: null, splitwiseId: null },
+    member: member ? toMemberDTO(member) : toMemberDTO({
+      id: reg.memberId,
+      name: "Unknown",
+      avatarUrl: null,
+      splitwiseId: null,
+      createdAt: new Date().toISOString(),
+    }),
     guests: rawGuests.map((g): GuestDTO => ({ id: g.id, label: g.label, playedFull: g.playedFull })),
   };
 }
@@ -90,9 +112,7 @@ async function buildMatchDTO(match: RawMatch): Promise<MatchDTO> {
 
 export async function getMembers(): Promise<MemberDTO[]> {
   const raw = await idbGetAll<RawMember>("members");
-  return raw
-    .map((m): MemberDTO => ({ id: m.id, name: m.name, avatarUrl: m.avatarUrl, splitwiseId: m.splitwiseId }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  return raw.map(toMemberDTO).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function createMember(data: {
@@ -106,17 +126,48 @@ export async function createMember(data: {
     splitwiseId: data.splitwiseId ?? null,
     createdAt: new Date().toISOString(),
   });
-  return { id, name: data.name, avatarUrl: data.avatarUrl ?? null, splitwiseId: data.splitwiseId ?? null };
+  return toMemberDTO({
+    id,
+    name: data.name,
+    avatarUrl: data.avatarUrl ?? null,
+    splitwiseId: data.splitwiseId ?? null,
+    createdAt: new Date().toISOString(),
+  });
 }
 
 export async function updateMember(
   id: number,
-  data: { name: string; avatarUrl?: string | null; splitwiseId?: number | null }
+  data: {
+    name: string;
+    avatarUrl?: string | null;
+    splitwiseId?: number | null;
+    eloRating?: number;
+    totalMatches?: number;
+    totalWins?: number;
+    pin?: string;
+  }
 ): Promise<MemberDTO> {
   const existing = await idbGetById<RawMember>("members", id);
   if (!existing) throw new Error("Member not found.");
-  await idbPut("members", { ...existing, name: data.name, avatarUrl: data.avatarUrl ?? null, splitwiseId: data.splitwiseId ?? null });
-  return { id, name: data.name, avatarUrl: data.avatarUrl ?? null, splitwiseId: data.splitwiseId ?? null };
+  await idbPut("members", {
+    ...existing,
+    name: data.name,
+    avatarUrl: data.avatarUrl ?? null,
+    splitwiseId: data.splitwiseId ?? null,
+    ...(data.eloRating !== undefined && { eloRating: data.eloRating }),
+    ...(data.totalMatches !== undefined && { totalMatches: data.totalMatches }),
+    ...(data.totalWins !== undefined && { totalWins: data.totalWins }),
+  });
+  return toMemberDTO({
+    id,
+    name: data.name,
+    avatarUrl: data.avatarUrl ?? null,
+    splitwiseId: data.splitwiseId ?? null,
+    eloRating: data.eloRating ?? existing.eloRating,
+    totalMatches: data.totalMatches ?? existing.totalMatches,
+    totalWins: data.totalWins ?? existing.totalWins,
+    createdAt: existing.createdAt ?? new Date().toISOString(),
+  });
 }
 
 export async function deleteMember(id: number): Promise<void> {
