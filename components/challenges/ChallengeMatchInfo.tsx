@@ -49,6 +49,18 @@ export default function ChallengeMatchInfo({ challenge }: ChallengeMatchInfoProp
           {challenge.format === "DOUBLES" && " (Elo trung bình thấp hơn)"}
         </p>
       )}
+
+      {challenge.status === "COMPLETED" && challenge.confirmedScore && (
+        <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+          Tỷ số: <strong>{challenge.confirmedScore}</strong>
+          {challenge.winnerSide && (
+            <>
+              {" "}
+              · Side <strong>{challenge.winnerSide}</strong> thắng
+            </>
+          )}
+        </p>
+      )}
     </div>
   );
 }

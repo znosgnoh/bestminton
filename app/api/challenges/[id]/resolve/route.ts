@@ -1,11 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminPin } from "@/lib/adminPin";
-import { requireDatabase } from "@/lib/apiHelpers";
+import { databaseErrorResponse, requireDatabase } from "@/lib/apiHelpers";
 import { resolveChallenge } from "@/lib/challengeService";
 import { revalidateChallengePages, revalidateMemberPages } from "@/lib/revalidate";
 import type { ResolveChallengeRequest } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+function parseConfirmedHandicap(value: unknown): number | { error: string } {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 21) {
+    return { error: "confirmedHandicapPoints must be a non-negative integer up to 21." };
+  }
+  return parsed;
+}
+
+function parseConfirmedScore(value: unknown): string | { error: string } {
+  if (typeof value !== "string") {
+    return { error: "confirmedScore is required." };
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return { error: "confirmedScore is required." };
+  }
+  if (trimmed.length > 80) {
+    return { error: "confirmedScore must be at most 80 characters." };
+  }
+  return trimmed;
+}
 
 export async function POST(
   request: NextRequest,
@@ -31,6 +53,16 @@ export async function POST(
     return NextResponse.json({ error: "winnerSide must be A or B." }, { status: 400 });
   }
 
+  const handicapResult = parseConfirmedHandicap(body.confirmedHandicapPoints);
+  if (typeof handicapResult === "object") {
+    return NextResponse.json({ error: handicapResult.error }, { status: 400 });
+  }
+
+  const scoreResult = parseConfirmedScore(body.confirmedScore);
+  if (typeof scoreResult === "object") {
+    return NextResponse.json({ error: scoreResult.error }, { status: 400 });
+  }
+
   const pinCheck = verifyAdminPin(body.pin);
   if (!pinCheck.ok) {
     const status = pinCheck.error === "missing" ? 403 : 401;
@@ -39,7 +71,12 @@ export async function POST(
   }
 
   try {
-    const result = await resolveChallenge(challengeId, body.winnerSide);
+    const result = await resolveChallenge(
+      challengeId,
+      body.winnerSide,
+      handicapResult,
+      scoreResult
+    );
     revalidateChallengePages(challengeId);
     revalidateMemberPages();
     return NextResponse.json(result);
@@ -54,6 +91,6 @@ export async function POST(
         { status: 409 }
       );
     }
-    return NextResponse.json({ error: "Database unavailable." }, { status: 503 });
+    return databaseErrorResponse(err, "POST /api/challenges/[id]/resolve");
   }
 }

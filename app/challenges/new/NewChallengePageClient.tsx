@@ -10,11 +10,13 @@ import type { MemberDTO } from "@/lib/types";
 interface NewChallengePageClientProps {
   members: MemberDTO[];
   dbAvailable: boolean;
+  dbError?: string;
 }
 
 export default function NewChallengePageClient({
   members,
   dbAvailable,
+  dbError,
 }: NewChallengePageClientProps) {
   const router = useRouter();
   const [createdId, setCreatedId] = useState<number | null>(null);
@@ -28,7 +30,7 @@ export default function NewChallengePageClient({
         </Link>
         <div className="tet-card p-8 text-center">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Kèo cần kết nối cơ sở dữ liệu trực tiếp.
+            {dbError ?? "Kèo cần kết nối cơ sở dữ liệu trực tiếp."}
           </p>
         </div>
       </div>

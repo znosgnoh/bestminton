@@ -98,6 +98,8 @@ export function serializeChallenge(
     status: challenge.status as ChallengeDTO["status"],
     isDrinkChallenge: challenge.isDrinkChallenge,
     handicapPoints: challenge.handicapPoints,
+    confirmedHandicapPoints: challenge.confirmedHandicapPoints ?? null,
+    confirmedScore: challenge.confirmedScore ?? null,
     handicapRecipientSide,
     winnerSide: (challenge.winnerSide as ChallengeSide | null) ?? null,
     winnerId: challenge.winnerId,

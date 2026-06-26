@@ -127,6 +127,8 @@ export interface ChallengeDTO {
   status: ChallengeStatus;
   isDrinkChallenge: boolean;
   handicapPoints: number;
+  confirmedHandicapPoints: number | null;
+  confirmedScore: string | null;
   handicapRecipientSide: ChallengeSide;
   winnerSide: ChallengeSide | null;
   winnerId: number | null;
@@ -161,6 +163,8 @@ export interface UpsertBetRequest {
 
 export interface ResolveChallengeRequest {
   winnerSide: ChallengeSide;
+  confirmedHandicapPoints: number;
+  confirmedScore: string;
   pin?: string;
 }
 

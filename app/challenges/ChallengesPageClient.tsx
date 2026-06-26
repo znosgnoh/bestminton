@@ -20,11 +20,13 @@ const FILTER_LABELS: Record<FilterStatus, string> = {
 interface ChallengesPageClientProps {
   initialChallenges: ChallengeDTO[];
   dbAvailable: boolean;
+  dbError?: string;
 }
 
 export default function ChallengesPageClient({
   initialChallenges,
   dbAvailable,
+  dbError,
 }: ChallengesPageClientProps) {
   const [challenges] = useState(initialChallenges);
   const [filter, setFilter] = useState<FilterStatus>("ALL");
@@ -33,7 +35,12 @@ export default function ChallengesPageClient({
     return (
       <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
         <h1 className="tet-page-title">Kèo</h1>
-        <ErrorBanner message="Kèo cần kết nối cơ sở dữ liệu trực tiếp." />
+        <ErrorBanner
+          message={
+            dbError ??
+            "Kèo cần kết nối cơ sở dữ liệu trực tiếp."
+          }
+        />
       </div>
     );
   }

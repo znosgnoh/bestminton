@@ -287,10 +287,15 @@ export function removeGuest(matchId: number, guestId: number): Promise<Registrat
 
 // ---- Challenges (API-only — no IndexedDB fallback) ----
 
+function formatApiError(data: { error?: string; detail?: string }, status: number): string {
+  const message = data.error ?? `HTTP ${status}`;
+  return data.detail ? `${message} — ${data.detail}` : message;
+}
+
 async function challengeFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
-  const data = (await res.json()) as T & { error?: string };
-  if (!res.ok) throw new Error((data as { error?: string }).error ?? `HTTP ${res.status}`);
+  const data = (await res.json()) as T & { error?: string; detail?: string };
+  if (!res.ok) throw new Error(formatApiError(data, res.status));
   return data;
 }
 
@@ -352,12 +357,19 @@ export function startChallenge(challengeId: number, pin?: string): Promise<Chall
 export function resolveChallenge(
   challengeId: number,
   winnerSide: ChallengeSide,
+  confirmedHandicapPoints: number,
+  confirmedScore: string,
   pin?: string
 ): Promise<ChallengeDTO> {
   return challengeFetch<ChallengeDTO>(`/api/challenges/${challengeId}/resolve`, {
     method: "POST",
     headers: JSON_HEADERS,
-    body: JSON.stringify({ winnerSide, ...(pin ? { pin } : {}) }),
+    body: JSON.stringify({
+      winnerSide,
+      confirmedHandicapPoints,
+      confirmedScore,
+      ...(pin ? { pin } : {}),
+    }),
   });
 }
 

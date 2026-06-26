@@ -95,11 +95,13 @@ model Challenge {
   playerA2Id         Int?
   playerBId          Int
   playerB2Id         Int?
-  handicapPoints     Int             @default(0)
-  isDrinkChallenge   Boolean         @default(false)
-  winnerSide         ChallengeSide?
-  winnerId           Int?
-  resolutionSnapshot Json?
+  handicapPoints           Int             @default(0)
+  confirmedHandicapPoints  Int?
+  confirmedScore           String?
+  isDrinkChallenge         Boolean         @default(false)
+  winnerSide               ChallengeSide?
+  winnerId                 Int?
+  resolutionSnapshot       Json?
   createdAt          DateTime        @default(now())
   completedAt        DateTime?
 

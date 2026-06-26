@@ -120,7 +120,9 @@ async function recordBetDebts(
 
 export async function resolveChallenge(
   challengeId: number,
-  winnerSide: ChallengeSide
+  winnerSide: ChallengeSide,
+  confirmedHandicapPoints: number,
+  confirmedScore: string
 ) {
   return db.$transaction(async (tx) => {
     const challenge = await tx.challenge.findUnique({
@@ -255,6 +257,7 @@ export async function resolveChallenge(
       challenge.playerBId
     );
 
+    // confirmedHandicapPoints + confirmedScore are retained for future Elo / win-rate / handicap calibration.
     const updated = await tx.challenge.update({
       where: { id: challengeId },
       data: {
@@ -262,6 +265,9 @@ export async function resolveChallenge(
         winnerSide,
         winnerId,
         completedAt: new Date(),
+        handicapPoints: confirmedHandicapPoints,
+        confirmedHandicapPoints,
+        confirmedScore,
         resolutionSnapshot: resolutionSnapshot as object,
       },
       include: CHALLENGE_FULL_INCLUDE,

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { isDatabaseConfigured } from "@/lib/dbConfig";
+import { formatDatabaseError, logDatabaseError, probeDatabase } from "@/lib/dbHealth";
 import { CHALLENGE_FULL_INCLUDE } from "@/lib/challengeIncludes";
 import { serializeChallenge } from "@/lib/challengeSerialize";
 import { membersToDTOs } from "@/lib/memberSerialize";
@@ -19,24 +19,32 @@ export default async function ChallengeDetailPage({
   let initialChallenge: ChallengeDTO | null = null;
   let initialMembers: MemberDTO[] = [];
   let dbAvailable = false;
+  let dbError: string | undefined;
 
-  if (isDatabaseConfigured() && !isNaN(challengeId)) {
-    try {
-      const [rawChallenge, rawMembers] = await Promise.all([
-        db.challenge.findUnique({
-          where: { id: challengeId },
-          include: CHALLENGE_FULL_INCLUDE,
-        }),
-        db.member.findMany({ orderBy: { name: "asc" } }),
-      ]);
+  if (!isNaN(challengeId)) {
+    const probe = await probeDatabase();
+    if (!probe.ok) {
+      dbError = probe.message;
+      logDatabaseError("ChallengeDetailPage", probe.message);
+    } else {
+      try {
+        const [rawChallenge, rawMembers] = await Promise.all([
+          db.challenge.findUnique({
+            where: { id: challengeId },
+            include: CHALLENGE_FULL_INCLUDE,
+          }),
+          db.member.findMany({ orderBy: { name: "asc" } }),
+        ]);
 
-      if (rawChallenge) {
-        initialChallenge = serializeChallenge(rawChallenge);
+        if (rawChallenge) {
+          initialChallenge = serializeChallenge(rawChallenge);
+        }
+        initialMembers = await membersToDTOs(rawMembers);
+        dbAvailable = true;
+      } catch (err) {
+        dbError = formatDatabaseError(err);
+        logDatabaseError("ChallengeDetailPage", err);
       }
-      initialMembers = await membersToDTOs(rawMembers);
-      dbAvailable = true;
-    } catch {
-      // DB unreachable
     }
   }
 
@@ -46,6 +54,7 @@ export default async function ChallengeDetailPage({
       initialChallenge={initialChallenge}
       initialMembers={initialMembers}
       dbAvailable={dbAvailable}
+      dbError={dbError}
     />
   );
 }

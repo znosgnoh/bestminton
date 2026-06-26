@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { probeDatabase } from "@/lib/dbHealth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  try {
-    await db.$queryRaw`SELECT 1`;
+  const probe = await probeDatabase();
+  if (probe.ok) {
     return NextResponse.json({ db: true });
-  } catch {
-    return NextResponse.json({ db: false });
   }
+
+  return NextResponse.json({
+    db: false,
+    reason: probe.reason,
+    ...(process.env.NODE_ENV === "development" ? { detail: probe.message } : {}),
+  });
 }

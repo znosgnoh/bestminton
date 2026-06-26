@@ -92,6 +92,8 @@ Friendly singles/doubles match with Elo tracking and optional token betting. UI 
 | `playerAId`, `playerBId` | Int (FK) | Side competitors |
 | `playerA2Id`, `playerB2Id` | Int? (FK) | Doubles partners |
 | `handicapPoints` | Int | Points given to the weaker side (editable before start) |
+| `confirmedHandicapPoints` | Int? | Captain-confirmed handicap at resolve (for future algo tuning) |
+| `confirmedScore` | String? | Captain-confirmed final score at resolve (e.g. `21-15, 21-18`) |
 | `isDrinkChallenge` | Boolean | Drink-token ledger vs abstract tokens |
 | `winnerSide`, `winnerId` | Enum / Int? | Set on resolve |
 | `resolutionSnapshot` | Json? | Payout / Elo snapshot at completion |
@@ -153,7 +155,7 @@ Implemented in `lib/elo.ts`.
 | `/api/challenges/[id]` | Route | `GET` detail, `PUT` update (e.g. handicap), `DELETE` |
 | `/api/challenges/[id]/bets` | Route | `POST` upsert bet, `DELETE` remove |
 | `/api/challenges/[id]/start` | Route | `POST` lock bets and start kèo |
-| `/api/challenges/[id]/resolve` | Route | `POST` record winner, Elo, payouts |
+| `/api/challenges/[id]/resolve` | Route | `POST` record winner, confirmed handicap/score, Elo, payouts |
 | `/api/leaderboard` | Route | `GET` Elo leaderboard |
 | `/api/debts` | Route | `GET` drink debt ledger |
 | `/api/members` | Route | `GET` list, `POST` create |
@@ -202,7 +204,7 @@ Implemented in `lib/elo.ts`.
 2. **New kèo:** pick singles/doubles competitors; review sub-linear **suggested handicap** and edit if needed → `PENDING`
 3. While `PENDING`, others place bets on a side; captain can still edit handicap (win % reflects current points)
 4. Captain **starts** the kèo → `ACTIVE` (bets locked)
-5. After play, captain **resolves** with the winning side → Elo updates, token/drink payouts recorded
+5. After play, captain **resolves** — confirms handicap + final score, then picks winning side → Elo updates, token/drink payouts recorded
 
 ---
 
@@ -246,4 +248,4 @@ CAPTAIN_PIN=
 - **Settlement URL:** The Settle section (`SettleForm`) only renders when `?manage=1` is present in the URL — enforced at the server page level. Saving settlement or syncing Splitwise sends the stored captain PIN when configured.
 - **Kèo copy:** Challenge UI uses Vietnamese **kèo** labels in the product; routes remain `/challenges` for URLs.
 - **Recurring matches:** Creating a recurring match auto-generates instances for the next 8 weeks at the same day/time.
-- **After Prisma migrations:** Always run `npx prisma generate` after any schema change, then restart the dev server so the new client is loaded.
+- **After Prisma migrations:** Run `npx prisma migrate deploy` (or `migrate dev` locally) so the DB matches `schema.prisma`, then `npx prisma generate` and restart the dev server. Resolve (`POST /api/challenges/[id]/resolve`) requires migration `20260626120000_challenge_resolve_confirmation` (`confirmedHandicapPoints`, `confirmedScore` on `Challenge`); without it the transaction rolls back after Elo updates and the API returns 503.

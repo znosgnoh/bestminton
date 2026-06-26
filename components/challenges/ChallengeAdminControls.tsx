@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, Play, Trophy } from "lucide-react";
 import AdminPinModal from "@/components/ui/AdminPinModal";
 import ErrorBanner from "@/components/ui/ErrorBanner";
+import ResolveConfirmModal from "@/components/challenges/ResolveConfirmModal";
 import { useAdminPin } from "@/hooks/useAdminPin";
 import { DRINK_LABEL } from "@/lib/constants";
 import * as dataService from "@/lib/dataService";
@@ -14,7 +15,14 @@ interface ChallengeAdminControlsProps {
   onUpdated: (challenge: ChallengeDTO) => void;
 }
 
-type PendingAction = "start" | { resolve: ChallengeSide } | null;
+type PendingAction =
+  | "start"
+  | {
+      resolve: ChallengeSide;
+      confirmedHandicapPoints: number;
+      confirmedScore: string;
+    }
+  | null;
 
 export default function ChallengeAdminControls({
   challenge,
@@ -22,6 +30,7 @@ export default function ChallengeAdminControls({
 }: ChallengeAdminControlsProps) {
   const { unlocked, pinRequired, unlock, getStoredPin } = useAdminPin();
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const [resolveWinnerSide, setResolveWinnerSide] = useState<ChallengeSide | null>(null);
   const [showPinModal, setShowPinModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +50,13 @@ export default function ChallengeAdminControls({
         updated = await dataService.startChallenge(challenge.id, pin);
         setSuccess("Kèo đã bắt đầu — cược đã khóa.");
       } else {
-        updated = await dataService.resolveChallenge(challenge.id, action.resolve, pin);
+        updated = await dataService.resolveChallenge(
+          challenge.id,
+          action.resolve,
+          action.confirmedHandicapPoints,
+          action.confirmedScore,
+          pin
+        );
         setSuccess(
           challenge.isDrinkChallenge || challenge.bets.length > 0
             ? `Side ${action.resolve} wins! Ratings and ${DRINK_LABEL.toLowerCase()} updated.`
@@ -54,12 +69,34 @@ export default function ChallengeAdminControls({
     } finally {
       setLoading(false);
       setPendingAction(null);
+      setResolveWinnerSide(null);
     }
   }
 
-  function requestAction(action: PendingAction) {
+  function requestStart() {
+    const action: PendingAction = "start";
     setPendingAction(action);
     if (pinRequired && !unlocked) {
+      setShowPinModal(true);
+    } else {
+      void runAction(action, pinRequired ? getStoredPin() : undefined);
+    }
+  }
+
+  function requestResolve(winnerSide: ChallengeSide) {
+    setResolveWinnerSide(winnerSide);
+  }
+
+  function handleResolveConfirm(confirmedHandicapPoints: number, confirmedScore: string) {
+    if (!resolveWinnerSide) return;
+    const action: PendingAction = {
+      resolve: resolveWinnerSide,
+      confirmedHandicapPoints,
+      confirmedScore,
+    };
+    setPendingAction(action);
+    if (pinRequired && !unlocked) {
+      setResolveWinnerSide(null);
       setShowPinModal(true);
     } else {
       void runAction(action, pinRequired ? getStoredPin() : undefined);
@@ -74,13 +111,19 @@ export default function ChallengeAdminControls({
     return null;
   }
 
+  function cancelResolve() {
+    if (loading) return;
+    setResolveWinnerSide(null);
+    setPendingAction(null);
+  }
+
   return (
     <div className="tet-card p-4 space-y-3">
       <h2 className="tet-section-title text-sm">Admin Controls</h2>
 
       {challenge.status === "PENDING" && (
         <button
-          onClick={() => requestAction("start")}
+          onClick={requestStart}
           disabled={loading}
           className="tet-btn-primary w-full flex items-center justify-center gap-2"
         >
@@ -102,11 +145,14 @@ export default function ChallengeAdminControls({
             {(["A", "B"] as ChallengeSide[]).map((side) => (
               <button
                 key={side}
-                onClick={() => requestAction({ resolve: side })}
+                onClick={() => requestResolve(side)}
                 disabled={loading}
                 className="tet-btn-primary flex items-center justify-center gap-2"
               >
-                {loading && pendingAction && pendingAction !== "start" && pendingAction.resolve === side ? (
+                {loading &&
+                pendingAction &&
+                pendingAction !== "start" &&
+                pendingAction.resolve === side ? (
                   <Loader2 size={18} className="animate-spin" />
                 ) : (
                   <>
@@ -123,6 +169,17 @@ export default function ChallengeAdminControls({
       {error && <ErrorBanner message={error} onRetry={() => setError(null)} />}
       {success && <div className="tet-alert-success text-sm">{success}</div>}
 
+      {resolveWinnerSide && (
+        <ResolveConfirmModal
+          open
+          challenge={challenge}
+          winnerSide={resolveWinnerSide}
+          loading={loading}
+          onSubmit={handleResolveConfirm}
+          onCancel={cancelResolve}
+        />
+      )}
+
       <AdminPinModal
         open={showPinModal}
         title={pendingAction === "start" ? "PIN để bắt đầu kèo" : "PIN để chốt kèo"}
@@ -130,6 +187,7 @@ export default function ChallengeAdminControls({
         onCancel={() => {
           setShowPinModal(false);
           setPendingAction(null);
+          setResolveWinnerSide(null);
         }}
       />
     </div>

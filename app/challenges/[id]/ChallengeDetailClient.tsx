@@ -19,6 +19,7 @@ interface ChallengeDetailClientProps {
   initialChallenge: ChallengeDTO | null;
   initialMembers: MemberDTO[];
   dbAvailable: boolean;
+  dbError?: string;
 }
 
 export default function ChallengeDetailClient({
@@ -26,6 +27,7 @@ export default function ChallengeDetailClient({
   initialChallenge,
   initialMembers,
   dbAvailable,
+  dbError,
 }: ChallengeDetailClientProps) {
   const router = useRouter();
   const [challenge, setChallenge] = useState<ChallengeDTO | null>(initialChallenge);
@@ -146,7 +148,7 @@ export default function ChallengeDetailClient({
         </Link>
         <div className="tet-card p-8 text-center">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Kèo cần kết nối cơ sở dữ liệu trực tiếp.
+            {dbError ?? "Kèo cần kết nối cơ sở dữ liệu trực tiếp."}
           </p>
         </div>
       </div>

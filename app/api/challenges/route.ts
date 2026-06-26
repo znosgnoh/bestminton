@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { requireDatabase } from "@/lib/apiHelpers";
+import { databaseErrorResponse, requireDatabase } from "@/lib/apiHelpers";
 import { CHALLENGE_LIST_INCLUDE } from "@/lib/challengeIncludes";
 import { serializeChallenge, serializeChallengeList } from "@/lib/challengeSerialize";
 import { sideAverageElo, suggestedHandicap } from "@/lib/elo";
@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json(challenges.map(serializeChallengeList));
-  } catch {
-    return NextResponse.json({ error: "Database unavailable." }, { status: 503 });
+  } catch (err) {
+    return databaseErrorResponse(err, "GET /api/challenges");
   }
 }
 
