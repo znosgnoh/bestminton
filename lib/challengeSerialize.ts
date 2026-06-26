@@ -100,6 +100,7 @@ export function serializeChallenge(
     handicapPoints: challenge.handicapPoints,
     confirmedHandicapPoints: challenge.confirmedHandicapPoints ?? null,
     confirmedScore: challenge.confirmedScore ?? null,
+    notes: challenge.notes ?? null,
     handicapRecipientSide,
     winnerSide: (challenge.winnerSide as ChallengeSide | null) ?? null,
     winnerId: challenge.winnerId,

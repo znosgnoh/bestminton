@@ -47,9 +47,9 @@ function resolveWinnerId(
 }
 
 /**
- * Record match debts: each loser owes each winner 1 ly nước cam (all losers × all winners).
+ * Record singles match debts: the loser owes the winner 1 ly nước cam.
  */
-async function recordMatchDebts(
+async function recordSinglesMatchDebts(
   competitors: Competitor[],
   winnerSide: ChallengeSide,
   tx: Parameters<Parameters<typeof db.$transaction>[0]>[0]
@@ -70,6 +70,38 @@ async function recordMatchDebts(
         reason: "match",
       });
     }
+  }
+
+  return debts;
+}
+
+/**
+ * Record doubles match debts: each winner earns exactly 1 ly nước cam from a loser on the
+ * opposing side. Debtors rotate round-robin across losers (not fixed player pairs).
+ */
+async function recordDoublesMatchDebts(
+  competitors: Competitor[],
+  winnerSide: ChallengeSide,
+  tx: Parameters<Parameters<typeof db.$transaction>[0]>[0]
+): Promise<ChallengeDebtRecord[]> {
+  const winners = competitors.filter((c) => c.side === winnerSide);
+  const losers = competitors.filter((c) => c.side !== winnerSide);
+  const debts: ChallengeDebtRecord[] = [];
+
+  if (winners.length === 0 || losers.length === 0) return debts;
+
+  for (let i = 0; i < winners.length; i++) {
+    const winner = winners[i];
+    const loser = losers[i % losers.length];
+    await addDebt(loser.id, winner.id, 1, tx);
+    debts.push({
+      debtorId: loser.id,
+      debtorName: loser.name,
+      creditorId: winner.id,
+      creditorName: winner.name,
+      amount: 1,
+      reason: "match",
+    });
   }
 
   return debts;
@@ -229,25 +261,32 @@ export async function resolveChallenge(
       });
     }
 
-    const eloChanges = computeEloChanges(competitors, winnerSide);
+    const isDoubles = challenge.format === "DOUBLES";
+    const eloChanges = isDoubles
+      ? []
+      : computeEloChanges(competitors, winnerSide);
     const matchDebts =
       challenge.isDrinkChallenge && challenge.bets.length === 0
-        ? await recordMatchDebts(competitors, winnerSide, tx)
+        ? isDoubles
+          ? await recordDoublesMatchDebts(competitors, winnerSide, tx)
+          : await recordSinglesMatchDebts(competitors, winnerSide, tx)
         : [];
     const betDebts = await recordBetDebts(challenge.bets, winnerSide, tx);
     const debts = [...matchDebts, ...betDebts];
 
-    for (const change of eloChanges) {
-      const competitor = competitors.find((c) => c.id === change.memberId)!;
-      const won = competitor.side === winnerSide;
-      await tx.member.update({
-        where: { id: change.memberId },
-        data: {
-          eloRating: change.after,
-          totalMatches: competitor.totalMatches + 1,
-          totalWins: competitor.totalWins + (won ? 1 : 0),
-        },
-      });
+    if (!isDoubles) {
+      for (const change of eloChanges) {
+        const competitor = competitors.find((c) => c.id === change.memberId)!;
+        const won = competitor.side === winnerSide;
+        await tx.member.update({
+          where: { id: change.memberId },
+          data: {
+            eloRating: change.after,
+            totalMatches: competitor.totalMatches + 1,
+            totalWins: competitor.totalWins + (won ? 1 : 0),
+          },
+        });
+      }
     }
 
     const resolutionSnapshot: ChallengeResolutionDTO = { eloChanges, debts };
@@ -350,41 +389,66 @@ export async function adminEditChallengeWinner(
     if (challenge.winnerSide === winnerSide) throw new Error("SAME_WINNER");
 
     const snapshot = challenge.resolutionSnapshot as ChallengeResolutionDTO | null;
-    if (!snapshot?.eloChanges?.length) throw new Error("NO_SNAPSHOT");
+    const isDoubles = challenge.format === "DOUBLES";
 
-    await revertEloFromSnapshot(tx, snapshot);
+    if (!isDoubles) {
+      if (!snapshot?.eloChanges?.length) throw new Error("NO_SNAPSHOT");
 
-    const refreshed = await tx.challenge.findUnique({
-      where: { id: challengeId },
-      include: {
-        playerA: { select: RESOLVE_PLAYER_SELECT },
-        playerA2: { select: RESOLVE_PLAYER_SELECT },
-        playerB: { select: RESOLVE_PLAYER_SELECT },
-        playerB2: { select: RESOLVE_PLAYER_SELECT },
-      },
-    });
-    if (!refreshed) throw new Error("NOT_FOUND");
+      await revertEloFromSnapshot(tx, snapshot);
 
-    const competitors = buildCompetitors(refreshed);
-    const eloChanges = computeEloChanges(competitors, winnerSide);
-
-    for (const change of eloChanges) {
-      const competitor = competitors.find((c) => c.id === change.memberId)!;
-      const won = competitor.side === winnerSide;
-      await tx.member.update({
-        where: { id: change.memberId },
-        data: {
-          eloRating: change.after,
-          totalMatches: competitor.totalMatches + 1,
-          totalWins: competitor.totalWins + (won ? 1 : 0),
+      const refreshed = await tx.challenge.findUnique({
+        where: { id: challengeId },
+        include: {
+          playerA: { select: RESOLVE_PLAYER_SELECT },
+          playerA2: { select: RESOLVE_PLAYER_SELECT },
+          playerB: { select: RESOLVE_PLAYER_SELECT },
+          playerB2: { select: RESOLVE_PLAYER_SELECT },
         },
       });
+      if (!refreshed) throw new Error("NOT_FOUND");
+
+      const competitors = buildCompetitors(refreshed);
+      const eloChanges = computeEloChanges(competitors, winnerSide);
+
+      for (const change of eloChanges) {
+        const competitor = competitors.find((c) => c.id === change.memberId)!;
+        const won = competitor.side === winnerSide;
+        await tx.member.update({
+          where: { id: change.memberId },
+          data: {
+            eloRating: change.after,
+            totalMatches: competitor.totalMatches + 1,
+            totalWins: competitor.totalWins + (won ? 1 : 0),
+          },
+        });
+      }
+
+      const winnerId = resolveWinnerId(
+        winnerSide,
+        refreshed.playerAId,
+        refreshed.playerBId
+      );
+
+      const updated = await tx.challenge.update({
+        where: { id: challengeId },
+        data: {
+          winnerSide,
+          winnerId,
+          resolutionSnapshot: {
+            eloChanges,
+            debts: snapshot.debts,
+          } as object,
+        },
+        include: CHALLENGE_FULL_INCLUDE,
+      });
+
+      return serializeChallenge(updated);
     }
 
     const winnerId = resolveWinnerId(
       winnerSide,
-      refreshed.playerAId,
-      refreshed.playerBId
+      challenge.playerAId,
+      challenge.playerBId
     );
 
     const updated = await tx.challenge.update({
@@ -392,10 +456,6 @@ export async function adminEditChallengeWinner(
       data: {
         winnerSide,
         winnerId,
-        resolutionSnapshot: {
-          eloChanges,
-          debts: snapshot.debts,
-        } as object,
       },
       include: CHALLENGE_FULL_INCLUDE,
     });

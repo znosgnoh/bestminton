@@ -35,10 +35,26 @@ export default function ResolveConfirmModal({
 
   if (!open) return null;
 
+  function parseHandicapValue(raw: string): number | null {
+    const trimmed = raw.trim();
+    if (trimmed === "") {
+      return challenge.handicapPoints;
+    }
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed)) {
+      return null;
+    }
+    const asInt = Math.trunc(parsed);
+    if (!Number.isInteger(asInt) || parsed !== asInt) {
+      return null;
+    }
+    return asInt;
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const parsedHandicap = parseInt(handicap, 10);
-    if (Number.isNaN(parsedHandicap) || parsedHandicap < 0 || parsedHandicap > 21) {
+    const parsedHandicap = parseHandicapValue(handicap);
+    if (parsedHandicap === null || parsedHandicap < 0 || parsedHandicap > 21) {
       setError("Chấp điểm phải từ 0 đến 21.");
       return;
     }
@@ -73,6 +89,11 @@ export default function ResolveConfirmModal({
             {winnerSide}
           </span>{" "}
           thắng.
+          {challenge.format === "DOUBLES" && (
+            <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
+              Kèo đôi không cập nhật Elo.
+            </span>
+          )}
         </p>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">

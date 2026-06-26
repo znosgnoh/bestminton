@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import ChallengeMatchInfo from "@/components/challenges/ChallengeMatchInfo";
 import HandicapEditor from "@/components/challenges/HandicapEditor";
+import NotesEditor from "@/components/challenges/NotesEditor";
 import BettingBoard from "@/components/challenges/BettingBoard";
 import ChallengeAdminControls from "@/components/challenges/ChallengeAdminControls";
 import DrinkChallengeToggle from "@/components/challenges/DrinkChallengeToggle";
@@ -179,6 +180,8 @@ export default function ChallengeDetailClient({
       <ChallengeMatchInfo challenge={challenge} />
 
       <HandicapEditor challenge={challenge} onUpdated={handleChallengeUpdated} />
+
+      <NotesEditor challenge={challenge} onUpdated={handleChallengeUpdated} />
 
       <DrinkChallengeToggle challenge={challenge} onUpdated={handleChallengeUpdated} />
 

@@ -124,9 +124,13 @@ export default function ChallengeManageRow({
   }
 
   const deleteMessage = deleteNeedsDebtConfirm
-    ? `Xóa kèo này? Kèo đã tạo ${debtCount} bản ghi nợ ${DRINK_LABEL.toLowerCase()} sẽ KHÔNG được hoàn tác. Điểm Elo sẽ được khôi phục.`
+    ? challenge.format === "DOUBLES"
+      ? `Xóa kèo này? Kèo đã tạo ${debtCount} bản ghi nợ ${DRINK_LABEL.toLowerCase()} sẽ KHÔNG được hoàn tác.`
+      : `Xóa kèo này? Kèo đã tạo ${debtCount} bản ghi nợ ${DRINK_LABEL.toLowerCase()} sẽ KHÔNG được hoàn tác. Điểm Elo sẽ được khôi phục.`
     : challenge.status === "COMPLETED"
-      ? "Xóa kèo này? Điểm Elo sẽ được khôi phục. Không thể hoàn tác."
+      ? challenge.format === "DOUBLES"
+        ? "Xóa kèo này? Không thể hoàn tác."
+        : "Xóa kèo này? Điểm Elo sẽ được khôi phục. Không thể hoàn tác."
       : "Xóa kèo này? Không thể hoàn tác.";
 
   return (
@@ -195,7 +199,9 @@ export default function ChallengeManageRow({
         {editing && challenge.status === "COMPLETED" && (
           <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-2">
             <p className="text-xs text-gray-600 dark:text-gray-400">
-              Set winning side (Elo will be recalculated; drink debts are not adjusted):
+              {challenge.format === "DOUBLES"
+                ? "Chọn bên thắng (nợ nước cam không được điều chỉnh):"
+                : "Set winning side (Elo will be recalculated; drink debts are not adjusted):"}
             </p>
             <div className="grid grid-cols-2 gap-2">
               {(["A", "B"] as ChallengeSide[]).map((side) => (

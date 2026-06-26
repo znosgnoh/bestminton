@@ -21,20 +21,28 @@ export default function ChallengeResultSummary({ challenge }: ChallengeResultSum
       </p>
 
       <div>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
-          Elo Changes
-        </h3>
-        <div className="divide-y divide-amber-100/60 dark:divide-gray-800">
-          {resolution.eloChanges.map((c) => (
-            <div key={c.memberId} className="flex items-center justify-between py-2 text-sm">
-              <span className="font-medium text-gray-900 dark:text-gray-100">{c.name}</span>
-              <span className={c.delta >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}>
-                {c.before} → {c.after} ({c.delta >= 0 ? "+" : ""}
-                {c.delta})
-              </span>
+        {challenge.format === "DOUBLES" ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Kèo đôi không cập nhật Elo.
+          </p>
+        ) : (
+          <>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
+              Elo Changes
+            </h3>
+            <div className="divide-y divide-amber-100/60 dark:divide-gray-800">
+              {resolution.eloChanges.map((c) => (
+                <div key={c.memberId} className="flex items-center justify-between py-2 text-sm">
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{c.name}</span>
+                  <span className={c.delta >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}>
+                    {c.before} → {c.after} ({c.delta >= 0 ? "+" : ""}
+                    {c.delta})
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
       </div>
 
       <div>

@@ -55,8 +55,9 @@ export default function DrinkChallengeToggle({
             {loading && <Loader2 size={14} className="animate-spin text-gray-400" />}
           </span>
           <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
-            Loser buys winner 1 ly nước cam on resolve — unless bets are placed, then only the bet
-            pool applies.
+            {challenge.format === "DOUBLES"
+              ? "Mỗi người thắng được 1 ly nước cam từ phe thua (không ghép cố định) — trừ khi có cược, khi đó chỉ áp dụng cược."
+              : "Người thua mua 1 ly nước cam cho người thắng khi chốt kèo — trừ khi có cược, khi đó chỉ áp dụng cược."}
           </span>
         </span>
       </label>

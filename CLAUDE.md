@@ -82,7 +82,7 @@ Guests attached to a registered player (share that player's cost).
 
 ### Challenge (kèo)
 
-Friendly singles/doubles match with Elo tracking and optional token betting. UI copy uses Vietnamese **kèo** terminology.
+Friendly singles/doubles match with optional drink-token betting. **Singles** update member Elo on resolve; **doubles** skip Elo/`totalMatches`/`totalWins` changes (separate 2v2 Elo planned later) but use the same optional `isDrinkChallenge` flag as singles. UI copy uses Vietnamese **kèo** terminology.
 
 | Field | Type | Notes |
 | --- | --- | --- |
@@ -94,7 +94,8 @@ Friendly singles/doubles match with Elo tracking and optional token betting. UI 
 | `handicapPoints` | Int | Points given to the weaker side (editable before start) |
 | `confirmedHandicapPoints` | Int? | Captain-confirmed handicap at resolve (for future algo tuning) |
 | `confirmedScore` | String? | Captain-confirmed final score at resolve (e.g. `21-15, 21-18`) |
-| `isDrinkChallenge` | Boolean | Drink-token ledger vs abstract tokens |
+| `notes` | String? | Optional custom rules or extra info (editable while `PENDING`) |
+| `isDrinkChallenge` | Boolean | Drink-token ledger (optional for singles and doubles) |
 | `winnerSide`, `winnerId` | Enum / Int? | Set on resolve |
 | `resolutionSnapshot` | Json? | Payout / Elo snapshot at completion |
 | `createdAt`, `completedAt` | DateTime | |
@@ -134,6 +135,8 @@ Implemented in `lib/elo.ts`.
 - **Suggested handicap:** Sub-linear scaling from average side Elo gap — calibrated so a 300-point gap suggests 6 points; doubling the gap yields ~1.5× points (not 2×). The weaker side receives the handicap.
 - **Editable handicap:** On create (`/challenges/new`) and while status is `PENDING` (management or `HandicapEditor`), captains can override the suggestion.
 - **Displayed win rate:** `sideWinProbabilities` treats each handicap point as a **50 Elo** boost on the recipient (`ELO_PER_HANDICAP_POINT`), then applies the standard Elo expected-score formula. Win percentages update when handicap changes.
+- **Resolve — singles:** `resolveChallenge` updates `eloRating`, `totalMatches`, and `totalWins`; optional nước cam debts when `isDrinkChallenge` or bets exist.
+- **Resolve — doubles:** Handicap/win % still use current singles Elo averages; no Elo/`totalMatches`/`totalWins` updates (`resolutionSnapshot.eloChanges` is empty). When `isDrinkChallenge` and no bets: each winner earns exactly 1 ly nước cam, debtor is a loser on the opposing side (round-robin across losers, not fixed pairs). Bet debts unchanged (1:1 bettor vs counterparty).
 
 ---
 
@@ -204,7 +207,7 @@ Implemented in `lib/elo.ts`.
 2. **New kèo:** pick singles/doubles competitors; review sub-linear **suggested handicap** and edit if needed → `PENDING`
 3. While `PENDING`, others place bets on a side; captain can still edit handicap (win % reflects current points)
 4. Captain **starts** the kèo → `ACTIVE` (bets locked)
-5. After play, captain **resolves** — confirms handicap + final score, then picks winning side → Elo updates, token/drink payouts recorded
+5. After play, captain **resolves** — confirms handicap + final score, then picks winning side → **singles:** Elo + optional drink payouts; **doubles:** optional drink payouts only (no Elo)
 
 ---
 

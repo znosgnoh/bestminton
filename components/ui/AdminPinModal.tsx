@@ -32,14 +32,19 @@ export default function AdminPinModal({
       setError(err);
     } else {
       setPin("");
-      onCancel();
     }
+  }
+
+  function handleBackdropClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (submitting) return;
+    if (e.target !== e.currentTarget) return;
+    onCancel();
   }
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={onCancel}
+      onClick={handleBackdropClick}
     >
       <div
         className="tet-card w-full max-w-sm p-6 shadow-xl"

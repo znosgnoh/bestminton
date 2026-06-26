@@ -354,6 +354,14 @@ export function startChallenge(challengeId: number, pin?: string): Promise<Chall
   });
 }
 
+function normalizeConfirmedHandicapPoints(value: number): number {
+  const parsed = Math.trunc(Number(value));
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 21) {
+    throw new Error("Chấp điểm phải từ 0 đến 21.");
+  }
+  return parsed;
+}
+
 export function resolveChallenge(
   challengeId: number,
   winnerSide: ChallengeSide,
@@ -361,13 +369,19 @@ export function resolveChallenge(
   confirmedScore: string,
   pin?: string
 ): Promise<ChallengeDTO> {
+  const handicap = normalizeConfirmedHandicapPoints(confirmedHandicapPoints);
+  const score = confirmedScore.trim();
+  if (!score) {
+    return Promise.reject(new Error("Vui lòng nhập tỷ số."));
+  }
+
   return challengeFetch<ChallengeDTO>(`/api/challenges/${challengeId}/resolve`, {
     method: "POST",
     headers: JSON_HEADERS,
     body: JSON.stringify({
       winnerSide,
-      confirmedHandicapPoints,
-      confirmedScore,
+      confirmedHandicapPoints: handicap,
+      confirmedScore: score,
       ...(pin ? { pin } : {}),
     }),
   });

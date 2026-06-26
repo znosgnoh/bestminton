@@ -5,13 +5,15 @@ import * as dataService from "@/lib/dataService";
 import { ADMIN_PIN_KEY, ADMIN_UNLOCK_KEY } from "@/lib/adminPinClient";
 
 export function useAdminPin() {
-  const [unlocked, setUnlocked] = useState(false);
+  const [unlocked, setUnlocked] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem(ADMIN_UNLOCK_KEY) === "true";
+  });
   const [pinRequired, setPinRequired] = useState(false);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem(ADMIN_UNLOCK_KEY) === "true";
-    setUnlocked(stored);
+    setUnlocked(sessionStorage.getItem(ADMIN_UNLOCK_KEY) === "true");
 
     dataService
       .getPinRequired()
@@ -28,8 +30,12 @@ export function useAdminPin() {
   const unlock = useCallback(async (pin: string): Promise<string | null> => {
     try {
       await dataService.verifyAdminPin(pin);
-      sessionStorage.setItem(ADMIN_UNLOCK_KEY, "true");
-      sessionStorage.setItem(ADMIN_PIN_KEY, pin);
+      try {
+        sessionStorage.setItem(ADMIN_UNLOCK_KEY, "true");
+        sessionStorage.setItem(ADMIN_PIN_KEY, pin);
+      } catch {
+        // sessionStorage may be unavailable (e.g. Safari private mode)
+      }
       setUnlocked(true);
       return null;
     } catch (err) {

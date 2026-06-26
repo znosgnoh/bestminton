@@ -24,6 +24,7 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
   const [isDrinkChallenge, setIsDrinkChallenge] = useState(false);
   const [handicapPoints, setHandicapPoints] = useState(0);
   const [handicapTouched, setHandicapTouched] = useState(false);
+  const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -123,6 +124,7 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
         playerBId: playerBId!,
         isDrinkChallenge,
         handicapPoints,
+        notes: notes.trim() || null,
         ...(format === "DOUBLES"
           ? { playerA2Id: playerA2Id!, playerB2Id: playerB2Id! }
           : {}),
@@ -175,6 +177,7 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
               setPlayerA2Id(null);
               setPlayerB2Id(null);
               setHandicapTouched(false);
+              if (f === "DOUBLES") setIsDrinkChallenge(true);
             }}
             className={format === f ? "tet-tab-active flex-1 tet-tab" : "tet-tab-inactive flex-1 tet-tab"}
           >
@@ -229,6 +232,26 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
         </div>
       )}
 
+      <div>
+        <label className="tet-label block mb-2" htmlFor="challenge-notes">
+          Ghi chú
+        </label>
+        <textarea
+          id="challenge-notes"
+          rows={3}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Luật riêng, thông tin thêm…"
+          className="tet-input w-full resize-y min-h-[4.5rem]"
+        />
+      </div>
+
+      {format === "DOUBLES" && (
+        <p className="text-xs text-gray-500 dark:text-gray-400 rounded-xl border border-amber-100/80 bg-amber-50/40 p-3 dark:border-gray-700 dark:bg-gray-800/40">
+          Kèo đôi không cập nhật Elo (Elo hiện tại vẫn dùng để gợi ý chấp điểm).
+        </p>
+      )}
+
       <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-100/80 bg-amber-50/40 p-3 dark:border-gray-700 dark:bg-gray-800/40">
         <input
           type="checkbox"
@@ -242,7 +265,9 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
             {DRINK_CHALLENGE_LABEL}
           </span>
           <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
-            Winner gets nước cam from loser when resolved (unless bets are placed).
+            {format === "DOUBLES"
+              ? "Mỗi người thắng được 1 ly nước cam từ phe thua (trừ khi có cược)."
+              : "Người thua mua nước cam cho người thắng khi chốt kèo (trừ khi có cược)."}
           </span>
         </span>
       </label>

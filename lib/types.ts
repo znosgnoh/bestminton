@@ -129,6 +129,7 @@ export interface ChallengeDTO {
   handicapPoints: number;
   confirmedHandicapPoints: number | null;
   confirmedScore: string | null;
+  notes: string | null;
   handicapRecipientSide: ChallengeSide;
   winnerSide: ChallengeSide | null;
   winnerId: number | null;
@@ -148,11 +149,13 @@ export interface CreateChallengeRequest {
   playerB2Id?: number;
   isDrinkChallenge?: boolean;
   handicapPoints?: number;
+  notes?: string | null;
 }
 
 export interface UpdateChallengeRequest {
   isDrinkChallenge?: boolean;
   handicapPoints?: number;
+  notes?: string | null;
 }
 
 export interface UpsertBetRequest {

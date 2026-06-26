@@ -8,7 +8,14 @@ import type { ResolveChallengeRequest } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 function parseConfirmedHandicap(value: unknown): number | { error: string } {
-  const parsed = Number(value);
+  if (value === undefined || value === null) {
+    return { error: "confirmedHandicapPoints is required (0–21)." };
+  }
+  if (typeof value === "string" && value.trim() === "") {
+    return { error: "confirmedHandicapPoints is required (0–21)." };
+  }
+  const parsed =
+    typeof value === "string" ? parseInt(value.trim(), 10) : Math.trunc(Number(value));
   if (!Number.isInteger(parsed) || parsed < 0 || parsed > 21) {
     return { error: "confirmedHandicapPoints must be a non-negative integer up to 21." };
   }

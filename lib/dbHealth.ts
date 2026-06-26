@@ -7,6 +7,7 @@ const REQUIRED_CHALLENGE_FIELDS = [
   "confirmedHandicapPoints",
   "confirmedScore",
   "winnerId",
+  "notes",
 ] as const;
 
 export function isPrismaClientCurrent(): boolean {

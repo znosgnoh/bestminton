@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Loader2, Play, Trophy } from "lucide-react";
 import AdminPinModal from "@/components/ui/AdminPinModal";
 import ErrorBanner from "@/components/ui/ErrorBanner";
@@ -29,7 +29,13 @@ export default function ChallengeAdminControls({
   onUpdated,
 }: ChallengeAdminControlsProps) {
   const { unlocked, pinRequired, unlock, getStoredPin } = useAdminPin();
+  const pendingActionRef = useRef<PendingAction>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+
+  function setPending(action: PendingAction) {
+    pendingActionRef.current = action;
+    setPendingAction(action);
+  }
   const [resolveWinnerSide, setResolveWinnerSide] = useState<ChallengeSide | null>(null);
   const [showPinModal, setShowPinModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -58,9 +64,13 @@ export default function ChallengeAdminControls({
           pin
         );
         setSuccess(
-          challenge.isDrinkChallenge || challenge.bets.length > 0
-            ? `Side ${action.resolve} wins! Ratings and ${DRINK_LABEL.toLowerCase()} updated.`
-            : `Side ${action.resolve} wins! Ratings updated.`
+          challenge.format === "DOUBLES"
+            ? challenge.isDrinkChallenge || challenge.bets.length > 0
+              ? `Side ${action.resolve} thắng! Đã ghi nợ nước cam.`
+              : `Side ${action.resolve} thắng!`
+            : challenge.isDrinkChallenge || challenge.bets.length > 0
+              ? `Side ${action.resolve} wins! Ratings and ${DRINK_LABEL.toLowerCase()} updated.`
+              : `Side ${action.resolve} wins! Ratings updated.`
         );
       }
       onUpdated(updated);
@@ -68,14 +78,14 @@ export default function ChallengeAdminControls({
       setError(err instanceof Error ? err.message : "Action failed.");
     } finally {
       setLoading(false);
-      setPendingAction(null);
+      setPending(null);
       setResolveWinnerSide(null);
     }
   }
 
   function requestStart() {
     const action: PendingAction = "start";
-    setPendingAction(action);
+    setPending(action);
     if (pinRequired && !unlocked) {
       setShowPinModal(true);
     } else {
@@ -94,7 +104,7 @@ export default function ChallengeAdminControls({
       confirmedHandicapPoints,
       confirmedScore,
     };
-    setPendingAction(action);
+    setPending(action);
     if (pinRequired && !unlocked) {
       setResolveWinnerSide(null);
       setShowPinModal(true);
@@ -104,17 +114,18 @@ export default function ChallengeAdminControls({
   }
 
   async function handlePinSubmit(pin: string): Promise<string | null> {
+    const action = pendingActionRef.current;
     const pinError = await unlock(pin);
     if (pinError) return pinError;
     setShowPinModal(false);
-    await runAction(pendingAction, pin);
+    await runAction(action, pin);
     return null;
   }
 
   function cancelResolve() {
     if (loading) return;
     setResolveWinnerSide(null);
-    setPendingAction(null);
+    setPending(null);
   }
 
   return (
@@ -186,7 +197,7 @@ export default function ChallengeAdminControls({
         onSubmit={handlePinSubmit}
         onCancel={() => {
           setShowPinModal(false);
-          setPendingAction(null);
+          setPending(null);
           setResolveWinnerSide(null);
         }}
       />

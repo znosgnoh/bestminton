@@ -13,6 +13,19 @@ import type { AdminDeleteChallengeRequest, AdminEditChallengeRequest, UpdateChal
 
 export const dynamic = "force-dynamic";
 
+function parseNotesUpdate(value: unknown): string | null | { error: string } {
+  if (value === null) return null;
+  if (typeof value !== "string") {
+    return { error: "notes must be a string." };
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return null;
+  if (trimmed.length > 2000) {
+    return { error: "notes must be at most 2000 characters." };
+  }
+  return trimmed;
+}
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -62,11 +75,15 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  if (body.isDrinkChallenge === undefined && body.handicapPoints === undefined) {
+  if (
+    body.isDrinkChallenge === undefined &&
+    body.handicapPoints === undefined &&
+    body.notes === undefined
+  ) {
     return NextResponse.json({ error: "No fields to update." }, { status: 400 });
   }
 
-  const data: { isDrinkChallenge?: boolean; handicapPoints?: number } = {};
+  const data: { isDrinkChallenge?: boolean; handicapPoints?: number; notes?: string | null } = {};
 
   if (body.isDrinkChallenge !== undefined) {
     if (typeof body.isDrinkChallenge !== "boolean") {
@@ -86,10 +103,18 @@ export async function PATCH(
     data.handicapPoints = parsed;
   }
 
+  if (body.notes !== undefined) {
+    const notesResult = parseNotesUpdate(body.notes);
+    if (notesResult !== null && typeof notesResult === "object" && "error" in notesResult) {
+      return NextResponse.json({ error: notesResult.error }, { status: 400 });
+    }
+    data.notes = notesResult;
+  }
+
   try {
     const existing = await db.challenge.findUnique({
       where: { id: challengeId },
-      select: { status: true },
+      select: { status: true, format: true },
     });
 
     if (!existing) {

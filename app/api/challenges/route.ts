@@ -22,6 +22,19 @@ function parseHandicapPoints(
   return parsed;
 }
 
+function parseNotes(value: unknown): string | null | { error: string } {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string") {
+    return { error: "notes must be a string." };
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return null;
+  if (trimmed.length > 2000) {
+    return { error: "notes must be at most 2000 characters." };
+  }
+  return trimmed;
+}
+
 export async function GET(request: NextRequest) {
   const unavailable = requireDatabase();
   if (unavailable) return unavailable;
@@ -124,6 +137,11 @@ export async function POST(request: NextRequest) {
     }
     const handicapPoints = handicapResult;
     const isDrinkChallenge = body.isDrinkChallenge === true;
+    const notesResult = parseNotes(body.notes);
+    if (typeof notesResult === "object" && notesResult !== null && "error" in notesResult) {
+      return NextResponse.json({ error: notesResult.error }, { status: 400 });
+    }
+    const notes = notesResult;
 
     const challenge = await db.challenge.create({
       data: {
@@ -135,6 +153,7 @@ export async function POST(request: NextRequest) {
         playerB2Id: format === "DOUBLES" ? playerB2Id : null,
         handicapPoints,
         isDrinkChallenge,
+        notes,
       },
       include: CHALLENGE_LIST_INCLUDE,
     });
@@ -142,9 +161,9 @@ export async function POST(request: NextRequest) {
     revalidateChallengePages();
     return NextResponse.json(serializeChallenge(challenge), { status: 201 });
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code !== "P2022") {
       return NextResponse.json({ error: "Gạ kèo thất bại." }, { status: 400 });
     }
-    return NextResponse.json({ error: "Database unavailable." }, { status: 503 });
+    return databaseErrorResponse(err, "POST /api/challenges");
   }
 }
