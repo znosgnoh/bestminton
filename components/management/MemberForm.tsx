@@ -5,6 +5,7 @@ import { Loader2, X } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 import AdminPinModal from "@/components/ui/AdminPinModal";
 import { useAdminPin } from "@/hooks/useAdminPin";
+import { adminPinHeaders } from "@/lib/adminPinClient";
 import * as dataService from "@/lib/dataService";
 import { DEFAULT_ELO } from "@/lib/elo";
 import type { MemberDTO } from "@/lib/types";
@@ -68,6 +69,7 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
 
       const res = await fetch("/api/upload/avatar", {
         method: "POST",
+        headers: adminPinHeaders(),
         body: formData,
       });
 

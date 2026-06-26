@@ -267,6 +267,7 @@ export interface CreateExpenseRequest {
     userId: number;
     owedShare: number;
   }>;
+  pin?: string;
 }
 
 // --- Splitwise flat payload (internal, route handler only) ---

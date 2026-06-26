@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
 import { revalidateMemberPages } from "@/lib/revalidate";
 import { memberToDTO, membersToDTOs } from "@/lib/memberSerialize";
 import { Prisma } from "@prisma/client";
@@ -17,12 +18,15 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  let body: { name?: string; avatarUrl?: string; splitwiseId?: number };
+  let body: { name?: string; avatarUrl?: string; splitwiseId?: number; pin?: string };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
+
+  const pinDenied = requireAdminPin(pinFromRequest(request, body));
+  if (pinDenied) return pinDenied;
 
   const name = typeof body.name === "string" ? body.name.trim() : "";
   if (!name) {

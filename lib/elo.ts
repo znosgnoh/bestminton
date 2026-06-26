@@ -11,6 +11,46 @@ export function expectedScore(ratingA: number, ratingB: number): number {
 const HANDICAP_REFERENCE_DIFF = 300;
 const HANDICAP_REFERENCE_POINTS = 6;
 
+/** Elo boost per handicap point — inverse of suggestedHandicap's 300 Elo → 6 pts rule. */
+export const ELO_PER_HANDICAP_POINT = HANDICAP_REFERENCE_DIFF / HANDICAP_REFERENCE_POINTS;
+
+export type HandicapRecipientSide = "A" | "B";
+
+/**
+ * Win probability for side A when the weaker side receives handicap points.
+ * Handicap is modeled as an effective Elo boost on the recipient (50 Elo per point).
+ */
+export function expectedScoreWithHandicap(
+  ratingA: number,
+  ratingB: number,
+  handicapPoints: number,
+  handicapRecipientSide: HandicapRecipientSide
+): number {
+  if (handicapPoints <= 0) {
+    return expectedScore(ratingA, ratingB);
+  }
+  const boost = handicapPoints * ELO_PER_HANDICAP_POINT;
+  if (handicapRecipientSide === "A") {
+    return expectedScore(ratingA + boost, ratingB);
+  }
+  return expectedScore(ratingA, ratingB + boost);
+}
+
+export function sideWinProbabilities(
+  ratingA: number,
+  ratingB: number,
+  handicapPoints: number,
+  handicapRecipientSide: HandicapRecipientSide
+): { sideA: number; sideB: number } {
+  const sideA = expectedScoreWithHandicap(
+    ratingA,
+    ratingB,
+    handicapPoints,
+    handicapRecipientSide
+  );
+  return { sideA, sideB: 1 - sideA };
+}
+
 /**
  * Sub-linear scaling exponent. Doubling the Elo gap yields 1.5× handicap (not 2×).
  * Calibrated so 300 Elo → 6 pts and 600 Elo → 9 pts (adjacent-pair chain example).

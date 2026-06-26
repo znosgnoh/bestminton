@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
 import { MATCH_FULL_INCLUDE } from "@/lib/prismaIncludes";
 import { revalidateMatchPages } from "@/lib/revalidate";
 import { toDTO } from "@/lib/serialize";
@@ -30,12 +31,16 @@ export async function POST(request: NextRequest) {
     venue?: string;
     scheduledAt?: string;
     isRecurring?: boolean;
+    pin?: string;
   };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
+
+  const pinDenied = requireAdminPin(pinFromRequest(request, body));
+  if (pinDenied) return pinDenied;
 
   const title = typeof body.title === "string" ? body.title.trim() : "";
   const venue = typeof body.venue === "string" ? body.venue.trim() : "";

@@ -14,6 +14,9 @@ A mobile-first web app for managing badminton team sessions end-to-end: scheduli
 - **Post-match settlement** — Enter total court cost + who paid + hours played; the app calculates each share with exact cent rounding
 - **Splitwise sync** — One-click expense creation to a Splitwise group (optional; app runs fully without it)
 - **Dual storage** — Runs on IndexedDB (browser, zero setup) or Vercel Postgres (production)
+- **Kèo (challenges)** — Singles/doubles friendly matches with Elo ratings, sub-linear suggested handicap (editable before start), side win probabilities that account for handicap (50 Elo per point on the weaker side), optional token betting, and a drink-debt ledger
+- **Elo leaderboard** — `/leaderboard` ranks players by rating after completed kèo
+- **Captain PIN** — Optional `CAPTAIN_PIN` protects `/management` and captain-only API mutations (settlement, Splitwise sync, member/match edits); unset = no gate (handy for local dev)
 - **Dark mode** — System preference detected on load; toggleable in the header
 
 ---
@@ -60,6 +63,9 @@ SPLITWISE_CURRENCY_CODE=USD
 
 # Vercel Blob (optional — only needed for avatar file uploads)
 BLOB_READ_WRITE_TOKEN=
+
+# Captain PIN (optional — management UI + captain API mutations)
+CAPTAIN_PIN=
 ```
 
 ### 3. Run database migrations (if using Postgres)
@@ -93,14 +99,17 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### Captain (management page)
 
-Access `/management` directly in the browser (not linked in the nav — captain only).
+Access `/management` directly in the browser (not linked in the nav — captain only). If `CAPTAIN_PIN` is set in the environment, enter it once per tab to unlock management (same PIN is used automatically for settlement at `/matches/[id]?manage=1`).
 
 - **Members** — Add, edit, or remove team members; optionally link Splitwise IDs
 - **Matches** — Create one-off or recurring matches; view upcoming and past matches in separate tabs
+- **Kèo** — Create, edit handicap, start, and resolve challenges; linked from management and `/challenges`
 - **Settle** — On a past match row, tap the clipboard icon to open the settlement page:
   1. Enter Total Cost ($), Who Paid, and Hours Played
   2. Review calculated shares per player
   3. Click **Sync to Splitwise** to create the group expense
+
+Players use the **Kèo** nav item for the challenge list, betting on pending kèo, and the leaderboard.
 
 ---
 
@@ -128,7 +137,9 @@ Owed_i          = TotalCost × (W_i / W_total)
 app/
   page.tsx                  # Homepage — upcoming & past matches
   layout.tsx                # Root layout — header, dark mode init
-  management/page.tsx       # Captain admin page (hidden from nav)
+  management/page.tsx       # Captain admin page (hidden from nav; PIN gate)
+  challenges/                 # Kèo list, new, and detail pages
+  leaderboard/page.tsx        # Elo rankings
   matches/[id]/
     page.tsx                # Match detail server component
     MatchDetailClient.tsx   # Match detail client (registration, settle)

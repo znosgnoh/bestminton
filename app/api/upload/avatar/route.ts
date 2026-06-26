@@ -1,10 +1,14 @@
 import { put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
+import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png"]);
 const MAX_BYTES = 2 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
+  const pinDenied = requireAdminPin(pinFromRequest(request));
+  if (pinDenied) return pinDenied;
+
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return NextResponse.json(
       { error: "Avatar upload is not configured (missing BLOB_READ_WRITE_TOKEN)." },

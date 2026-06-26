@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
+import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
 import { MATCH_FULL_INCLUDE } from "@/lib/prismaIncludes";
 import { revalidateMatchPages } from "@/lib/revalidate";
 import { toDTO } from "@/lib/serialize";
@@ -45,12 +46,16 @@ export async function PUT(
     hours?: number | null;
     totalCost?: number | null;
     paidByMemberId?: number | null;
+    pin?: string;
   };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
+
+  const pinDenied = requireAdminPin(pinFromRequest(request, body));
+  if (pinDenied) return pinDenied;
 
   try {
     const existing = await db.match.findUniqueOrThrow({ where: { id } });
@@ -102,13 +107,16 @@ export async function DELETE(
     return NextResponse.json({ error: "Invalid match ID." }, { status: 400 });
   }
 
-  let body: { confirmSynced?: boolean } = {};
+  let body: { confirmSynced?: boolean; pin?: string } = {};
   try {
     const text = await request.text();
     if (text) body = JSON.parse(text);
   } catch {
-    // No body is fine for DELETE
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
+
+  const pinDenied = requireAdminPin(pinFromRequest(request, body));
+  if (pinDenied) return pinDenied;
 
   try {
     const existing = await db.match.findUniqueOrThrow({ where: { id } });

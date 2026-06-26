@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
   isSplitwiseConfigured,
   splitwiseFetch,
@@ -8,9 +8,13 @@ import {
   splitwiseMemberName,
   type SplitwiseGroupResponse,
 } from "@/lib/splitwise";
+import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
 import type { SplitwiseMember } from "@/lib/types";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const pinDenied = requireAdminPin(pinFromRequest(request));
+  if (pinDenied) return pinDenied;
+
   if (!isSplitwiseConfigured()) {
     return NextResponse.json(
       {

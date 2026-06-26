@@ -2,9 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import * as dataService from "@/lib/dataService";
-
-const UNLOCK_KEY = "bestminton_admin_unlocked";
-const PIN_KEY = "bestminton_admin_pin";
+import { ADMIN_PIN_KEY, ADMIN_UNLOCK_KEY } from "@/lib/adminPinClient";
 
 export function useAdminPin() {
   const [unlocked, setUnlocked] = useState(false);
@@ -12,7 +10,7 @@ export function useAdminPin() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem(UNLOCK_KEY) === "true";
+    const stored = sessionStorage.getItem(ADMIN_UNLOCK_KEY) === "true";
     setUnlocked(stored);
 
     dataService
@@ -24,14 +22,14 @@ export function useAdminPin() {
 
   const getStoredPin = useCallback((): string | undefined => {
     if (typeof window === "undefined") return undefined;
-    return sessionStorage.getItem(PIN_KEY) ?? undefined;
+    return sessionStorage.getItem(ADMIN_PIN_KEY) ?? undefined;
   }, []);
 
   const unlock = useCallback(async (pin: string): Promise<string | null> => {
     try {
       await dataService.verifyAdminPin(pin);
-      sessionStorage.setItem(UNLOCK_KEY, "true");
-      sessionStorage.setItem(PIN_KEY, pin);
+      sessionStorage.setItem(ADMIN_UNLOCK_KEY, "true");
+      sessionStorage.setItem(ADMIN_PIN_KEY, pin);
       setUnlocked(true);
       return null;
     } catch (err) {
@@ -40,8 +38,8 @@ export function useAdminPin() {
   }, []);
 
   const clearUnlock = useCallback(() => {
-    sessionStorage.removeItem(UNLOCK_KEY);
-    sessionStorage.removeItem(PIN_KEY);
+    sessionStorage.removeItem(ADMIN_UNLOCK_KEY);
+    sessionStorage.removeItem(ADMIN_PIN_KEY);
     setUnlocked(false);
   }, []);
 

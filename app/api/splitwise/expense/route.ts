@@ -11,6 +11,7 @@ import {
   getSplitwiseExpenseId,
   type SplitwiseCreateExpenseResponse,
 } from "@/lib/splitwise";
+import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
 import type { CreateExpenseRequest } from "@/lib/types";
 import { db } from "@/lib/db";
 import { revalidateMatchPages } from "@/lib/revalidate";
@@ -32,6 +33,9 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
+
+  const pinDenied = requireAdminPin(pinFromRequest(request, body));
+  if (pinDenied) return pinDenied;
 
   const { totalCost, paidById, participants, matchId } = body;
   if (!totalCost || totalCost <= 0 || !paidById || !participants?.length) {

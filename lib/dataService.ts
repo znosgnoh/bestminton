@@ -1,5 +1,6 @@
 // Client-side only. Routes data operations to the real API or local IndexedDB.
 import { allowsIndexedDbFallback } from "./dbConfig";
+import { withAdminPin } from "./adminPinClient";
 import * as localDb from "./localDb";
 import type {
   MemberDTO,
@@ -75,7 +76,12 @@ export function createMember(data: {
   splitwiseId?: number | null;
 }): Promise<MemberDTO> {
   return via(
-    () => apiFetch<MemberDTO>("/api/members", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify(data) }),
+    () =>
+      apiFetch<MemberDTO>("/api/members", {
+        method: "POST",
+        headers: JSON_HEADERS,
+        body: JSON.stringify(withAdminPin(data)),
+      }),
     () => localDb.createMember(data)
   );
 }
@@ -93,14 +99,25 @@ export function updateMember(
   }
 ): Promise<MemberDTO> {
   return via(
-    () => apiFetch<MemberDTO>(`/api/members/${id}`, { method: "PUT", headers: JSON_HEADERS, body: JSON.stringify(data) }),
+    () =>
+      apiFetch<MemberDTO>(`/api/members/${id}`, {
+        method: "PUT",
+        headers: JSON_HEADERS,
+        body: JSON.stringify(withAdminPin(data)),
+      }),
     () => localDb.updateMember(id, data)
   );
 }
 
 export async function deleteMember(id: number): Promise<void> {
   await via(
-    async () => { await apiFetch<unknown>(`/api/members/${id}`, { method: "DELETE" }); },
+    async () => {
+      await apiFetch<unknown>(`/api/members/${id}`, {
+        method: "DELETE",
+        headers: JSON_HEADERS,
+        body: JSON.stringify(withAdminPin({})),
+      });
+    },
     () => localDb.deleteMember(id)
   );
 }
@@ -128,7 +145,12 @@ export function createMatches(data: {
   isRecurring: boolean;
 }): Promise<MatchDTO[]> {
   return via(
-    () => apiFetch<MatchDTO[]>("/api/matches", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify(data) }),
+    () =>
+      apiFetch<MatchDTO[]>("/api/matches", {
+        method: "POST",
+        headers: JSON_HEADERS,
+        body: JSON.stringify(withAdminPin(data)),
+      }),
     () => localDb.createMatches(data)
   );
 }
@@ -138,7 +160,12 @@ export function updateMatchInfo(
   data: { title?: string; venue?: string; scheduledAt?: string }
 ): Promise<MatchDTO> {
   return via(
-    () => apiFetch<MatchDTO>(`/api/matches/${id}`, { method: "PUT", headers: JSON_HEADERS, body: JSON.stringify(data) }),
+    () =>
+      apiFetch<MatchDTO>(`/api/matches/${id}`, {
+        method: "PUT",
+        headers: JSON_HEADERS,
+        body: JSON.stringify(withAdminPin(data)),
+      }),
     () => localDb.updateMatch(id, data)
   );
 }
@@ -148,7 +175,12 @@ export function saveMatchSettlement(
   data: { totalCost: number; hours: number; paidByMemberId: number }
 ): Promise<MatchDTO> {
   return via(
-    () => apiFetch<MatchDTO>(`/api/matches/${id}`, { method: "PUT", headers: JSON_HEADERS, body: JSON.stringify(data) }),
+    () =>
+      apiFetch<MatchDTO>(`/api/matches/${id}`, {
+        method: "PUT",
+        headers: JSON_HEADERS,
+        body: JSON.stringify(withAdminPin(data)),
+      }),
     () => localDb.updateMatch(id, data)
   );
 }
@@ -159,7 +191,7 @@ export async function deleteMatch(id: number, confirmSynced: boolean): Promise<v
       await apiFetch<unknown>(`/api/matches/${id}`, {
         method: "DELETE",
         headers: JSON_HEADERS,
-        body: JSON.stringify({ confirmSynced }),
+        body: JSON.stringify(withAdminPin({ confirmSynced })),
       });
     },
     () => localDb.deleteMatch(id)

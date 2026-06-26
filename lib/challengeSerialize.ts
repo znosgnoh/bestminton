@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { expectedScore, sideAverageElo } from "./elo";
+import { sideAverageElo, sideWinProbabilities } from "./elo";
 import type {
   BetDTO,
   ChallengeDTO,
@@ -31,7 +31,7 @@ function buildSide(
   players: ChallengePlayerDTO[],
   bets: BetDTO[],
   side: ChallengeSide,
-  opponentAvg: number
+  winProbability: number
 ): ChallengeDTO["sideA"] {
   const sideBets = bets.filter((b) => b.side === side);
   const ratings = players.map((p) => p.eloRating);
@@ -39,7 +39,7 @@ function buildSide(
   return {
     players,
     averageElo,
-    winProbability: expectedScore(averageElo, opponentAvg),
+    winProbability,
     poolTokens: sideBets.reduce((s, b) => s + b.amount, 0),
     poolBets: sideBets.length,
   };
@@ -60,6 +60,12 @@ export function serializeChallenge(
   const sideAAvg = sideAverageElo(sideAPlayers.map((p) => p.eloRating));
   const sideBAvg = sideAverageElo(sideBPlayers.map((p) => p.eloRating));
   const handicapRecipientSide: ChallengeSide = sideAAvg <= sideBAvg ? "A" : "B";
+  const winProbabilities = sideWinProbabilities(
+    sideAAvg,
+    sideBAvg,
+    challenge.handicapPoints,
+    handicapRecipientSide
+  );
 
   const bets: BetDTO[] = includeBets
     ? challenge.bets.map((b) => ({
@@ -97,8 +103,8 @@ export function serializeChallenge(
     winnerId: challenge.winnerId,
     createdAt: challenge.createdAt.toISOString(),
     completedAt: challenge.completedAt?.toISOString() ?? null,
-    sideA: buildSide(sideAPlayers, bets, "A", sideBAvg),
-    sideB: buildSide(sideBPlayers, bets, "B", sideAAvg),
+    sideA: buildSide(sideAPlayers, bets, "A", winProbabilities.sideA),
+    sideB: buildSide(sideBPlayers, bets, "B", winProbabilities.sideB),
     bets,
     resolution: resolution ?? undefined,
   };

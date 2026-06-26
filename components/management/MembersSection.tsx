@@ -7,6 +7,7 @@ import MemberForm from "./MemberForm";
 import AdminPinModal from "@/components/ui/AdminPinModal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useAdminPin } from "@/hooks/useAdminPin";
+import { adminPinHeaders } from "@/lib/adminPinClient";
 import * as dataService from "@/lib/dataService";
 import { DEFAULT_ELO } from "@/lib/elo";
 import type { MemberDTO, SplitwiseMember } from "@/lib/types";
@@ -63,7 +64,9 @@ export default function MembersSection({
     setImportMessage(null);
 
     try {
-      const res = await fetch("/api/splitwise/members");
+      const res = await fetch("/api/splitwise/members", {
+        headers: adminPinHeaders(),
+      });
       const data = (await res.json()) as {
         members?: SplitwiseMember[];
         group?: { id: number; name: string } | null;

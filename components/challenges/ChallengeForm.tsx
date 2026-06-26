@@ -6,7 +6,7 @@ import AvatarTile from "@/components/matches/AvatarTile";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
 import { DRINK_CHALLENGE_LABEL } from "@/lib/constants";
-import { sideAverageElo, suggestedHandicap } from "@/lib/elo";
+import { sideAverageElo, sideWinProbabilities, suggestedHandicap } from "@/lib/elo";
 import * as dataService from "@/lib/dataService";
 import type { ChallengeFormat, MemberDTO } from "@/lib/types";
 
@@ -97,6 +97,11 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
     sideAAvg !== null && sideBAvg !== null ? suggestedHandicap(sideAAvg, sideBAvg) : null;
   const handicapRecipientSide =
     sideAAvg !== null && sideBAvg !== null ? (sideAAvg <= sideBAvg ? "A" : "B") : null;
+
+  const winProbabilities =
+    sideAAvg !== null && sideBAvg !== null && handicapRecipientSide !== null
+      ? sideWinProbabilities(sideAAvg, sideBAvg, handicapPoints, handicapRecipientSide)
+      : null;
 
   useEffect(() => {
     if (!handicapTouched && suggested !== null) {
@@ -205,6 +210,22 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
             Gợi ý: {suggested} điểm cho Side {handicapRecipientSide}
             {format === "DOUBLES" && " (Elo trung bình thấp hơn)"}
           </p>
+          {winProbabilities && (
+            <div className="mt-3 grid grid-cols-2 gap-3 text-center text-sm">
+              <div className="rounded-xl bg-amber-50/80 dark:bg-gray-800/80 p-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Win chance A</p>
+                <p className="text-lg font-bold text-emerald-700 dark:text-amber-400">
+                  {Math.round(winProbabilities.sideA * 100)}%
+                </p>
+              </div>
+              <div className="rounded-xl bg-amber-50/80 dark:bg-gray-800/80 p-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Win chance B</p>
+                <p className="text-lg font-bold text-emerald-700 dark:text-amber-400">
+                  {Math.round(winProbabilities.sideB * 100)}%
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

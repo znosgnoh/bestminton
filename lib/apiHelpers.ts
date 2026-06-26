@@ -1,5 +1,23 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminPin } from "@/lib/adminPin";
 import { isDatabaseConfigured } from "@/lib/dbConfig";
+
+export function pinFromRequest(
+  request: NextRequest,
+  body?: { pin?: string }
+): string | undefined {
+  return body?.pin ?? request.headers.get("x-captain-pin") ?? undefined;
+}
+
+export function requireAdminPin(pin?: string) {
+  const pinCheck = verifyAdminPin(pin);
+  if (!pinCheck.ok) {
+    const status = pinCheck.error === "missing" ? 403 : 401;
+    const message = pinCheck.error === "missing" ? "PIN required." : "Invalid PIN.";
+    return NextResponse.json({ error: message }, { status });
+  }
+  return null;
+}
 
 export function requireDatabase() {
   if (!isDatabaseConfigured()) {

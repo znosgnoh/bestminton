@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { verifyAdminPin } from "@/lib/adminPin";
+import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
 import { revalidateMemberPages } from "@/lib/revalidate";
 import { memberToDTO } from "@/lib/memberSerialize";
 import { Prisma } from "@prisma/client";
@@ -41,6 +41,9 @@ export async function PUT(
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
+  const pinDenied = requireAdminPin(pinFromRequest(request, body));
+  if (pinDenied) return pinDenied;
+
   const name = typeof body.name === "string" ? body.name.trim() : undefined;
   if (name !== undefined && !name) {
     return NextResponse.json({ error: "Name cannot be empty." }, { status: 400 });
@@ -61,20 +64,6 @@ export async function PUT(
       { error: "splitwiseId must be a positive integer." },
       { status: 400 }
     );
-  }
-
-  const hasStatsUpdate =
-    body.eloRating !== undefined ||
-    body.totalMatches !== undefined ||
-    body.totalWins !== undefined;
-
-  if (hasStatsUpdate) {
-    const pinCheck = verifyAdminPin(body.pin);
-    if (!pinCheck.ok) {
-      const status = pinCheck.error === "missing" ? 403 : 401;
-      const message = pinCheck.error === "missing" ? "PIN required." : "Invalid PIN.";
-      return NextResponse.json({ error: message }, { status });
-    }
   }
 
   let eloRating: number | undefined;
@@ -181,7 +170,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: idStr } = await params;
@@ -189,6 +178,17 @@ export async function DELETE(
   if (isNaN(id)) {
     return NextResponse.json({ error: "Invalid member ID." }, { status: 400 });
   }
+
+  let body: { pin?: string } = {};
+  try {
+    const text = await request.text();
+    if (text) body = JSON.parse(text);
+  } catch {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+
+  const pinDenied = requireAdminPin(pinFromRequest(request, body));
+  if (pinDenied) return pinDenied;
 
   const member = await db.member.findUnique({ where: { id }, select: { id: true } });
   if (!member) {

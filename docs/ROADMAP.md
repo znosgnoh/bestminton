@@ -6,15 +6,9 @@ Backlog of potential next features, roughly ordered by value. None are committed
 
 ## Near-term
 
-### US-33: Captain PIN for Management Page
+### US-33: Captain PIN for Management Page — **shipped**
 
-Protect `/management` with a simple PIN stored in an env var. The page shows a PIN entry screen on first visit; the unlocked state is kept in `sessionStorage`. Prevents accidental edits, still zero-friction for the captain.
-
-**Acceptance criteria sketch:**
-
-- PIN is set via `CAPTAIN_PIN` env var (app works without it — no gate shown if unset).
-- Wrong PIN shows an error; correct PIN stores a session token and shows the page.
-- Session token expires when the browser tab closes.
+`CAPTAIN_PIN` (or legacy `ADMIN_PIN`) gates `/management` via `ManagementGate` and protects captain mutating APIs (members, matches, settlement, Splitwise, avatar upload, challenge admin). PIN is sent from the client via JSON `pin` or `X-Captain-Pin` after unlock. Unset env var = no gate (dev convenience). See `CLAUDE.md` §8–9.
 
 ---
 

@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { Loader2, CheckCircle, AlertTriangle, Info } from "lucide-react";
 import { calculateShares } from "@/lib/calculations";
 import { currencyLabel, formatAmount, getCurrencySymbol } from "@/lib/currency";
+import { withAdminPin } from "@/lib/adminPinClient";
 import * as dataService from "@/lib/dataService";
 import type { MatchDTO, RegistrationDTO, CalculatedShare } from "@/lib/types";
 
@@ -95,19 +96,21 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
       const res = await fetch("/api/splitwise/expense", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          matchId: match.id,
-          totalCost,
-          description: match.title,
-          date: match.scheduledAt,
-          details: match.venue ? `Venue: ${match.venue}` : undefined,
-          groupId: 0,
-          paidById: paidByReg.member.splitwiseId,
-          participants: shares.map((s) => {
-            const reg = registrations.find((r) => r.memberId === s.memberId);
-            return { userId: reg!.member.splitwiseId!, owedShare: s.owedShare };
-          }),
-        }),
+        body: JSON.stringify(
+          withAdminPin({
+            matchId: match.id,
+            totalCost,
+            description: match.title,
+            date: match.scheduledAt,
+            details: match.venue ? `Venue: ${match.venue}` : undefined,
+            groupId: 0,
+            paidById: paidByReg.member.splitwiseId,
+            participants: shares.map((s) => {
+              const reg = registrations.find((r) => r.memberId === s.memberId);
+              return { userId: reg!.member.splitwiseId!, owedShare: s.owedShare };
+            }),
+          })
+        ),
       });
       const data = (await res.json()) as { success?: boolean; error?: string };
       if (!res.ok) throw new Error(data.error ?? "Sync failed.");
