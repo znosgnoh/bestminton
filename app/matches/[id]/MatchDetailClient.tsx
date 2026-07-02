@@ -7,6 +7,7 @@ import { MatchDetailSkeleton } from "@/components/ui/Skeleton";
 import MemberRoster from "@/components/matches/MemberRoster";
 import RegistrationRow from "@/components/matches/RegistrationRow";
 import SettleForm from "@/components/matches/SettleForm";
+import { YouTubeUrlEditor } from "@/components/ui/YouTubeVideo";
 import * as dataService from "@/lib/dataService";
 import type { MatchDTO, MemberDTO, RegistrationDTO } from "@/lib/types";
 
@@ -124,6 +125,15 @@ export default function MatchDetailClient({
           </div>
         </div>
       </div>
+
+      <YouTubeUrlEditor
+        url={match.youtubeUrl}
+        editable={isManage}
+        onSave={async (youtubeUrl) => {
+          const updated = await dataService.saveMatchYoutubeUrl(match.id, youtubeUrl);
+          setMatch(updated);
+        }}
+      />
 
       <MemberRoster
         matchId={match.id}

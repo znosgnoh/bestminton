@@ -5,6 +5,7 @@ import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
 import { MATCH_FULL_INCLUDE } from "@/lib/prismaIncludes";
 import { revalidateMatchPages } from "@/lib/revalidate";
 import { toDTO } from "@/lib/serialize";
+import { parseYoutubeUrlField } from "@/lib/youtube";
 
 export const revalidate = 30;
 
@@ -46,6 +47,7 @@ export async function PUT(
     hours?: number | null;
     totalCost?: number | null;
     paidByMemberId?: number | null;
+    youtubeUrl?: string | null;
     pin?: string;
   };
   try {
@@ -84,6 +86,13 @@ export async function PUT(
       data.paidBy = body.paidByMemberId
         ? { connect: { id: body.paidByMemberId } }
         : { disconnect: true };
+    }
+    if (body.youtubeUrl !== undefined) {
+      const parsed = parseYoutubeUrlField(body.youtubeUrl);
+      if (!parsed.ok) {
+        return NextResponse.json({ error: parsed.error }, { status: 400 });
+      }
+      data.youtubeUrl = parsed.url;
     }
 
     const match = await db.match.update({ where: { id }, data, include: MATCH_FULL_INCLUDE });

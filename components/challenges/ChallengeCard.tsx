@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Play } from "lucide-react";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
 import StatusBadge from "@/components/ui/StatusBadge";
 import DrinkChallengeBadge from "@/components/challenges/DrinkChallengeBadge";
@@ -40,6 +41,12 @@ export default function ChallengeCard({ challenge }: ChallengeCardProps) {
         </div>
         <StatusBadge status={challenge.status} />
       </div>
+      {challenge.youtubeUrl && (
+        <p className="mt-2 inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+          <Play size={12} />
+          Có video
+        </p>
+      )}
       {challenge.isDrinkChallenge && challenge.status !== "COMPLETED" && (
         <div className="mt-2">
           <DrinkChallengeBadge />

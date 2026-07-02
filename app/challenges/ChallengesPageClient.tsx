@@ -4,8 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import ChallengeCard from "@/components/challenges/ChallengeCard";
+import ChallengeListSections from "@/components/challenges/ChallengeListSections";
 import ErrorBanner from "@/components/ui/ErrorBanner";
-import PageLoader from "@/components/ui/PageLoader";
 import type { ChallengeDTO } from "@/lib/types";
 
 type FilterStatus = "ALL" | "PENDING" | "ACTIVE" | "COMPLETED";
@@ -77,6 +77,8 @@ export default function ChallengesPageClient({
             Gạ kèo đầu tiên
           </Link>
         </div>
+      ) : filter === "ALL" ? (
+        <ChallengeListSections challenges={filtered} />
       ) : (
         <div className="space-y-3">
           {filtered.map((c) => (
@@ -86,8 +88,4 @@ export default function ChallengesPageClient({
       )}
     </div>
   );
-}
-
-export function ChallengesLoading() {
-  return <PageLoader label="Đang tải kèo…" />;
 }

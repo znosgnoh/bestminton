@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { MapPin, Users, RefreshCw, CheckCircle, Loader2 } from "lucide-react";
+import { MapPin, Users, RefreshCw, CheckCircle, Play } from "lucide-react";
 import type { MatchDTO } from "@/lib/types";
 
 interface MatchCardProps {
@@ -25,30 +23,10 @@ function totalHeadcount(match: MatchDTO): number {
 }
 
 export default function MatchCard({ match }: MatchCardProps) {
-  const pathname = usePathname();
-  const [navigating, setNavigating] = useState(false);
   const headcount = totalHeadcount(match);
-  const href = `/matches/${match.id}`;
-
-  useEffect(() => {
-    setNavigating(false);
-  }, [pathname]);
 
   return (
-    <Link
-      href={href}
-      onClick={() => setNavigating(true)}
-      aria-busy={navigating}
-      className={`tet-card-hover relative block p-4 transition-opacity duration-200 ${
-        navigating ? "pointer-events-none opacity-70" : ""
-      }`}
-    >
-      {navigating && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/50 dark:bg-gray-950/50">
-          <Loader2 size={22} className="animate-spin text-emerald-600 dark:text-amber-400" />
-        </div>
-      )}
-
+    <Link href={`/matches/${match.id}`} className="tet-card-hover block p-4">
       <div className="flex items-start justify-between gap-2">
         <h3 className="flex-1 font-heading text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
           {match.title}
@@ -76,10 +54,17 @@ export default function MatchCard({ match }: MatchCardProps) {
 
       <div className="mt-3 flex items-center justify-between">
         <span className="text-sm text-gray-600 dark:text-gray-400">{formatDate(match.scheduledAt)}</span>
-        <span className="tet-badge-count">
-          <Users size={12} />
-          {headcount} {headcount === 1 ? "player" : "players"}
-        </span>
+        <div className="flex items-center gap-2">
+          {match.youtubeUrl && (
+            <span className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400" title="Có video YouTube">
+              <Play size={12} />
+            </span>
+          )}
+          <span className="tet-badge-count">
+            <Users size={12} />
+            {headcount} {headcount === 1 ? "player" : "players"}
+          </span>
+        </div>
       </div>
     </Link>
   );

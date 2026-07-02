@@ -10,6 +10,7 @@ import {
 } from "@/lib/challengeService";
 import { revalidateChallengePages, revalidateMemberPages } from "@/lib/revalidate";
 import type { AdminDeleteChallengeRequest, AdminEditChallengeRequest, UpdateChallengeRequest } from "@/lib/types";
+import { parseYoutubeUrlField } from "@/lib/youtube";
 
 export const dynamic = "force-dynamic";
 
@@ -78,12 +79,18 @@ export async function PATCH(
   if (
     body.isDrinkChallenge === undefined &&
     body.handicapPoints === undefined &&
-    body.notes === undefined
+    body.notes === undefined &&
+    body.youtubeUrl === undefined
   ) {
     return NextResponse.json({ error: "No fields to update." }, { status: 400 });
   }
 
-  const data: { isDrinkChallenge?: boolean; handicapPoints?: number; notes?: string | null } = {};
+  const data: {
+    isDrinkChallenge?: boolean;
+    handicapPoints?: number;
+    notes?: string | null;
+    youtubeUrl?: string | null;
+  } = {};
 
   if (body.isDrinkChallenge !== undefined) {
     if (typeof body.isDrinkChallenge !== "boolean") {
@@ -111,6 +118,20 @@ export async function PATCH(
     data.notes = notesResult;
   }
 
+  if (body.youtubeUrl !== undefined) {
+    const parsed = parseYoutubeUrlField(body.youtubeUrl);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    data.youtubeUrl = parsed.url;
+  }
+
+  const youtubeOnly =
+    data.youtubeUrl !== undefined &&
+    data.isDrinkChallenge === undefined &&
+    data.handicapPoints === undefined &&
+    data.notes === undefined;
+
   try {
     const existing = await db.challenge.findUnique({
       where: { id: challengeId },
@@ -121,7 +142,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Không tìm thấy kèo." }, { status: 404 });
     }
 
-    if (existing.status !== "PENDING") {
+    if (existing.status !== "PENDING" && !youtubeOnly) {
       return NextResponse.json(
         { error: "Chỉ có thể đổi cài đặt kèo trước khi trận bắt đầu." },
         { status: 409 }

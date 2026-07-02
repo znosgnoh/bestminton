@@ -157,7 +157,7 @@ export function createMatches(data: {
 
 export function updateMatchInfo(
   id: number,
-  data: { title?: string; venue?: string; scheduledAt?: string }
+  data: { title?: string; venue?: string; scheduledAt?: string; youtubeUrl?: string | null }
 ): Promise<MatchDTO> {
   return via(
     () =>
@@ -167,6 +167,18 @@ export function updateMatchInfo(
         body: JSON.stringify(withAdminPin(data)),
       }),
     () => localDb.updateMatch(id, data)
+  );
+}
+
+export function saveMatchYoutubeUrl(id: number, youtubeUrl: string | null): Promise<MatchDTO> {
+  return via(
+    () =>
+      apiFetch<MatchDTO>(`/api/matches/${id}`, {
+        method: "PUT",
+        headers: JSON_HEADERS,
+        body: JSON.stringify(withAdminPin({ youtubeUrl })),
+      }),
+    () => localDb.updateMatch(id, { youtubeUrl })
   );
 }
 

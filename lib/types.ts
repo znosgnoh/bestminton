@@ -135,6 +135,7 @@ export interface ChallengeDTO {
   winnerId: number | null;
   createdAt: string;
   completedAt: string | null;
+  youtubeUrl: string | null;
   sideA: ChallengeSideDTO;
   sideB: ChallengeSideDTO;
   bets: BetDTO[];
@@ -156,6 +157,7 @@ export interface UpdateChallengeRequest {
   isDrinkChallenge?: boolean;
   handicapPoints?: number;
   notes?: string | null;
+  youtubeUrl?: string | null;
 }
 
 export interface UpsertBetRequest {
@@ -243,6 +245,7 @@ export interface MatchDTO {
   isRecurring: boolean;
   recurDayOfWeek: number | null;
   synced: boolean;
+  youtubeUrl: string | null;
   registrations: RegistrationDTO[];
 }
 

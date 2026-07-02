@@ -49,6 +49,7 @@ interface RawMatch {
   isRecurring: boolean;
   recurDayOfWeek: number | null;
   synced: boolean;
+  youtubeUrl?: string | null;
   createdAt: string;
 }
 
@@ -104,6 +105,7 @@ async function buildMatchDTO(match: RawMatch): Promise<MatchDTO> {
     isRecurring: match.isRecurring,
     recurDayOfWeek: match.recurDayOfWeek,
     synced: match.synced,
+    youtubeUrl: match.youtubeUrl ?? null,
     registrations: regDTOs,
   };
 }
@@ -227,6 +229,7 @@ export async function updateMatch(
     hours?: number | null;
     totalCost?: number | null;
     paidByMemberId?: number | null;
+    youtubeUrl?: string | null;
   }
 ): Promise<MatchDTO> {
   const existing = await idbGetById<RawMatch>("matches", id);

@@ -12,6 +12,7 @@ import ChallengeAdminControls from "@/components/challenges/ChallengeAdminContro
 import DrinkChallengeToggle from "@/components/challenges/DrinkChallengeToggle";
 import ChallengeResultSummary from "@/components/challenges/ChallengeResultSummary";
 import ErrorBanner from "@/components/ui/ErrorBanner";
+import { YouTubeUrlEditor } from "@/components/ui/YouTubeVideo";
 import * as dataService from "@/lib/dataService";
 import type { ChallengeDTO, ChallengeSide, MemberDTO } from "@/lib/types";
 
@@ -178,6 +179,15 @@ export default function ChallengeDetailClient({
       </Link>
 
       <ChallengeMatchInfo challenge={challenge} />
+
+      <YouTubeUrlEditor
+        url={challenge.youtubeUrl}
+        editable
+        onSave={async (youtubeUrl) => {
+          const updated = await dataService.updateChallenge(challenge.id, { youtubeUrl });
+          handleChallengeUpdated(updated);
+        }}
+      />
 
       <HandicapEditor challenge={challenge} onUpdated={handleChallengeUpdated} />
 

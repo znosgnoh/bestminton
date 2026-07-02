@@ -42,6 +42,7 @@ model Match {
   isRecurring    Boolean  @default(false)
   recurDayOfWeek Int?
   synced         Boolean  @default(false)
+  youtubeUrl     String?
   createdAt      DateTime @default(now())
 
   paidBy        Member?             @relation("MatchPayer", fields: [paidByMemberId], references: [id])
@@ -103,6 +104,7 @@ model Challenge {
   winnerSide               ChallengeSide?
   winnerId                 Int?
   resolutionSnapshot       Json?
+  youtubeUrl               String?
   createdAt          DateTime        @default(now())
   completedAt        DateTime?
 

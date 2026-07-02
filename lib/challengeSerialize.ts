@@ -106,6 +106,7 @@ export function serializeChallenge(
     winnerId: challenge.winnerId,
     createdAt: challenge.createdAt.toISOString(),
     completedAt: challenge.completedAt?.toISOString() ?? null,
+    youtubeUrl: challenge.youtubeUrl ?? null,
     sideA: buildSide(sideAPlayers, bets, "A", winProbabilities.sideA),
     sideB: buildSide(sideBPlayers, bets, "B", winProbabilities.sideB),
     bets,
