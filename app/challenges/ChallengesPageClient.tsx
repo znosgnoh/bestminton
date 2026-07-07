@@ -5,17 +5,12 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import ChallengeCard from "@/components/challenges/ChallengeCard";
 import ChallengeListSections from "@/components/challenges/ChallengeListSections";
+import EloGuidelineLink from "@/components/leaderboard/EloGuidelineLink";
 import ErrorBanner from "@/components/ui/ErrorBanner";
+import { useI18n } from "@/contexts/LocaleContext";
 import type { ChallengeDTO } from "@/lib/types";
 
 type FilterStatus = "ALL" | "PENDING" | "ACTIVE" | "COMPLETED";
-
-const FILTER_LABELS: Record<FilterStatus, string> = {
-  ALL: "Tất cả",
-  PENDING: "Chờ gạ",
-  ACTIVE: "Đang đấu",
-  COMPLETED: "Đã xong",
-};
 
 interface ChallengesPageClientProps {
   initialChallenges: ChallengeDTO[];
@@ -28,19 +23,22 @@ export default function ChallengesPageClient({
   dbAvailable,
   dbError,
 }: ChallengesPageClientProps) {
+  const { t } = useI18n();
   const [challenges] = useState(initialChallenges);
   const [filter, setFilter] = useState<FilterStatus>("ALL");
+
+  const filterLabels: Record<FilterStatus, string> = {
+    ALL: t("challenges.filterAll"),
+    PENDING: t("status.pending"),
+    ACTIVE: t("status.active"),
+    COMPLETED: t("status.completed"),
+  };
 
   if (!dbAvailable) {
     return (
       <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
-        <h1 className="tet-page-title">Kèo</h1>
-        <ErrorBanner
-          message={
-            dbError ??
-            "Kèo cần kết nối cơ sở dữ liệu trực tiếp."
-          }
-        />
+        <h1 className="tet-page-title">{t("challenges.title")}</h1>
+        <ErrorBanner message={dbError ?? t("challenges.dbRequired")} />
       </div>
     );
   }
@@ -51,10 +49,13 @@ export default function ChallengesPageClient({
   return (
     <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="tet-page-title">Kèo</h1>
-        <Link href="/challenges/new" className="tet-btn-primary flex items-center gap-1.5 px-4 py-2 text-sm">
+        <div>
+          <h1 className="tet-page-title">{t("challenges.title")}</h1>
+          <EloGuidelineLink className="mt-1" />
+        </div>
+        <Link href="/challenges/new" className="tet-btn-primary flex items-center gap-1.5 px-4 py-2 text-sm shrink-0">
           <Plus size={16} />
-          Gạ kèo
+          {t("challenges.newKeo")}
         </Link>
       </div>
 
@@ -65,16 +66,16 @@ export default function ChallengesPageClient({
             onClick={() => setFilter(s)}
             className={filter === s ? "tet-tab-active tet-tab shrink-0" : "tet-tab-inactive tet-tab shrink-0"}
           >
-            {FILTER_LABELS[s]}
+            {filterLabels[s]}
           </button>
         ))}
       </div>
 
       {filtered.length === 0 ? (
         <div className="tet-empty">
-          <p>Chưa có kèo.</p>
+          <p>{t("challenges.noKeo")}</p>
           <Link href="/challenges/new" className="tet-link-accent mt-2 inline-block">
-            Gạ kèo đầu tiên
+            {t("challenges.firstKeo")}
           </Link>
         </div>
       ) : filter === "ALL" ? (

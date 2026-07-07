@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Trophy } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Loader2 } from "lucide-react";
+import { useI18n } from "@/contexts/LocaleContext";
 import type { ChallengeDTO, ChallengeSide } from "@/lib/types";
 
 interface ResolveConfirmModalProps {
@@ -21,9 +23,15 @@ export default function ResolveConfirmModal({
   onSubmit,
   onCancel,
 }: ResolveConfirmModalProps) {
+  const { t } = useI18n();
   const [handicap, setHandicap] = useState(String(challenge.handicapPoints));
   const [score, setScore] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (open) {
@@ -33,7 +41,7 @@ export default function ResolveConfirmModal({
     }
   }, [open, challenge.handicapPoints]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   function parseHandicapValue(raw: string): number | null {
     const trimmed = raw.trim();
@@ -55,16 +63,16 @@ export default function ResolveConfirmModal({
     e.preventDefault();
     const parsedHandicap = parseHandicapValue(handicap);
     if (parsedHandicap === null || parsedHandicap < 0 || parsedHandicap > 21) {
-      setError("Chấp điểm phải từ 0 đến 21.");
+      setError(t("challenges.handicapRange"));
       return;
     }
     const trimmedScore = score.trim();
     if (!trimmedScore) {
-      setError("Vui lòng nhập tỷ số.");
+      setError(t("challenges.scoreRequired"));
       return;
     }
     if (trimmedScore.length > 80) {
-      setError("Tỷ số quá dài (tối đa 80 ký tự).");
+      setError(t("challenges.scoreTooLong"));
       return;
     }
     onSubmit(parsedHandicap, trimmedScore);
@@ -72,7 +80,7 @@ export default function ResolveConfirmModal({
 
   const recipientSide = challenge.handicapRecipientSide;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={loading ? undefined : onCancel}
@@ -81,17 +89,12 @@ export default function ResolveConfirmModal({
         className="tet-card w-full max-w-sm p-6 shadow-xl ring-amber-200/60 dark:ring-amber-900/40"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="tet-section-title">Xác nhận chấp điểm và tỷ số</h3>
+        <h3 className="tet-section-title">{t("challenges.resolveTitle")}</h3>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          Xác nhận chấp điểm và tỷ số trước khi chốt kèo — Side{" "}
-          <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-400">
-            <Trophy size={14} />
-            {winnerSide}
-          </span>{" "}
-          thắng.
+          {t("challenges.resolveBody", { side: winnerSide })}
           {challenge.format === "DOUBLES" && (
             <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
-              Kèo đôi không cập nhật Elo.
+              {t("challenges.resolveDoublesNote")}
             </span>
           )}
         </p>
@@ -99,7 +102,7 @@ export default function ResolveConfirmModal({
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
             <label htmlFor="resolve-handicap" className="tet-label">
-              Chấp điểm
+              {t("challenges.handicapLabel")}
             </label>
             <input
               id="resolve-handicap"
@@ -113,14 +116,14 @@ export default function ResolveConfirmModal({
               className="tet-input mt-1 w-full"
             />
             <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
-              Side {recipientSide} được chấp
-              {challenge.format === "DOUBLES" && " (Elo trung bình thấp hơn)"}
+              {t("challenges.handicapRecipient", { side: recipientSide })}
+              {challenge.format === "DOUBLES" && t("challenges.handicapDoublesNote")}
             </span>
           </div>
 
           <div>
             <label htmlFor="resolve-score" className="tet-label">
-              Tỷ số
+              {t("challenges.scoreLabel")}
             </label>
             <input
               id="resolve-score"
@@ -129,7 +132,7 @@ export default function ResolveConfirmModal({
               disabled={loading}
               onChange={(e) => setScore(e.target.value)}
               className="tet-input mt-1 w-full"
-              placeholder="VD: 21-15, 21-18 hoặc 2-1"
+              placeholder={t("challenges.scorePlaceholder")}
               autoFocus
             />
           </div>
@@ -143,18 +146,19 @@ export default function ResolveConfirmModal({
               className="tet-btn-ghost flex-1"
               disabled={loading}
             >
-              Hủy
+              {t("challenges.resolveCancel")}
             </button>
             <button type="submit" className="tet-btn-primary flex-1" disabled={loading}>
               {loading ? (
                 <Loader2 size={18} className="mx-auto animate-spin" />
               ) : (
-                "Chốt kèo"
+                t("challenges.resolveSubmit")
               )}
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

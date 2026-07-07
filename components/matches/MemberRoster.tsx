@@ -12,6 +12,7 @@ interface MemberRosterProps {
   registrations: RegistrationDTO[];
   setRegistrations: (updater: (prev: RegistrationDTO[]) => RegistrationDTO[]) => void;
   isPast: boolean;
+  canEditRegistration: boolean;
 }
 
 function buildOptimisticRegistration(
@@ -35,12 +36,13 @@ export default function MemberRoster({
   registrations,
   setRegistrations,
   isPast,
+  canEditRegistration,
 }: MemberRosterProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Set<number>>(new Set());
 
   async function handleToggle(member: MemberDTO) {
-    if (isPast || pending.has(member.id)) return;
+    if (!canEditRegistration || pending.has(member.id)) return;
     setError(null);
 
     const isRegistered = registrations.some((r) => r.memberId === member.id);
@@ -92,7 +94,7 @@ export default function MemberRoster({
   return (
     <div className="tet-card p-4">
       <h2 className="tet-section-title text-sm mb-3">
-        {isPast ? "Players" : "Tap to register"}
+        {canEditRegistration ? (isPast ? "Tap to update roster" : "Tap to register") : "Players"}
       </h2>
       {error && (
         <div className="mb-3">
@@ -108,7 +110,7 @@ export default function MemberRoster({
               member={member}
               registered={!!reg}
               playedFull={reg?.playedFull}
-              disabled={isPast || pending.has(member.id)}
+              disabled={!canEditRegistration || pending.has(member.id)}
               pending={pending.has(member.id)}
               onToggle={() => handleToggle(member)}
             />

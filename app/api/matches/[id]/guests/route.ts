@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { revalidateMatchPages } from "@/lib/revalidate";
+import { requirePastMatchAdminPin } from "@/lib/apiHelpers";
 
 const REG_INCLUDE = { member: true, guests: true };
 
@@ -14,7 +15,7 @@ export async function POST(
     return NextResponse.json({ error: "Invalid match ID." }, { status: 400 });
   }
 
-  let body: { memberId?: number; label?: string; playedFull?: boolean };
+  let body: { memberId?: number; label?: string; playedFull?: boolean; pin?: string };
   try {
     body = await request.json();
   } catch {
@@ -25,6 +26,14 @@ export async function POST(
   if (!memberId || isNaN(memberId)) {
     return NextResponse.json({ error: "memberId is required." }, { status: 400 });
   }
+
+  const match = await db.match.findUnique({ where: { id: matchId } });
+  if (!match) {
+    return NextResponse.json({ error: "Match not found." }, { status: 404 });
+  }
+
+  const pinDenied = requirePastMatchAdminPin(request, match.scheduledAt, body);
+  if (pinDenied) return pinDenied;
 
   const registration = await db.matchRegistration.findUnique({
     where: { matchId_memberId: { matchId, memberId } },

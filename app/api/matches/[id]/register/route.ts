@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { revalidateMatchPages } from "@/lib/revalidate";
+import { requirePastMatchAdminPin } from "@/lib/apiHelpers";
 import { Prisma } from "@prisma/client";
 
 const REG_INCLUDE = { member: true, guests: true };
+
+async function getMatchOr404(matchId: number) {
+  const match = await db.match.findUnique({ where: { id: matchId } });
+  if (!match) {
+    return { error: NextResponse.json({ error: "Match not found." }, { status: 404 }) };
+  }
+  return { match };
+}
 
 export async function POST(
   request: NextRequest,
@@ -15,7 +24,7 @@ export async function POST(
     return NextResponse.json({ error: "Invalid match ID." }, { status: 400 });
   }
 
-  let body: { memberId?: number };
+  let body: { memberId?: number; pin?: string };
   try {
     body = await request.json();
   } catch {
@@ -27,16 +36,12 @@ export async function POST(
     return NextResponse.json({ error: "memberId is required." }, { status: 400 });
   }
 
-  const match = await db.match.findUnique({ where: { id: matchId } });
-  if (!match) {
-    return NextResponse.json({ error: "Match not found." }, { status: 404 });
-  }
-  if (new Date(match.scheduledAt) < new Date()) {
-    return NextResponse.json(
-      { error: "Registration is closed for past matches." },
-      { status: 400 }
-    );
-  }
+  const matchResult = await getMatchOr404(matchId);
+  if ("error" in matchResult) return matchResult.error;
+  const { match } = matchResult;
+
+  const pinDenied = requirePastMatchAdminPin(request, match.scheduledAt, body);
+  if (pinDenied) return pinDenied;
 
   try {
     const registration = await db.matchRegistration.upsert({
@@ -65,7 +70,7 @@ export async function PUT(
     return NextResponse.json({ error: "Invalid match ID." }, { status: 400 });
   }
 
-  let body: { memberId?: number; playedFull?: boolean };
+  let body: { memberId?: number; playedFull?: boolean; pin?: string };
   try {
     body = await request.json();
   } catch {
@@ -79,6 +84,13 @@ export async function PUT(
   if (typeof body.playedFull !== "boolean") {
     return NextResponse.json({ error: "playedFull (boolean) is required." }, { status: 400 });
   }
+
+  const matchResult = await getMatchOr404(matchId);
+  if ("error" in matchResult) return matchResult.error;
+  const { match } = matchResult;
+
+  const pinDenied = requirePastMatchAdminPin(request, match.scheduledAt, body);
+  if (pinDenied) return pinDenied;
 
   try {
     const updated = await db.matchRegistration.update({
@@ -106,7 +118,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Invalid match ID." }, { status: 400 });
   }
 
-  let body: { memberId?: number };
+  let body: { memberId?: number; pin?: string };
   try {
     body = await request.json();
   } catch {
@@ -117,6 +129,13 @@ export async function DELETE(
   if (!memberId || isNaN(memberId)) {
     return NextResponse.json({ error: "memberId is required." }, { status: 400 });
   }
+
+  const matchResult = await getMatchOr404(matchId);
+  if ("error" in matchResult) return matchResult.error;
+  const { match } = matchResult;
+
+  const pinDenied = requirePastMatchAdminPin(request, match.scheduledAt, body);
+  if (pinDenied) return pinDenied;
 
   try {
     await db.matchRegistration.delete({

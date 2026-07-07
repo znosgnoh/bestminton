@@ -1,6 +1,6 @@
 import { addDebt } from "./drinkDebt";
 import { db } from "./db";
-import { expectedScore, newRating, sideAverageElo } from "./elo";
+import { computeSinglesEloChanges } from "./elo";
 import { CHALLENGE_FULL_INCLUDE } from "./challengeIncludes";
 import { serializeChallenge } from "./challengeSerialize";
 import type { ChallengeDebtRecord, ChallengeResolutionDTO, ChallengeSide } from "./types";
@@ -16,26 +16,33 @@ interface Competitor {
 
 function computeEloChanges(
   competitors: Competitor[],
-  winnerSide: ChallengeSide
+  winnerSide: ChallengeSide,
+  confirmedHandicapPoints: number,
+  confirmedScore: string
 ): ChallengeResolutionDTO["eloChanges"] {
-  const sideA = competitors.filter((c) => c.side === "A");
-  const sideB = competitors.filter((c) => c.side === "B");
-  const sideAAvg = sideAverageElo(sideA.map((c) => c.eloRating));
-  const sideBAvg = sideAverageElo(sideB.map((c) => c.eloRating));
+  const playerA = competitors.find((c) => c.side === "A");
+  const playerB = competitors.find((c) => c.side === "B");
+  if (!playerA || !playerB) return [];
 
-  return competitors.map((c) => {
-    const opponentAvg = c.side === "A" ? sideBAvg : sideAAvg;
-    const expected = expectedScore(c.eloRating, opponentAvg);
-    const actual: 0 | 1 = c.side === winnerSide ? 1 : 0;
-    const after = newRating(c.eloRating, actual, expected, c.totalMatches);
-    return {
-      memberId: c.id,
-      name: c.name,
-      before: c.eloRating,
-      after,
-      delta: after - c.eloRating,
-    };
-  });
+  return computeSinglesEloChanges(
+    {
+      id: playerA.id,
+      name: playerA.name,
+      eloRating: playerA.eloRating,
+      totalMatches: playerA.totalMatches,
+      side: "A",
+    },
+    {
+      id: playerB.id,
+      name: playerB.name,
+      eloRating: playerB.eloRating,
+      totalMatches: playerB.totalMatches,
+      side: "B",
+    },
+    winnerSide,
+    confirmedHandicapPoints,
+    confirmedScore
+  );
 }
 
 function resolveWinnerId(
@@ -264,7 +271,12 @@ export async function resolveChallenge(
     const isDoubles = challenge.format === "DOUBLES";
     const eloChanges = isDoubles
       ? []
-      : computeEloChanges(competitors, winnerSide);
+      : computeEloChanges(
+          competitors,
+          winnerSide,
+          confirmedHandicapPoints,
+          confirmedScore
+        );
     const matchDebts =
       challenge.isDrinkChallenge && challenge.bets.length === 0
         ? isDoubles
@@ -296,7 +308,7 @@ export async function resolveChallenge(
       challenge.playerBId
     );
 
-    // confirmedHandicapPoints + confirmedScore are retained for future Elo / win-rate / handicap calibration.
+    // confirmedHandicapPoints + confirmedScore feed handicap-adjusted Elo and margin scaling.
     const updated = await tx.challenge.update({
       where: { id: challengeId },
       data: {
@@ -408,7 +420,12 @@ export async function adminEditChallengeWinner(
       if (!refreshed) throw new Error("NOT_FOUND");
 
       const competitors = buildCompetitors(refreshed);
-      const eloChanges = computeEloChanges(competitors, winnerSide);
+      const eloChanges = computeEloChanges(
+        competitors,
+        winnerSide,
+        refreshed.confirmedHandicapPoints ?? refreshed.handicapPoints,
+        refreshed.confirmedScore ?? ""
+      );
 
       for (const change of eloChanges) {
         const competitor = competitors.find((c) => c.id === change.memberId)!;

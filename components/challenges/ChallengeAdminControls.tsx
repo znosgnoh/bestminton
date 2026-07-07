@@ -2,11 +2,11 @@
 
 import { useRef, useState } from "react";
 import { Loader2, Play, Trophy } from "lucide-react";
+import { useI18n } from "@/contexts/LocaleContext";
 import AdminPinModal from "@/components/ui/AdminPinModal";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import ResolveConfirmModal from "@/components/challenges/ResolveConfirmModal";
 import { useAdminPin } from "@/hooks/useAdminPin";
-import { DRINK_LABEL } from "@/lib/constants";
 import * as dataService from "@/lib/dataService";
 import type { ChallengeDTO, ChallengeSide } from "@/lib/types";
 
@@ -28,6 +28,7 @@ export default function ChallengeAdminControls({
   challenge,
   onUpdated,
 }: ChallengeAdminControlsProps) {
+  const { t } = useI18n();
   const { unlocked, pinRequired, unlock, getStoredPin } = useAdminPin();
   const pendingActionRef = useRef<PendingAction>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
@@ -54,7 +55,7 @@ export default function ChallengeAdminControls({
       let updated: ChallengeDTO;
       if (action === "start") {
         updated = await dataService.startChallenge(challenge.id, pin);
-        setSuccess("Kèo đã bắt đầu — cược đã khóa.");
+        setSuccess(t("challenges.keoStarted"));
       } else {
         updated = await dataService.resolveChallenge(
           challenge.id,
@@ -66,11 +67,11 @@ export default function ChallengeAdminControls({
         setSuccess(
           challenge.format === "DOUBLES"
             ? challenge.isDrinkChallenge || challenge.bets.length > 0
-              ? `Side ${action.resolve} thắng! Đã ghi nợ nước cam.`
-              : `Side ${action.resolve} thắng!`
+              ? t("challenges.keoWonDoublesDrink", { side: action.resolve })
+              : t("challenges.keoWonDoubles", { side: action.resolve })
             : challenge.isDrinkChallenge || challenge.bets.length > 0
-              ? `Side ${action.resolve} wins! Ratings and ${DRINK_LABEL.toLowerCase()} updated.`
-              : `Side ${action.resolve} wins! Ratings updated.`
+              ? t("challenges.keoWonDrink", { side: action.resolve })
+              : t("challenges.keoWonElo", { side: action.resolve })
         );
       }
       onUpdated(updated);
@@ -130,7 +131,7 @@ export default function ChallengeAdminControls({
 
   return (
     <div className="tet-card p-4 space-y-3">
-      <h2 className="tet-section-title text-sm">Admin Controls</h2>
+      <h2 className="tet-section-title text-sm">{t("challenges.adminControls")}</h2>
 
       {challenge.status === "PENDING" && (
         <button
@@ -143,7 +144,7 @@ export default function ChallengeAdminControls({
           ) : (
             <>
               <Play size={18} />
-              Bắt đầu kèo
+              {t("challenges.startKeo")}
             </>
           )}
         </button>
@@ -151,7 +152,7 @@ export default function ChallengeAdminControls({
 
       {challenge.status === "ACTIVE" && (
         <div className="space-y-2">
-          <p className="text-xs text-gray-600 dark:text-gray-400">Select the winning side:</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400">{t("challenges.selectWinner")}</p>
           <div className="grid grid-cols-2 gap-2">
             {(["A", "B"] as ChallengeSide[]).map((side) => (
               <button
@@ -168,7 +169,7 @@ export default function ChallengeAdminControls({
                 ) : (
                   <>
                     <Trophy size={16} />
-                    Side {side} Wins
+                    {t("challenges.sideWins", { side })}
                   </>
                 )}
               </button>
@@ -193,7 +194,7 @@ export default function ChallengeAdminControls({
 
       <AdminPinModal
         open={showPinModal}
-        title={pendingAction === "start" ? "PIN để bắt đầu kèo" : "PIN để chốt kèo"}
+        title={pendingAction === "start" ? t("challenges.startPin") : t("challenges.resolvePin")}
         onSubmit={handlePinSubmit}
         onCancel={() => {
           setShowPinModal(false);

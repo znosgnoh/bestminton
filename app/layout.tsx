@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import Link from "next/link";
+import { cookies } from "next/headers";
 import { Be_Vietnam_Pro, Noto_Sans } from "next/font/google";
-import BadmintonRacketIcon from "@/components/ui/BadmintonRacketIcon";
-import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
-import DarkModeToggle from "@/components/ui/DarkModeToggle";
+import AppHeader from "@/components/layout/AppHeader";
 import PullToRefresh from "@/components/PullToRefresh";
 import PwaRegister from "@/components/PwaRegister";
+import { LocaleProvider } from "@/contexts/LocaleContext";
+import { isLocale, LOCALE_STORAGE_KEY } from "@/lib/i18n";
+import { SITE_SHORT, SITE_TITLE } from "./layout.constants";
 import "./globals.css";
 
 const beVietnamPro = Be_Vietnam_Pro({
@@ -22,8 +23,7 @@ const notoSans = Noto_Sans({
   display: "swap",
 });
 
-export const SITE_TITLE = "Bestminton — Split the Court Fee";
-export const SITE_SHORT = "Bestminton";
+export { SITE_SHORT, SITE_TITLE };
 
 export const metadata: Metadata = {
   title: SITE_TITLE,
@@ -46,58 +46,37 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const storedLocale = cookieStore.get(LOCALE_STORAGE_KEY)?.value;
+  const initialLocale = storedLocale && isLocale(storedLocale) ? storedLocale : "en";
+
   return (
-    <html lang="en" className={`h-full antialiased ${beVietnamPro.variable} ${notoSans.variable}`} suppressHydrationWarning>
+    <html lang={initialLocale === "zh" ? "zh-CN" : initialLocale} className={`h-full antialiased ${beVietnamPro.variable} ${notoSans.variable}`} suppressHydrationWarning>
       <head>
-        {/* Prevent flash of wrong theme on load */}
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(t===null&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})()`,
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var l=localStorage.getItem('${LOCALE_STORAGE_KEY}');if(l==='vi')document.documentElement.lang='vi';else if(l==='zh')document.documentElement.lang='zh-CN';else if(l==='en')document.documentElement.lang='en';}catch(e){}})()`,
+          }}
+        />
       </head>
       <body className="min-h-full flex min-w-0 flex-col overflow-x-clip">
-        <header className="tet-header">
-          <div className="mx-auto max-w-lg px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <Link href="/" className="tet-brand min-w-0">
-                <BadmintonRacketIcon size={22} className="shrink-0 text-emerald-600 dark:text-amber-400" />
-                <span className="font-heading truncate text-lg font-bold leading-tight tracking-tight">{SITE_SHORT}</span>
-              </Link>
-              <DarkModeToggle />
-            </div>
-            <nav
-              className="tet-nav-scroll mt-2.5 flex items-center gap-3 overflow-x-auto pb-0.5 text-xs font-medium sm:gap-4 sm:text-sm"
-              aria-label="Main navigation"
-            >
-              <Link href="/" className="shrink-0 text-gray-600 hover:text-emerald-700 dark:text-gray-400 dark:hover:text-amber-400">
-                Matches
-              </Link>
-              <Link href="/challenges" className="shrink-0 text-gray-600 hover:text-emerald-700 dark:text-gray-400 dark:hover:text-amber-400">
-                Kèo
-              </Link>
-              <Link href="/leaderboard" className="shrink-0 text-gray-600 hover:text-emerald-700 dark:text-gray-400 dark:hover:text-amber-400">
-                Leaderboard
-              </Link>
-              <Link
-                href="/cam"
-                className="inline-flex shrink-0 items-center gap-1 text-gray-600 hover:text-emerald-700 dark:text-gray-400 dark:hover:text-amber-400"
-              >
-                <OrangeJuiceIcon size={14} className="text-orange-500 dark:text-orange-400" />
-                <span>Nước cam</span>
-              </Link>
-            </nav>
-          </div>
-        </header>
-        <main className="flex-1 min-w-0">
-          <PullToRefresh>{children}</PullToRefresh>
-        </main>
-        <PwaRegister />
+        <LocaleProvider initialLocale={initialLocale}>
+          <AppHeader />
+          <main className="flex-1 min-w-0">
+            <PullToRefresh>{children}</PullToRefresh>
+          </main>
+          <PwaRegister />
+        </LocaleProvider>
       </body>
     </html>
   );

@@ -9,14 +9,14 @@ import type { RegistrationDTO } from "@/lib/types";
 interface RegistrationRowProps {
   registration: RegistrationDTO;
   matchId: number;
-  isPast: boolean;
+  canEditRegistration: boolean;
   onUpdated: (updated: RegistrationDTO) => void;
 }
 
 export default function RegistrationRow({
   registration,
   matchId,
-  isPast,
+  canEditRegistration,
   onUpdated,
 }: RegistrationRowProps) {
   const [addingGuest, setAddingGuest] = useState(false);
@@ -65,6 +65,7 @@ export default function RegistrationRow({
   }
 
   async function handleToggleGuestPlaytime(guestId: number, playedFull: boolean) {
+    if (!canEditRegistration) return;
     setTogglingGuest((prev) => new Set(prev).add(guestId));
     try {
       const updated = await dataService.updateGuest(matchId, guestId, { playedFull });
@@ -81,7 +82,7 @@ export default function RegistrationRow({
   }
 
   async function handleTogglePlaytime() {
-    if (togglingPlaytime) return;
+    if (!canEditRegistration || togglingPlaytime) return;
     setTogglingPlaytime(true);
     setPlaytimeError(null);
     try {
@@ -111,8 +112,10 @@ export default function RegistrationRow({
           <button
             type="button"
             onClick={handleTogglePlaytime}
-            disabled={togglingPlaytime}
-                className={`cursor-pointer flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-colors duration-200 disabled:cursor-wait disabled:opacity-60 select-none ${
+            disabled={!canEditRegistration || togglingPlaytime}
+                className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60 select-none ${
+              canEditRegistration ? "cursor-pointer" : "cursor-default"
+            } ${
               isFullTime
                 ? "tet-pill-full hover:bg-emerald-100 dark:hover:bg-emerald-900"
                 : "tet-pill-half hover:bg-amber-100 dark:hover:bg-amber-900"
@@ -144,7 +147,7 @@ export default function RegistrationRow({
                 <button
                   type="button"
                   onClick={() => handleToggleGuestPlaytime(guest.id, !guestFull)}
-                  disabled={isTogglingThis}
+                  disabled={!canEditRegistration || isTogglingThis}
                   className={`cursor-pointer ml-0.5 rounded-full px-1 py-px text-[9px] font-semibold leading-none transition-colors disabled:cursor-wait disabled:opacity-50 ${
                     guestFull
                       ? "bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200"
@@ -156,7 +159,7 @@ export default function RegistrationRow({
                 </button>
 
                 {/* Remove button (upcoming only) */}
-                {!isPast && (
+                {canEditRegistration && (
                   <button
                     type="button"
                     onClick={() => handleRemoveGuest(guest.id)}
@@ -174,7 +177,7 @@ export default function RegistrationRow({
             );
           })}
 
-          {!isPast && !addingGuest && (
+          {canEditRegistration && !addingGuest && (
             <button
               type="button"
               onClick={() => setAddingGuest(true)}
@@ -185,7 +188,7 @@ export default function RegistrationRow({
             </button>
           )}
 
-          {!isPast && addingGuest && (
+          {canEditRegistration && addingGuest && (
             <div className="mt-1 w-full rounded-xl border border-amber-200/60 dark:border-gray-700 bg-amber-50/50 dark:bg-gray-800/60 p-2.5 flex flex-col gap-2">
               <input
                 autoFocus

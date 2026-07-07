@@ -1,6 +1,6 @@
 // Client-side only. Routes data operations to the real API or local IndexedDB.
 import { allowsIndexedDbFallback } from "./dbConfig";
-import { withAdminPin } from "./adminPinClient";
+import { withAdminPin, adminPinHeaders } from "./adminPinClient";
 import * as localDb from "./localDb";
 import type {
   MemberDTO,
@@ -60,6 +60,10 @@ async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
+
+function jsonHeaders(): Record<string, string> {
+  return { ...JSON_HEADERS, ...adminPinHeaders() };
+}
 
 // ---- Members ----
 
@@ -217,8 +221,8 @@ export function registerMember(matchId: number, memberId: number): Promise<Regis
     () =>
       apiFetch<RegistrationDTO>(`/api/matches/${matchId}/register`, {
         method: "POST",
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ memberId }),
+        headers: jsonHeaders(),
+        body: JSON.stringify(withAdminPin({ memberId })),
       }),
     () => localDb.registerMember(matchId, memberId)
   );
@@ -229,8 +233,8 @@ export async function unregisterMember(matchId: number, memberId: number): Promi
     async () => {
       await apiFetch<unknown>(`/api/matches/${matchId}/register`, {
         method: "DELETE",
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ memberId }),
+        headers: jsonHeaders(),
+        body: JSON.stringify(withAdminPin({ memberId })),
       });
     },
     () => localDb.unregisterMember(matchId, memberId)
@@ -246,8 +250,8 @@ export function updateRegistration(
     () =>
       apiFetch<RegistrationDTO>(`/api/matches/${matchId}/register`, {
         method: "PUT",
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ memberId, ...data }),
+        headers: jsonHeaders(),
+        body: JSON.stringify(withAdminPin({ memberId, ...data })),
       }),
     () => localDb.updateRegistration(matchId, memberId, data)
   );
@@ -264,8 +268,8 @@ export function addGuest(
     () =>
       apiFetch<RegistrationDTO>(`/api/matches/${matchId}/guests`, {
         method: "POST",
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ memberId, ...data }),
+        headers: jsonHeaders(),
+        body: JSON.stringify(withAdminPin({ memberId, ...data })),
       }),
     () => localDb.addGuest(matchId, memberId, data)
   );
@@ -280,8 +284,8 @@ export function updateGuest(
     () =>
       apiFetch<RegistrationDTO>(`/api/matches/${matchId}/guests/${guestId}`, {
         method: "PUT",
-        headers: JSON_HEADERS,
-        body: JSON.stringify(data),
+        headers: jsonHeaders(),
+        body: JSON.stringify(withAdminPin(data)),
       }),
     () => localDb.updateGuest(guestId, data)
   );
@@ -292,6 +296,8 @@ export function removeGuest(matchId: number, guestId: number): Promise<Registrat
     () =>
       apiFetch<RegistrationDTO>(`/api/matches/${matchId}/guests/${guestId}`, {
         method: "DELETE",
+        headers: jsonHeaders(),
+        body: JSON.stringify(withAdminPin({})),
       }),
     () => localDb.removeGuest(guestId)
   );

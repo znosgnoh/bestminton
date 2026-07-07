@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { CalendarPlus, ChevronDown, ChevronUp } from "lucide-react";
 import MatchManageRow from "./MatchManageRow";
 import MatchForm from "./MatchForm";
+import { useI18n } from "@/contexts/LocaleContext";
 import * as dataService from "@/lib/dataService";
 import type { MatchDTO } from "@/lib/types";
 
@@ -24,6 +25,7 @@ function sortMatches(all: MatchDTO[]): { upcoming: MatchDTO[]; past: MatchDTO[] 
 }
 
 export default function MatchesSection({ initialMatches, dbAvailable }: MatchesSectionProps) {
+  const { t } = useI18n();
   const [matches, setMatches] = useState<MatchDTO[]>(initialMatches);
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [showForm, setShowForm] = useState(false);
@@ -89,14 +91,16 @@ export default function MatchesSection({ initialMatches, dbAvailable }: MatchesS
             onClick={() => setActiveTab(tab)}
             className={`tet-tab ${activeTab === tab ? "tet-tab-active" : "tet-tab-inactive"}`}
           >
-            {tab === "upcoming" ? `Upcoming (${upcoming.length})` : `Past (${past.length})`}
+            {tab === "upcoming"
+              ? t("home.tabUpcoming", { count: upcoming.length })
+              : t("home.tabPast", { count: past.length })}
           </button>
         ))}
       </div>
 
       {list.length === 0 ? (
         <p className="tet-empty rounded-b-2xl border border-t-0 border-solid border-amber-200/50 dark:border-amber-900/40">
-          {activeTab === "upcoming" ? "No upcoming matches." : "No past matches yet."}
+          {activeTab === "upcoming" ? t("home.noUpcoming") : t("home.noPast")}
         </p>
       ) : (
         <div className="space-y-2 pt-3">

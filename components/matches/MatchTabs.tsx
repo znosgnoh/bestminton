@@ -5,6 +5,7 @@ import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { Loader2 } from "lucide-react";
 import { HomePageSkeleton } from "@/components/ui/Skeleton";
 import MatchCard from "./MatchCard";
+import { useI18n } from "@/contexts/LocaleContext";
 import * as dataService from "@/lib/dataService";
 import type { MatchDTO } from "@/lib/types";
 
@@ -17,6 +18,7 @@ interface MatchTabsProps {
 }
 
 function MatchTabsInner({ upcoming: initialUpcoming, past: initialPast, dbAvailable }: MatchTabsProps) {
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const router = useRouter();
   const activeTab = searchParams.get("tab") === "past" ? "past" : "upcoming";
@@ -78,7 +80,9 @@ function MatchTabsInner({ upcoming: initialUpcoming, past: initialPast, dbAvaila
             onClick={() => switchTab(tab)}
             className={`tet-tab ${activeTab === tab ? "tet-tab-active" : "tet-tab-inactive"}`}
           >
-            {tab === "upcoming" ? `Upcoming (${upcoming.length})` : `Past (${past.length})`}
+            {tab === "upcoming"
+              ? t("home.tabUpcoming", { count: upcoming.length })
+              : t("home.tabPast", { count: past.length })}
           </button>
         ))}
       </div>
@@ -86,9 +90,7 @@ function MatchTabsInner({ upcoming: initialUpcoming, past: initialPast, dbAvaila
       <div className="space-y-3 p-4">
         {list.length === 0 ? (
           <p className="tet-empty py-12">
-            {activeTab === "upcoming"
-              ? "No upcoming matches scheduled."
-              : "No past matches yet."}
+            {activeTab === "upcoming" ? t("home.noUpcoming") : t("home.noPast")}
           </p>
         ) : (
           <>
@@ -106,7 +108,7 @@ function MatchTabsInner({ upcoming: initialUpcoming, past: initialPast, dbAvaila
 
             {!hasMore && list.length > PAGE_SIZE && (
               <p className="py-2 text-center text-xs text-gray-500 dark:text-gray-500">
-                All {list.length} matches loaded
+                {t("home.allLoaded", { count: list.length })}
               </p>
             )}
           </>

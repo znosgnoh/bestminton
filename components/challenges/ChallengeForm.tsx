@@ -6,6 +6,7 @@ import AvatarTile from "@/components/matches/AvatarTile";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
 import { DRINK_CHALLENGE_LABEL } from "@/lib/constants";
+import EloGuidelineLink from "@/components/leaderboard/EloGuidelineLink";
 import { sideAverageElo, sideWinProbabilities, suggestedHandicap } from "@/lib/elo";
 import * as dataService from "@/lib/dataService";
 import type { ChallengeFormat, MemberDTO } from "@/lib/types";
@@ -246,9 +247,14 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
         />
       </div>
 
-      {format === "DOUBLES" && (
+      {format === "DOUBLES" ? (
         <p className="text-xs text-gray-500 dark:text-gray-400 rounded-xl border border-amber-100/80 bg-amber-50/40 p-3 dark:border-gray-700 dark:bg-gray-800/40">
           Kèo đôi không cập nhật Elo (Elo hiện tại vẫn dùng để gợi ý chấp điểm).
+        </p>
+      ) : (
+        <p className="text-xs text-gray-500 dark:text-gray-400 rounded-xl border border-amber-100/80 bg-amber-50/40 p-3 dark:border-gray-700 dark:bg-gray-800/40">
+          Kèo đơn cập nhật Elo khi chốt — phụ thuộc chấp điểm, tỷ số và chênh Elo.{" "}
+          <EloGuidelineLink />
         </p>
       )}
 

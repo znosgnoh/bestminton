@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { revalidateMatchPages } from "@/lib/revalidate";
+import { requirePastMatchAdminPin } from "@/lib/apiHelpers";
 import { Prisma } from "@prisma/client";
 
 const REG_INCLUDE = { member: true, guests: true };
@@ -16,7 +17,7 @@ export async function PUT(
     return NextResponse.json({ error: "Invalid guest ID." }, { status: 400 });
   }
 
-  let body: { playedFull?: boolean };
+  let body: { playedFull?: boolean; pin?: string };
   try {
     body = await request.json();
   } catch {
@@ -27,6 +28,21 @@ export async function PUT(
   }
 
   try {
+    const existing = await db.guest.findUnique({
+      where: { id: guestId },
+      include: { registration: { include: { match: true } } },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Guest not found." }, { status: 404 });
+    }
+
+    const pinDenied = requirePastMatchAdminPin(
+      request,
+      existing.registration.match.scheduledAt,
+      body
+    );
+    if (pinDenied) return pinDenied;
+
     const guest = await db.guest.update({
       where: { id: guestId },
       data: { playedFull: body.playedFull },
@@ -48,7 +64,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string; guestId: string }> }
 ) {
   const { id: idStr, guestId: guestIdStr } = await params;
@@ -58,12 +74,29 @@ export async function DELETE(
     return NextResponse.json({ error: "Invalid guest ID." }, { status: 400 });
   }
 
+  let body: { pin?: string } = {};
   try {
-    // Find registration before deletion so we can return the updated list
-    const guest = await db.guest.findUnique({ where: { id: guestId } });
+    body = await request.json();
+  } catch {
+    // DELETE may have no body; PIN can still come from header
+  }
+
+  try {
+    const guest = await db.guest.findUnique({
+      where: { id: guestId },
+      include: { registration: { include: { match: true } } },
+    });
     if (!guest) {
       return NextResponse.json({ error: "Guest not found." }, { status: 404 });
     }
+
+    const pinDenied = requirePastMatchAdminPin(
+      request,
+      guest.registration.match.scheduledAt,
+      body
+    );
+    if (pinDenied) return pinDenied;
+
     const registrationId = guest.registrationId;
 
     await db.guest.delete({ where: { id: guestId } });

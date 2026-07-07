@@ -1,4 +1,5 @@
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
+import EloGuidelineLink from "@/components/leaderboard/EloGuidelineLink";
 import { DRINK_LABEL, formatDrinkAmount } from "@/lib/constants";
 import type { ChallengeDTO } from "@/lib/types";
 
@@ -41,6 +42,10 @@ export default function ChallengeResultSummary({ challenge }: ChallengeResultSum
                 </div>
               ))}
             </div>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              <EloGuidelineLink />
+              {" "}để xem vì sao điểm thay đổi như vậy.
+            </p>
           </>
         )}
       </div>

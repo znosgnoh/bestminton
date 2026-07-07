@@ -11,6 +11,7 @@ import BettingBoard from "@/components/challenges/BettingBoard";
 import ChallengeAdminControls from "@/components/challenges/ChallengeAdminControls";
 import DrinkChallengeToggle from "@/components/challenges/DrinkChallengeToggle";
 import ChallengeResultSummary from "@/components/challenges/ChallengeResultSummary";
+import EloGuidelineLink from "@/components/leaderboard/EloGuidelineLink";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import { YouTubeUrlEditor } from "@/components/ui/YouTubeVideo";
 import * as dataService from "@/lib/dataService";
@@ -179,6 +180,12 @@ export default function ChallengeDetailClient({
       </Link>
 
       <ChallengeMatchInfo challenge={challenge} />
+
+      {challenge.format === "SINGLES" && (
+        <div className="flex justify-end">
+          <EloGuidelineLink variant="pill" />
+        </div>
+      )}
 
       <YouTubeUrlEditor
         url={challenge.youtubeUrl}

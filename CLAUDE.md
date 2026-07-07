@@ -128,14 +128,20 @@ Total court fee is split weighted by playtime and headcount per player.
 
 **Rounding:** Shares are rounded to 2 decimal places. Any cent discrepancy is added to / subtracted from the first participant's share so `Σ Owed_i = TotalCost` exactly (required by Splitwise).
 
-### Elo, suggested handicap, and win rate
+### Internationalization (i18n)
 
-Implemented in `lib/elo.ts`.
+- **Locales:** `vi` (VN), `en` (EN), `zh` (CN / Simplified Chinese) — switch via flag dropdown in the header.
+- **Storage:** `localStorage` key `bestminton_locale` (+ cookie for future SSR); browser language detection on first visit.
+- **API:** `useI18n()` → `{ locale, setLocale, t }` from `contexts/LocaleContext.tsx`; message catalogs in `lib/i18n/messages/{en,vi,zh}.ts`.
+- **Pattern:** Add keys to all three locale files; use `t("namespace.key", { param })` in client components. Not every screen is migrated yet — extend catalogs as you touch UI.
+
+
+Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts: **Leaderboard** (`/leaderboard#elo-guideline`, `components/leaderboard/EloGuideline.tsx`, data in `lib/eloGuideline.ts`). Kèo pages link via `EloGuidelineLink`.
 
 - **Suggested handicap:** Sub-linear scaling from average side Elo gap — calibrated so a 300-point gap suggests 6 points; doubling the gap yields ~1.5× points (not 2×). The weaker side receives the handicap.
 - **Editable handicap:** On create (`/challenges/new`) and while status is `PENDING` (management or `HandicapEditor`), captains can override the suggestion.
 - **Displayed win rate:** `sideWinProbabilities` treats each handicap point as a **50 Elo** boost on the recipient (`ELO_PER_HANDICAP_POINT`), then applies the standard Elo expected-score formula. Win percentages update when handicap changes.
-- **Resolve — singles:** `resolveChallenge` updates `eloRating`, `totalMatches`, and `totalWins`; optional nước cam debts when `isDrinkChallenge` or bets exist.
+- **Resolve — singles:** `computeSinglesEloChanges` in `lib/elo.ts` — `newRating = old + K × scoreMarginMult × eloGapMult × (actual − expected)`, where **expected** uses `confirmedHandicapPoints` (handicap-adjusted), **scoreMarginMult** parses `confirmedScore` (close 2-1 / 21-19 → smaller swing; straight-set / large margins → up to ~1.5×), **eloGapMult** scales upsets vs expected favorites, **K** is 32 (&lt;10 kèo) or 16 (established). Updates `eloRating`, `totalMatches`, and `totalWins`; optional nước cam debts when `isDrinkChallenge` or bets exist.
 - **Resolve — doubles:** Handicap/win % still use current singles Elo averages; no Elo/`totalMatches`/`totalWins` updates (`resolutionSnapshot.eloChanges` is empty). When `isDrinkChallenge` and no bets: each winner earns exactly 1 ly nước cam, debtor is a loser on the opposing side (round-robin across losers, not fixed pairs). Bet debts unchanged (1:1 bettor vs counterparty).
 
 ---

@@ -1,13 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, MapPin, Clock, Calendar } from "lucide-react";
 import { MatchDetailSkeleton } from "@/components/ui/Skeleton";
+import AdminPinModal from "@/components/ui/AdminPinModal";
 import MemberRoster from "@/components/matches/MemberRoster";
 import RegistrationRow from "@/components/matches/RegistrationRow";
 import SettleForm from "@/components/matches/SettleForm";
 import { YouTubeUrlEditor } from "@/components/ui/YouTubeVideo";
+import { useI18n } from "@/contexts/LocaleContext";
+import { useAdminPin } from "@/hooks/useAdminPin";
 import * as dataService from "@/lib/dataService";
 import type { MatchDTO, MemberDTO, RegistrationDTO } from "@/lib/types";
 
@@ -37,7 +41,7 @@ function formatTime(iso: string): string {
   }).format(new Date(iso));
 }
 
-export default function MatchDetailClient({
+function MatchDetailClientInner({
   matchId,
   initialMatch,
   initialMembers,
@@ -46,6 +50,11 @@ export default function MatchDetailClient({
   currencyCode,
   isManage,
 }: MatchDetailClientProps) {
+  const searchParams = useSearchParams();
+  const isManageMode = isManage || searchParams.get("manage") === "1";
+  const { t } = useI18n();
+  const { unlocked, pinRequired, checking, unlock } = useAdminPin();
+
   const [match, setMatch] = useState<MatchDTO | null>(initialMatch);
   const [allMembers, setAllMembers] = useState<MemberDTO[]>(initialMembers);
   const [registrations, setRegistrations] = useState<RegistrationDTO[]>(
@@ -71,7 +80,7 @@ export default function MatchDetailClient({
     setRegistrations((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
   }
 
-  if (loading) {
+  if (loading || checking) {
     return <MatchDetailSkeleton />;
   }
 
@@ -90,14 +99,42 @@ export default function MatchDetailClient({
   }
 
   const isPast = new Date(match.scheduledAt) < new Date();
+  const canManagePast = (isManageMode || unlocked) && (!pinRequired || unlocked);
+  const canEditRegistration = !isPast || canManagePast;
+  const needsCaptainPin = isPast && pinRequired && !unlocked && isManageMode;
   const totalHeadcount = registrations.reduce((sum, r) => sum + 1 + r.guests.length, 0);
 
   return (
     <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
+      <AdminPinModal
+        open={needsCaptainPin}
+        title="Enter Captain PIN"
+        onSubmit={unlock}
+        onCancel={() => {
+          window.location.href = "/management";
+        }}
+      />
+
       <Link href="/" className="tet-link">
         <ArrowLeft size={15} />
         All Matches
       </Link>
+
+      {isPast && !canManagePast && (
+        <div className="tet-alert-info">
+          <p className="text-sm">
+            To update who played or settle costs, open this match from{" "}
+            <Link href="/management" className="tet-link-accent font-medium">
+              Management
+            </Link>{" "}
+            or use{" "}
+            <Link href={`/matches/${match.id}?manage=1`} className="tet-link-accent font-medium">
+              settle view
+            </Link>
+            .
+          </p>
+        </div>
+      )}
 
       <div className="tet-card p-5">
         <div className="flex items-start justify-between gap-2">
@@ -105,9 +142,9 @@ export default function MatchDetailClient({
             {match.title}
           </h1>
           {isPast ? (
-            <span className="tet-badge-past">Past</span>
+            <span className="tet-badge-past">{t("common.pastBadge")}</span>
           ) : (
-            <span className="tet-badge-upcoming">Upcoming</span>
+            <span className="tet-badge-upcoming">{t("common.upcomingBadge")}</span>
           )}
         </div>
         <div className="mt-3 space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
@@ -128,7 +165,7 @@ export default function MatchDetailClient({
 
       <YouTubeUrlEditor
         url={match.youtubeUrl}
-        editable={isManage}
+        editable={isManageMode && canManagePast}
         onSave={async (youtubeUrl) => {
           const updated = await dataService.saveMatchYoutubeUrl(match.id, youtubeUrl);
           setMatch(updated);
@@ -141,6 +178,7 @@ export default function MatchDetailClient({
         registrations={registrations}
         setRegistrations={setRegistrations}
         isPast={isPast}
+        canEditRegistration={canEditRegistration}
       />
 
       {registrations.length > 0 && (
@@ -154,7 +192,7 @@ export default function MatchDetailClient({
                 key={reg.id}
                 registration={reg}
                 matchId={match.id}
-                isPast={isPast}
+                canEditRegistration={canEditRegistration}
                 onUpdated={handleRegistrationUpdated}
               />
             ))}
@@ -162,7 +200,7 @@ export default function MatchDetailClient({
         </div>
       )}
 
-      {isPast && isManage && (
+      {isPast && canManagePast && (
         <SettleForm
           match={match}
           registrations={registrations}
@@ -171,5 +209,13 @@ export default function MatchDetailClient({
         />
       )}
     </div>
+  );
+}
+
+export default function MatchDetailClient(props: MatchDetailClientProps) {
+  return (
+    <Suspense fallback={<MatchDetailSkeleton />}>
+      <MatchDetailClientInner {...props} />
+    </Suspense>
   );
 }

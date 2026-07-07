@@ -13,6 +13,7 @@ import {
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { useI18n } from "@/contexts/LocaleContext";
 
 type RefreshHandler = () => void | Promise<void>;
 
@@ -55,6 +56,7 @@ export default function PullToRefresh({ children }: PullToRefreshProps) {
     router.refresh();
   }, [router]);
 
+  const { t } = useI18n();
   const { pull, refreshing, reducedMotion, enabled, pullProgress, readyToRelease } =
     usePullToRefresh({ onRefresh });
 
@@ -62,10 +64,10 @@ export default function PullToRefresh({ children }: PullToRefreshProps) {
 
   const showIndicator = enabled && (pull > 0 || refreshing);
   const label = refreshing
-    ? "Refreshing…"
+    ? t("ptr.refreshing")
     : readyToRelease
-      ? "Release to refresh"
-      : "Pull to refresh";
+      ? t("ptr.release")
+      : t("ptr.pull");
 
   const contentOffset = reducedMotion ? 0 : pull;
   const indicatorOpacity = refreshing ? 1 : Math.min(1, pullProgress * 1.4);

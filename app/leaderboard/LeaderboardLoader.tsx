@@ -2,8 +2,7 @@ import { db } from "@/lib/db";
 import { isDatabaseConfigured } from "@/lib/dbConfig";
 import { debtSummaryFor, getAllDebtSummaries } from "@/lib/drinkDebt";
 import { toMemberDTO } from "@/lib/memberSerialize";
-import LeaderboardTable from "@/components/challenges/LeaderboardTable";
-import ErrorBanner from "@/components/ui/ErrorBanner";
+import LeaderboardClient from "./LeaderboardClient";
 import type { LeaderboardEntryDTO } from "@/lib/types";
 
 export default async function LeaderboardLoader() {
@@ -30,14 +29,5 @@ export default async function LeaderboardLoader() {
     }
   }
 
-  return (
-    <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
-      <h1 className="tet-page-title">Leaderboard</h1>
-      {!dbAvailable ? (
-        <ErrorBanner message="Leaderboard requires a live database connection." />
-      ) : (
-        <LeaderboardTable entries={entries} />
-      )}
-    </div>
-  );
+  return <LeaderboardClient entries={entries} dbAvailable={dbAvailable} />;
 }

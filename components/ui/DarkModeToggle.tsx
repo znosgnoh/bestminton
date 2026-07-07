@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Sun, Moon } from "lucide-react";
+import { useI18n } from "@/contexts/LocaleContext";
 
 export default function DarkModeToggle() {
+  const { t } = useI18n();
   const [dark, setDark] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -24,7 +26,7 @@ export default function DarkModeToggle() {
   return (
     <button
       onClick={toggle}
-      aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={dark ? t("theme.light") : t("theme.dark")}
       className="tet-btn-icon flex h-9 w-9 items-center justify-center hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:focus-visible:outline-amber-500"
     >
       {dark ? <Sun size={18} /> : <Moon size={18} />}

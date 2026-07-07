@@ -20,6 +20,16 @@ export function requireAdminPin(pin?: string) {
   return null;
 }
 
+/** Past-match registration edits require captain PIN when CAPTAIN_PIN is set. */
+export function requirePastMatchAdminPin(
+  request: NextRequest,
+  scheduledAt: Date | string,
+  body?: { pin?: string }
+) {
+  if (new Date(scheduledAt) >= new Date()) return null;
+  return requireAdminPin(pinFromRequest(request, body));
+}
+
 export function requireDatabase() {
   if (!isDatabaseConfigured()) {
     return NextResponse.json(
