@@ -3,26 +3,29 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import ChallengeCard from "@/components/challenges/ChallengeCard";
+import ChallengeDayGroups from "@/components/challenges/ChallengeDayGroups";
+import { useI18n } from "@/contexts/LocaleContext";
 import type { ChallengeDTO, ChallengeStatus } from "@/lib/types";
 
 const SECTION_ORDER: ChallengeStatus[] = ["ACTIVE", "PENDING", "COMPLETED"];
-
-const SECTION_LABELS: Record<ChallengeStatus, string> = {
-  PENDING: "Chờ gạ",
-  ACTIVE: "Đang đấu",
-  COMPLETED: "Đã xong",
-};
 
 interface ChallengeListSectionsProps {
   challenges: ChallengeDTO[];
 }
 
 export default function ChallengeListSections({ challenges }: ChallengeListSectionsProps) {
+  const { t } = useI18n();
   const [expanded, setExpanded] = useState<Record<ChallengeStatus, boolean>>({
     ACTIVE: false,
     PENDING: false,
     COMPLETED: false,
   });
+
+  const sectionLabels: Record<ChallengeStatus, string> = {
+    PENDING: t("status.pending"),
+    ACTIVE: t("status.active"),
+    COMPLETED: t("status.completed"),
+  };
 
   const sections = SECTION_ORDER.map((status) => ({
     status,
@@ -51,15 +54,21 @@ export default function ChallengeListSections({ challenges }: ChallengeListSecti
                 ) : (
                   <ChevronRight size={16} className="shrink-0 text-gray-500" />
                 )}
-                {SECTION_LABELS[status]}
+                {sectionLabels[status]}
               </span>
               <span className="text-xs text-gray-500 dark:text-gray-400">{items.length}</span>
             </button>
             {isOpen && (
-              <div className="space-y-3 border-t border-amber-100/60 px-4 py-3 dark:border-gray-800">
-                {items.map((challenge) => (
-                  <ChallengeCard key={challenge.id} challenge={challenge} />
-                ))}
+              <div className="border-t border-amber-100/60 px-4 py-3 dark:border-gray-800">
+                {status === "COMPLETED" ? (
+                  <ChallengeDayGroups challenges={items} />
+                ) : (
+                  <div className="space-y-3">
+                    {items.map((challenge) => (
+                      <ChallengeCard key={challenge.id} challenge={challenge} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </section>

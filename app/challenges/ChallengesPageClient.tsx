@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import ChallengeCard from "@/components/challenges/ChallengeCard";
+import ChallengeDayGroups from "@/components/challenges/ChallengeDayGroups";
 import ChallengeListSections from "@/components/challenges/ChallengeListSections";
 import EloGuidelineLink from "@/components/leaderboard/EloGuidelineLink";
 import ErrorBanner from "@/components/ui/ErrorBanner";
@@ -80,6 +81,8 @@ export default function ChallengesPageClient({
         </div>
       ) : filter === "ALL" ? (
         <ChallengeListSections challenges={filtered} />
+      ) : filter === "COMPLETED" ? (
+        <ChallengeDayGroups challenges={filtered} />
       ) : (
         <div className="space-y-3">
           {filtered.map((c) => (

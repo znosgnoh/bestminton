@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Check, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import SettleAmountModal from "@/components/cam/SettleAmountModal";
 import AdminPinModal from "@/components/ui/AdminPinModal";
 import ErrorBanner from "@/components/ui/ErrorBanner";
@@ -27,8 +27,6 @@ type AmountPrompt = {
   debtorName: string;
   creditorName: string;
 };
-
-const FULL_VIEW_THRESHOLD = 5;
 
 function attachNames(
   rows: Array<{ debtorId: number; creditorId: number; amount: number }>,
@@ -187,7 +185,6 @@ export default function DebtsTable({
   const [settlingKey, setSettlingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [showFullPairwise, setShowFullPairwise] = useState(false);
 
   const nameById = useMemo(() => {
     const map = new Map<number, string>();
@@ -216,8 +213,6 @@ export default function DebtsTable({
       totalOwed: owedBy.reduce((sum, d) => sum + d.amount, 0),
     };
   }, [highlightMemberId, nameById, simplifiedDebts]);
-
-  const showPairwiseToggle = debts.length > FULL_VIEW_THRESHOLD;
 
   const runSettle = useCallback(
     async (item: PendingSettle, pin?: string) => {
@@ -357,52 +352,7 @@ export default function DebtsTable({
         />
       )}
 
-      {showFullPairwise ? (
-        <ul className="space-y-2" aria-label={`All pairwise ${DRINK_LABEL} debts`}>
-          {debts.map((debt) => {
-            const key = `${debt.debtorId}:${debt.creditorId}`;
-            const isHighlighted =
-              highlightMemberId !== undefined &&
-              (debt.debtorId === highlightMemberId || debt.creditorId === highlightMemberId);
-
-            return (
-              <CompactDebtRow
-                key={key}
-                debt={debt}
-                isHighlighted={isHighlighted}
-                isSettling={settlingKey === key}
-                settlingDisabled={settlingKey !== null && settlingKey !== key}
-                onSettleClick={() => handlePaid(debt)}
-              />
-            );
-          })}
-        </ul>
-      ) : (
-        mainList
-      )}
-
-      {showPairwiseToggle && (
-        <div className="pt-1">
-          <button
-            type="button"
-            onClick={() => setShowFullPairwise((open) => !open)}
-            className="w-full min-h-10 rounded-xl border border-amber-200/80 dark:border-gray-700 px-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-amber-50/70 dark:hover:bg-gray-800/70 inline-flex items-center justify-center gap-1.5 transition-colors"
-            aria-expanded={showFullPairwise}
-          >
-            {showFullPairwise ? (
-              <>
-                <ChevronUp size={16} />
-                Hide all pairwise debts
-              </>
-            ) : (
-              <>
-                <ChevronDown size={16} />
-                Show all pairwise debts ({debts.length})
-              </>
-            )}
-          </button>
-        </div>
-      )}
+      {mainList}
 
       <SettleAmountModal
         open={amountPrompt !== null}
