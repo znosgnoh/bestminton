@@ -79,6 +79,7 @@ export async function PATCH(
   if (
     body.isDrinkChallenge === undefined &&
     body.handicapPoints === undefined &&
+    body.pointsToWin === undefined &&
     body.notes === undefined &&
     body.youtubeUrl === undefined
   ) {
@@ -88,6 +89,7 @@ export async function PATCH(
   const data: {
     isDrinkChallenge?: boolean;
     handicapPoints?: number;
+    pointsToWin?: number;
     notes?: string | null;
     youtubeUrl?: string | null;
   } = {};
@@ -99,23 +101,12 @@ export async function PATCH(
     data.isDrinkChallenge = body.isDrinkChallenge;
   }
 
-  if (body.handicapPoints !== undefined) {
-    const parsed = Number(body.handicapPoints);
-    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 21) {
-      return NextResponse.json(
-        { error: "handicapPoints must be a non-negative integer up to 21." },
-        { status: 400 }
-      );
+  if (body.pointsToWin !== undefined) {
+    const parsed = Number(body.pointsToWin);
+    if (parsed !== 15 && parsed !== 21) {
+      return NextResponse.json({ error: "pointsToWin must be 15 or 21." }, { status: 400 });
     }
-    data.handicapPoints = parsed;
-  }
-
-  if (body.notes !== undefined) {
-    const notesResult = parseNotesUpdate(body.notes);
-    if (notesResult !== null && typeof notesResult === "object" && "error" in notesResult) {
-      return NextResponse.json({ error: notesResult.error }, { status: 400 });
-    }
-    data.notes = notesResult;
+    data.pointsToWin = parsed;
   }
 
   if (body.youtubeUrl !== undefined) {
@@ -126,16 +117,25 @@ export async function PATCH(
     data.youtubeUrl = parsed.url;
   }
 
+  if (body.notes !== undefined) {
+    const notesResult = parseNotesUpdate(body.notes);
+    if (notesResult !== null && typeof notesResult === "object" && "error" in notesResult) {
+      return NextResponse.json({ error: notesResult.error }, { status: 400 });
+    }
+    data.notes = notesResult;
+  }
+
   const youtubeOnly =
     data.youtubeUrl !== undefined &&
     data.isDrinkChallenge === undefined &&
     data.handicapPoints === undefined &&
+    data.pointsToWin === undefined &&
     data.notes === undefined;
 
   try {
     const existing = await db.challenge.findUnique({
       where: { id: challengeId },
-      select: { status: true, format: true },
+      select: { status: true, format: true, pointsToWin: true, handicapPoints: true },
     });
 
     if (!existing) {
@@ -147,6 +147,22 @@ export async function PATCH(
         { error: "Chỉ có thể đổi cài đặt kèo trước khi trận bắt đầu." },
         { status: 409 }
       );
+    }
+
+    const endpoint = data.pointsToWin ?? existing.pointsToWin;
+
+    if (body.handicapPoints !== undefined) {
+      const parsed = Number(body.handicapPoints);
+      if (!Number.isInteger(parsed) || parsed < 0 || parsed > endpoint) {
+        return NextResponse.json(
+          { error: `handicapPoints must be a non-negative integer up to ${endpoint}.` },
+          { status: 400 }
+        );
+      }
+      data.handicapPoints = parsed;
+    } else if (data.pointsToWin !== undefined && existing.handicapPoints > data.pointsToWin) {
+      // Cap existing handicap when switching to a shorter game.
+      data.handicapPoints = data.pointsToWin;
     }
 
     const updated = await db.challenge.update({

@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
-import { formatDatabaseError, logDatabaseError, probeDatabase } from "@/lib/dbHealth";
+import { isDatabaseConfigured } from "@/lib/dbConfig";
+import { formatDatabaseError, logDatabaseError } from "@/lib/dbHealth";
 import { CHALLENGE_LIST_INCLUDE } from "@/lib/challengeIncludes";
 import { serializeChallengeList } from "@/lib/challengeSerialize";
 import ChallengesPageClient from "./ChallengesPageClient";
@@ -10,10 +11,9 @@ export default async function ChallengesLoader() {
   let dbAvailable = false;
   let dbError: string | undefined;
 
-  const probe = await probeDatabase();
-  if (!probe.ok) {
-    dbError = probe.message;
-    logDatabaseError("ChallengesPage", probe.message);
+  if (!isDatabaseConfigured()) {
+    dbError =
+      "POSTGRES_PRISMA_URL is not set. Configure Postgres env vars for kèo and leaderboard features.";
   } else {
     try {
       const raw = await db.challenge.findMany({

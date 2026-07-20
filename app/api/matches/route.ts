@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
-import { MATCH_FULL_INCLUDE } from "@/lib/prismaIncludes";
+import { MATCH_FULL_INCLUDE, MATCH_LIST_INCLUDE } from "@/lib/prismaIncludes";
 import { revalidateMatchPages } from "@/lib/revalidate";
 import { toDTO } from "@/lib/serialize";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 const CACHE_HEADERS = {
-  "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+  "Cache-Control": "private, no-store, max-age=0",
 };
 
 function addDays(date: Date, days: number): Date {
@@ -19,7 +19,7 @@ function addDays(date: Date, days: number): Date {
 
 export async function GET() {
   const matches = await db.match.findMany({
-    include: MATCH_FULL_INCLUDE,
+    include: MATCH_LIST_INCLUDE,
     orderBy: { scheduledAt: "asc" },
   });
   return NextResponse.json(toDTO(matches), { headers: CACHE_HEADERS });

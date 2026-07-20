@@ -13,6 +13,7 @@ import type {
   ChallengeSide,
   DrinkDebtDTO,
   MemberDebtsResponse,
+  MemberProfileDTO,
   SettleDebtResult,
   ResetEloResult,
 } from "./types";
@@ -53,7 +54,12 @@ async function via<T>(apiCall: () => Promise<T>, localCall: () => Promise<T>): P
 }
 
 async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
+  const method = init?.method?.toUpperCase() ?? "GET";
+  const res = await fetch(url, {
+    ...init,
+    // Always bypass HTTP/CDN caches for live session data (PTR + mutations).
+    ...(method === "GET" ? { cache: "no-store" } : {}),
+  });
   const data = (await res.json()) as T & { error?: string };
   if (!res.ok) throw new Error((data as { error?: string }).error ?? `HTTP ${res.status}`);
   return data;
@@ -311,7 +317,11 @@ function formatApiError(data: { error?: string; detail?: string }, status: numbe
 }
 
 async function challengeFetch<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
+  const method = init?.method?.toUpperCase() ?? "GET";
+  const res = await fetch(url, {
+    ...init,
+    ...(method === "GET" ? { cache: "no-store" } : {}),
+  });
   const data = (await res.json()) as T & { error?: string; detail?: string };
   if (!res.ok) throw new Error(formatApiError(data, res.status));
   return data;
@@ -374,8 +384,9 @@ export function startChallenge(challengeId: number, pin?: string): Promise<Chall
 
 function normalizeConfirmedHandicapPoints(value: number): number {
   const parsed = Math.trunc(Number(value));
+  // Client-side guard; server enforces the challenge's pointsToWin (15 or 21).
   if (!Number.isInteger(parsed) || parsed < 0 || parsed > 21) {
-    throw new Error("Chấp điểm phải từ 0 đến 21.");
+    throw new Error("Chấp điểm phải từ 0 đến điểm tới thắng của kèo.");
   }
   return parsed;
 }
@@ -463,6 +474,10 @@ export function getDebts(): Promise<DrinkDebtDTO[]> {
 
 export function getMemberDebts(memberId: number): Promise<MemberDebtsResponse> {
   return challengeFetch<MemberDebtsResponse>(`/api/members/${memberId}/debts`);
+}
+
+export function getMemberProfile(memberId: number): Promise<MemberProfileDTO> {
+  return challengeFetch<MemberProfileDTO>(`/api/members/${memberId}`);
 }
 
 export function settleDebt(data: {

@@ -3,8 +3,8 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { databaseErrorResponse, requireDatabase } from "@/lib/apiHelpers";
 import { CHALLENGE_LIST_INCLUDE } from "@/lib/challengeIncludes";
-import { serializeChallenge, serializeChallengeList } from "@/lib/challengeSerialize";
-import { sideAverageElo, suggestedHandicap } from "@/lib/elo";
+import { serializeChallengeList } from "@/lib/challengeSerialize";
+import { sideAverageElo, suggestedHandicap, isPointsToWin, maxHandicapPoints, DEFAULT_POINTS_TO_WIN } from "@/lib/elo";
 import { revalidateChallengePages } from "@/lib/revalidate";
 import type { CreateChallengeRequest } from "@/lib/types";
 
@@ -12,12 +12,23 @@ export const dynamic = "force-dynamic";
 
 function parseHandicapPoints(
   value: unknown,
-  fallback: number
+  fallback: number,
+  pointsToWin: number
 ): number | { error: string } {
   if (value === undefined) return fallback;
   const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 21) {
-    return { error: "handicapPoints must be a non-negative integer up to 21." };
+  const max = maxHandicapPoints(pointsToWin);
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > max) {
+    return { error: `handicapPoints must be a non-negative integer up to ${max}.` };
+  }
+  return parsed;
+}
+
+function parsePointsToWin(value: unknown): number | { error: string } {
+  if (value === undefined || value === null) return DEFAULT_POINTS_TO_WIN;
+  const parsed = Number(value);
+  if (!isPointsToWin(parsed)) {
+    return { error: "pointsToWin must be 15 or 21." };
   }
   return parsed;
 }
@@ -130,8 +141,14 @@ export async function POST(request: NextRequest) {
         ? [ratingMap.get(playerBId)!]
         : [ratingMap.get(playerBId)!, ratingMap.get(playerB2Id!)!]
     );
-    const suggested = suggestedHandicap(sideAAvg, sideBAvg);
-    const handicapResult = parseHandicapPoints(body.handicapPoints, suggested);
+    const pointsToWinResult = parsePointsToWin(body.pointsToWin);
+    if (typeof pointsToWinResult === "object") {
+      return NextResponse.json({ error: pointsToWinResult.error }, { status: 400 });
+    }
+    const pointsToWin = pointsToWinResult;
+
+    const suggested = suggestedHandicap(sideAAvg, sideBAvg, pointsToWin);
+    const handicapResult = parseHandicapPoints(body.handicapPoints, suggested, pointsToWin);
     if (typeof handicapResult === "object") {
       return NextResponse.json({ error: handicapResult.error }, { status: 400 });
     }
@@ -151,6 +168,7 @@ export async function POST(request: NextRequest) {
         playerA2Id: format === "DOUBLES" ? playerA2Id : null,
         playerBId,
         playerB2Id: format === "DOUBLES" ? playerB2Id : null,
+        pointsToWin,
         handicapPoints,
         isDrinkChallenge,
         notes,
@@ -159,7 +177,7 @@ export async function POST(request: NextRequest) {
     });
 
     revalidateChallengePages();
-    return NextResponse.json(serializeChallenge(challenge), { status: 201 });
+    return NextResponse.json(serializeChallengeList(challenge), { status: 201 });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code !== "P2022") {
       return NextResponse.json({ error: "Gạ kèo thất bại." }, { status: 400 });

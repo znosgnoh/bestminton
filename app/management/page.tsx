@@ -9,7 +9,7 @@ import { toDTO } from "@/lib/serialize";
 import ManagementPageClient from "@/components/management/ManagementPageClient";
 import type { MemberDTO, MatchDTO, ChallengeDTO } from "@/lib/types";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export default async function ManagementPage() {
   let members: MemberDTO[] = [];

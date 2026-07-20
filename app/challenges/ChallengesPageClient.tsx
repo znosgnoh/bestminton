@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import ChallengeCard from "@/components/challenges/ChallengeCard";
 import ChallengeDayGroups from "@/components/challenges/ChallengeDayGroups";
 import ChallengeListSections from "@/components/challenges/ChallengeListSections";
 import EloGuidelineLink from "@/components/leaderboard/EloGuidelineLink";
+import { useRegisterPullToRefresh } from "@/components/PullToRefresh";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import { useI18n } from "@/contexts/LocaleContext";
+import * as dataService from "@/lib/dataService";
 import type { ChallengeDTO } from "@/lib/types";
 
 type FilterStatus = "ALL" | "PENDING" | "ACTIVE" | "COMPLETED";
@@ -25,8 +27,19 @@ export default function ChallengesPageClient({
   dbError,
 }: ChallengesPageClientProps) {
   const { t } = useI18n();
-  const [challenges] = useState(initialChallenges);
+  const [challenges, setChallenges] = useState(initialChallenges);
   const [filter, setFilter] = useState<FilterStatus>("ALL");
+
+  useEffect(() => {
+    setChallenges(initialChallenges);
+  }, [initialChallenges]);
+
+  const refreshChallenges = useCallback(async () => {
+    const next = await dataService.getChallenges();
+    setChallenges(next);
+  }, []);
+
+  useRegisterPullToRefresh(refreshChallenges);
 
   const filterLabels: Record<FilterStatus, string> = {
     ALL: t("challenges.filterAll"),
@@ -54,7 +67,10 @@ export default function ChallengesPageClient({
           <h1 className="tet-page-title">{t("challenges.title")}</h1>
           <EloGuidelineLink className="mt-1" />
         </div>
-        <Link href="/challenges/new" className="tet-btn-primary flex items-center gap-1.5 px-4 py-2 text-sm shrink-0">
+        <Link
+          href="/challenges/new"
+          className="tet-btn-primary flex items-center gap-1.5 px-4 py-2 text-sm shrink-0"
+        >
           <Plus size={16} />
           {t("challenges.newKeo")}
         </Link>
@@ -65,7 +81,9 @@ export default function ChallengesPageClient({
           <button
             key={s}
             onClick={() => setFilter(s)}
-            className={filter === s ? "tet-tab-active tet-tab shrink-0" : "tet-tab-inactive tet-tab shrink-0"}
+            className={
+              filter === s ? "tet-tab-active tet-tab shrink-0" : "tet-tab-inactive tet-tab shrink-0"
+            }
           >
             {filterLabels[s]}
           </button>

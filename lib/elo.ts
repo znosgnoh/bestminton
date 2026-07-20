@@ -3,33 +3,57 @@ export const K_FACTOR_NEW = 32;
 export const K_FACTOR_ESTABLISHED = 16;
 export const K_MATCH_THRESHOLD = 10;
 
+/** Supported game endpoints (points to win a game). */
+export const POINTS_TO_WIN_OPTIONS = [15, 21] as const;
+export type PointsToWin = (typeof POINTS_TO_WIN_OPTIONS)[number];
+export const DEFAULT_POINTS_TO_WIN: PointsToWin = 21;
+
+export function isPointsToWin(value: unknown): value is PointsToWin {
+  return value === 15 || value === 21;
+}
+
+/** Max handicap equals the game endpoint. */
+export function maxHandicapPoints(pointsToWin: number = DEFAULT_POINTS_TO_WIN): number {
+  return isPointsToWin(pointsToWin) ? pointsToWin : DEFAULT_POINTS_TO_WIN;
+}
+
 export function expectedScore(ratingA: number, ratingB: number): number {
   return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
 }
 
-/** Elo gap that maps to 6 handicap points under the legacy linear rule (diff / 50). */
+/** Elo gap that maps to 6 handicap points under the legacy linear rule (diff / 50) at 21 pts. */
 const HANDICAP_REFERENCE_DIFF = 300;
 const HANDICAP_REFERENCE_POINTS = 6;
 
-/** Elo boost per handicap point — inverse of suggestedHandicap's 300 Elo → 6 pts rule. */
+/** Elo boost per handicap point at 21-pt games — inverse of suggestedHandicap's 300 Elo → 6 pts. */
 export const ELO_PER_HANDICAP_POINT = HANDICAP_REFERENCE_DIFF / HANDICAP_REFERENCE_POINTS;
+
+/**
+ * Relative weight of one handicap point vs a 21-pt game.
+ * In a 15-pt game each point is a larger share of the match → stronger Elo boost.
+ */
+export function handicapEloBoostPerPoint(pointsToWin: number = DEFAULT_POINTS_TO_WIN): number {
+  const endpoint = isPointsToWin(pointsToWin) ? pointsToWin : DEFAULT_POINTS_TO_WIN;
+  return ELO_PER_HANDICAP_POINT * (DEFAULT_POINTS_TO_WIN / endpoint);
+}
 
 export type HandicapRecipientSide = "A" | "B";
 
 /**
  * Win probability for side A when the weaker side receives handicap points.
- * Handicap is modeled as an effective Elo boost on the recipient (50 Elo per point).
+ * Handicap is modeled as an effective Elo boost on the recipient (scaled by pointsToWin).
  */
 export function expectedScoreWithHandicap(
   ratingA: number,
   ratingB: number,
   handicapPoints: number,
-  handicapRecipientSide: HandicapRecipientSide
+  handicapRecipientSide: HandicapRecipientSide,
+  pointsToWin: number = DEFAULT_POINTS_TO_WIN
 ): number {
   if (handicapPoints <= 0) {
     return expectedScore(ratingA, ratingB);
   }
-  const boost = handicapPoints * ELO_PER_HANDICAP_POINT;
+  const boost = handicapPoints * handicapEloBoostPerPoint(pointsToWin);
   if (handicapRecipientSide === "A") {
     return expectedScore(ratingA + boost, ratingB);
   }
@@ -40,29 +64,41 @@ export function sideWinProbabilities(
   ratingA: number,
   ratingB: number,
   handicapPoints: number,
-  handicapRecipientSide: HandicapRecipientSide
+  handicapRecipientSide: HandicapRecipientSide,
+  pointsToWin: number = DEFAULT_POINTS_TO_WIN
 ): { sideA: number; sideB: number } {
   const sideA = expectedScoreWithHandicap(
     ratingA,
     ratingB,
     handicapPoints,
-    handicapRecipientSide
+    handicapRecipientSide,
+    pointsToWin
   );
   return { sideA, sideB: 1 - sideA };
 }
 
 /**
  * Sub-linear scaling exponent. Doubling the Elo gap yields 1.5× handicap (not 2×).
- * Calibrated so 300 Elo → 6 pts and 600 Elo → 9 pts (adjacent-pair chain example).
+ * Calibrated so 300 Elo → 6 pts and 600 Elo → 9 pts at 21-pt games.
  */
 const HANDICAP_SUBLINEAR_EXPONENT = Math.log(1.5) / Math.log(2);
 
-export function suggestedHandicap(ratingA: number, ratingB: number): number {
+export function suggestedHandicap(
+  ratingA: number,
+  ratingB: number,
+  pointsToWin: number = DEFAULT_POINTS_TO_WIN
+): number {
   const diff = Math.abs(ratingA - ratingB);
   if (diff === 0) return 0;
-  return Math.round(
+  const endpoint = isPointsToWin(pointsToWin) ? pointsToWin : DEFAULT_POINTS_TO_WIN;
+  const at21 = Math.round(
     HANDICAP_REFERENCE_POINTS *
       Math.pow(diff / HANDICAP_REFERENCE_DIFF, HANDICAP_SUBLINEAR_EXPONENT)
+  );
+  // Scale suggestion to game length (15-pt games get fewer suggested points).
+  return Math.min(
+    endpoint,
+    Math.max(0, Math.round(at21 * (endpoint / DEFAULT_POINTS_TO_WIN)))
   );
 }
 
@@ -157,9 +193,16 @@ export function parseConfirmedScore(score: string): ParsedMatchScore | null {
 /**
  * Scale K by how decisive the result was.
  * Straight-set / large point margins → larger changes; close 2-1 → smaller.
+ * Point-margin reference scales with pointsToWin (24 at 21 pts → ~17 at 15 pts).
  */
-export function scoreMarginMultiplier(parsed: ParsedMatchScore | null): number {
+export function scoreMarginMultiplier(
+  parsed: ParsedMatchScore | null,
+  pointsToWin: number = DEFAULT_POINTS_TO_WIN
+): number {
   if (!parsed) return 1;
+
+  const endpoint = isPointsToWin(pointsToWin) ? pointsToWin : DEFAULT_POINTS_TO_WIN;
+  const marginReference = 24 * (endpoint / DEFAULT_POINTS_TO_WIN);
 
   const gamesTotal = parsed.winnerGames + parsed.loserGames;
   let multiplier = 1;
@@ -171,7 +214,7 @@ export function scoreMarginMultiplier(parsed: ParsedMatchScore | null): number {
 
   if (parsed.pointGames > 0) {
     const avgMargin = parsed.totalPointMargin / parsed.pointGames;
-    multiplier *= 0.9 + Math.min(0.35, avgMargin / 24);
+    multiplier *= 0.9 + Math.min(0.35, avgMargin / marginReference);
   }
 
   return Math.min(1.5, Math.max(0.75, multiplier));
@@ -217,16 +260,18 @@ export function computeSinglesEloChanges(
   playerB: SinglesEloCompetitor,
   winnerSide: HandicapRecipientSide,
   confirmedHandicapPoints: number,
-  confirmedScore: string
+  confirmedScore: string,
+  pointsToWin: number = DEFAULT_POINTS_TO_WIN
 ): SinglesEloChange[] {
   const recipient = handicapRecipientSide(playerA.eloRating, playerB.eloRating);
   const expectedA = expectedScoreWithHandicap(
     playerA.eloRating,
     playerB.eloRating,
     confirmedHandicapPoints,
-    recipient
+    recipient,
+    pointsToWin
   );
-  const scoreMult = scoreMarginMultiplier(parseConfirmedScore(confirmedScore));
+  const scoreMult = scoreMarginMultiplier(parseConfirmedScore(confirmedScore), pointsToWin);
 
   return [playerA, playerB].map((player) => {
     const opponent = player === playerA ? playerB : playerA;

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Enable dark mode via .dark class on <html> */
+/* Class-based dark mode (manual toggle). Must override Tailwind's default media query. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
@@ -69,6 +69,11 @@
   html {
     min-height: 100%;
     overflow-x: clip;
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 
   body {
@@ -286,5 +291,34 @@
   html.ptr-enabled.ptr-standalone body {
     overscroll-behavior-y: none;
     -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Client navigation progress (top bar) */
+.nav-progress-bar {
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.nav-progress-bar--active {
+  opacity: 1;
+  animation: nav-progress-slide 1.1s ease-in-out infinite;
+}
+
+@keyframes nav-progress-slide {
+  0% {
+    transform: scaleX(0.12);
+    transform-origin: left;
+  }
+  40% {
+    transform: scaleX(0.65);
+    transform-origin: left;
+  }
+  100% {
+    transform: scaleX(0.12);
+    transform-origin: right;
   }
 }

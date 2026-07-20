@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Challenge" ADD COLUMN IF NOT EXISTS "pointsToWin" INTEGER NOT NULL DEFAULT 21;

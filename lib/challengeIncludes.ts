@@ -3,6 +3,8 @@ const CHALLENGE_PLAYER_SELECT = {
   name: true,
   avatarUrl: true,
   eloRating: true,
+  totalMatches: true,
+  totalWins: true,
 } as const;
 
 const BET_MEMBER_SELECT = {
@@ -26,5 +28,19 @@ export const CHALLENGE_FULL_INCLUDE = {
   },
 } as const;
 
-/** List view — same shape, bets used only for pool counts. */
-export const CHALLENGE_LIST_INCLUDE = CHALLENGE_FULL_INCLUDE;
+/**
+ * List/history views — players + bet amounts for pool counts only.
+ * Avoids loading bettor/counterparty rows for every kèo on list pages.
+ */
+export const CHALLENGE_LIST_INCLUDE = {
+  playerA: { select: CHALLENGE_PLAYER_SELECT },
+  playerA2: { select: CHALLENGE_PLAYER_SELECT },
+  playerB: { select: CHALLENGE_PLAYER_SELECT },
+  playerB2: { select: CHALLENGE_PLAYER_SELECT },
+  bets: {
+    select: {
+      side: true,
+      amount: true,
+    },
+  },
+} as const;

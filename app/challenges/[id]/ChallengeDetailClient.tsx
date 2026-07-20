@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -12,6 +12,7 @@ import ChallengeAdminControls from "@/components/challenges/ChallengeAdminContro
 import DrinkChallengeToggle from "@/components/challenges/DrinkChallengeToggle";
 import ChallengeResultSummary from "@/components/challenges/ChallengeResultSummary";
 import EloGuidelineLink from "@/components/leaderboard/EloGuidelineLink";
+import { useRegisterPullToRefresh } from "@/components/PullToRefresh";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import { YouTubeUrlEditor } from "@/components/ui/YouTubeVideo";
 import * as dataService from "@/lib/dataService";
@@ -38,6 +39,11 @@ export default function ChallengeDetailClient({
   const [pendingBettorId, setPendingBettorId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setChallenge(initialChallenge);
+    setMembers(initialMembers);
+  }, [initialChallenge, initialMembers]);
+
   const refreshMembers = useCallback(async () => {
     try {
       const updated = await dataService.getMembers();
@@ -46,6 +52,17 @@ export default function ChallengeDetailClient({
       // non-fatal
     }
   }, []);
+
+  const refreshChallenge = useCallback(async () => {
+    const [updated, updatedMembers] = await Promise.all([
+      dataService.getChallenge(challengeId),
+      dataService.getMembers(),
+    ]);
+    setChallenge(updated);
+    setMembers(updatedMembers);
+  }, [challengeId]);
+
+  useRegisterPullToRefresh(refreshChallenge);
 
   const handleChallengeUpdated = useCallback(
     (updated: ChallengeDTO) => {

@@ -18,7 +18,8 @@ function computeEloChanges(
   competitors: Competitor[],
   winnerSide: ChallengeSide,
   confirmedHandicapPoints: number,
-  confirmedScore: string
+  confirmedScore: string,
+  pointsToWin: number
 ): ChallengeResolutionDTO["eloChanges"] {
   const playerA = competitors.find((c) => c.side === "A");
   const playerB = competitors.find((c) => c.side === "B");
@@ -41,7 +42,8 @@ function computeEloChanges(
     },
     winnerSide,
     confirmedHandicapPoints,
-    confirmedScore
+    confirmedScore,
+    pointsToWin
   );
 }
 
@@ -227,6 +229,13 @@ export async function resolveChallenge(
     if (challenge.status !== "ACTIVE") {
       throw new Error("INVALID_STATUS");
     }
+    if (
+      !Number.isInteger(confirmedHandicapPoints) ||
+      confirmedHandicapPoints < 0 ||
+      confirmedHandicapPoints > challenge.pointsToWin
+    ) {
+      throw new Error("INVALID_HANDICAP");
+    }
 
     const competitors: Competitor[] = [
       {
@@ -275,7 +284,8 @@ export async function resolveChallenge(
           competitors,
           winnerSide,
           confirmedHandicapPoints,
-          confirmedScore
+          confirmedScore,
+          challenge.pointsToWin
         );
     const matchDebts =
       challenge.isDrinkChallenge && challenge.bets.length === 0
@@ -424,7 +434,8 @@ export async function adminEditChallengeWinner(
         competitors,
         winnerSide,
         refreshed.confirmedHandicapPoints ?? refreshed.handicapPoints,
-        refreshed.confirmedScore ?? ""
+        refreshed.confirmedScore ?? "",
+        refreshed.pointsToWin
       );
 
       for (const change of eloChanges) {

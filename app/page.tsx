@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { HomePageSkeleton } from "@/components/ui/Skeleton";
 import HomeLoader from "./HomeLoader";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export default function HomePage() {
   return (

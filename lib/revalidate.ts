@@ -6,12 +6,13 @@ export function revalidateMatchPages(matchId?: number) {
   if (matchId) revalidatePath(`/matches/${matchId}`);
 }
 
-export function revalidateMemberPages() {
+export function revalidateMemberPages(memberId?: number) {
   revalidatePath("/");
   revalidatePath("/management");
   revalidatePath("/leaderboard");
   revalidatePath("/challenges");
   revalidatePath("/cam");
+  if (memberId) revalidatePath(`/members/${memberId}`);
 }
 
 export function revalidateChallengePages(challengeId?: number) {
@@ -19,6 +20,8 @@ export function revalidateChallengePages(challengeId?: number) {
   revalidatePath("/leaderboard");
   revalidatePath("/management");
   if (challengeId) revalidatePath(`/challenges/${challengeId}`);
+  // Profiles show challenge + Elo history
+  revalidatePath("/members", "layout");
 }
 
 export function revalidateDebtPages() {

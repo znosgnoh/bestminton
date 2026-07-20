@@ -5,6 +5,9 @@ import { toDTO } from "@/lib/serialize";
 import MatchTabs from "@/components/matches/MatchTabs";
 import type { MatchDTO } from "@/lib/types";
 
+/** Keep home fast: all upcoming + recent past only. */
+const PAST_MATCH_LIMIT = 40;
+
 export default async function HomeLoader() {
   let upcoming: MatchDTO[] = [];
   let past: MatchDTO[] = [];
@@ -12,14 +15,22 @@ export default async function HomeLoader() {
 
   if (isDatabaseConfigured()) {
     try {
-      const raw = await db.match.findMany({
-        include: MATCH_LIST_INCLUDE,
-        orderBy: { scheduledAt: "asc" },
-      });
-      const matches = toDTO<MatchDTO[]>(raw);
       const now = new Date();
-      upcoming = matches.filter((m) => new Date(m.scheduledAt) >= now);
-      past = matches.filter((m) => new Date(m.scheduledAt) < now).reverse();
+      const [upcomingRaw, pastRaw] = await Promise.all([
+        db.match.findMany({
+          where: { scheduledAt: { gte: now } },
+          include: MATCH_LIST_INCLUDE,
+          orderBy: { scheduledAt: "asc" },
+        }),
+        db.match.findMany({
+          where: { scheduledAt: { lt: now } },
+          include: MATCH_LIST_INCLUDE,
+          orderBy: { scheduledAt: "desc" },
+          take: PAST_MATCH_LIMIT,
+        }),
+      ]);
+      upcoming = toDTO<MatchDTO[]>(upcomingRaw);
+      past = toDTO<MatchDTO[]>(pastRaw);
       dbAvailable = true;
     } catch {
       // DB unreachable at build or runtime — fall back to client-side local mode

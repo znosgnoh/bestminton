@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { CalendarPlus, ChevronDown, ChevronUp } from "lucide-react";
 import MatchManageRow from "./MatchManageRow";
 import MatchForm from "./MatchForm";
+import { useRegisterPullToRefresh } from "@/components/PullToRefresh";
 import { useI18n } from "@/contexts/LocaleContext";
 import * as dataService from "@/lib/dataService";
 import type { MatchDTO } from "@/lib/types";
@@ -31,10 +32,19 @@ export default function MatchesSection({ initialMatches, dbAvailable }: MatchesS
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
-    if (!dbAvailable) {
-      dataService.getMatches().then(setMatches);
+    if (dbAvailable) {
+      setMatches(initialMatches);
+      return;
     }
-  }, [dbAvailable]);
+    dataService.getMatches().then(setMatches);
+  }, [dbAvailable, initialMatches]);
+
+  const refreshMatches = useCallback(async () => {
+    const next = await dataService.getMatches();
+    setMatches(next);
+  }, []);
+
+  useRegisterPullToRefresh(refreshMatches);
 
   function handleSaved(created: MatchDTO[]) {
     setMatches((prev) => {

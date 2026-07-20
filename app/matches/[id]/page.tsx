@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { MatchDetailSkeleton } from "@/components/ui/Skeleton";
 import MatchDetailLoader from "./MatchDetailLoader";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export default async function MatchPage({
   params,

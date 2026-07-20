@@ -71,6 +71,9 @@ export interface ChallengePlayerDTO {
   name: string;
   avatarUrl: string | null;
   eloRating: number;
+  totalMatches: number;
+  totalWins: number;
+  winRate: number;
 }
 
 export interface ChallengeSideDTO {
@@ -126,6 +129,7 @@ export interface ChallengeDTO {
   format: ChallengeFormat;
   status: ChallengeStatus;
   isDrinkChallenge: boolean;
+  pointsToWin: number;
   handicapPoints: number;
   confirmedHandicapPoints: number | null;
   confirmedScore: string | null;
@@ -149,12 +153,14 @@ export interface CreateChallengeRequest {
   playerBId: number;
   playerB2Id?: number;
   isDrinkChallenge?: boolean;
+  pointsToWin?: number;
   handicapPoints?: number;
   notes?: string | null;
 }
 
 export interface UpdateChallengeRequest {
   isDrinkChallenge?: boolean;
+  pointsToWin?: number;
   handicapPoints?: number;
   notes?: string | null;
   youtubeUrl?: string | null;
@@ -216,6 +222,48 @@ export interface MemberDebtsResponse {
   owes: DrinkDebtDTO[];
   owedBy: DrinkDebtDTO[];
   summary: MemberDebtSummary;
+}
+
+export interface MemberMatchHistoryItemDTO {
+  matchId: number;
+  title: string;
+  venue: string;
+  scheduledAt: string;
+  playedFull: boolean;
+  guestCount: number;
+  synced: boolean;
+}
+
+export interface EloHistoryPointDTO {
+  challengeId: number;
+  completedAt: string;
+  before: number;
+  after: number;
+  delta: number;
+  won: boolean;
+  score: string | null;
+  opponentNames: string[];
+  format: ChallengeFormat;
+}
+
+export interface MemberProfileStatsDTO {
+  sessionsPlayed: number;
+  singlesPlayed: number;
+  singlesWins: number;
+  doublesPlayed: number;
+  doublesWins: number;
+  peakElo: number;
+  lowestElo: number;
+}
+
+export interface MemberProfileDTO {
+  member: MemberDTO;
+  rank: number | null;
+  winRate: number;
+  stats: MemberProfileStatsDTO;
+  matchHistory: MemberMatchHistoryItemDTO[];
+  challengeHistory: ChallengeDTO[];
+  eloHistory: EloHistoryPointDTO[];
 }
 
 export interface GuestDTO {

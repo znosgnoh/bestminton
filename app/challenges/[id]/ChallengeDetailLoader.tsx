@@ -1,8 +1,10 @@
 import { db } from "@/lib/db";
-import { formatDatabaseError, logDatabaseError, probeDatabase } from "@/lib/dbHealth";
+import { isDatabaseConfigured } from "@/lib/dbConfig";
+import { formatDatabaseError, logDatabaseError } from "@/lib/dbHealth";
 import { CHALLENGE_FULL_INCLUDE } from "@/lib/challengeIncludes";
 import { serializeChallenge } from "@/lib/challengeSerialize";
-import { membersToDTOs } from "@/lib/memberSerialize";
+import { debtSummaryFor, getAllDebtSummaries } from "@/lib/drinkDebt";
+import { toMemberDTO } from "@/lib/memberSerialize";
 import ChallengeDetailClient from "./ChallengeDetailClient";
 import type { ChallengeDTO, MemberDTO } from "@/lib/types";
 
@@ -20,36 +22,46 @@ export default async function ChallengeDetailLoader({
   let dbAvailable = false;
   let dbError: string | undefined;
 
-  if (!isNaN(challengeId)) {
-    const probe = await probeDatabase();
-    if (!probe.ok) {
-      dbError = probe.message;
-      logDatabaseError("ChallengeDetailPage", probe.message);
-    } else {
-      try {
-        const [rawChallenge, rawMembers] = await Promise.all([
-          db.challenge.findUnique({
-            where: { id: challengeId },
-            include: CHALLENGE_FULL_INCLUDE,
-          }),
-          db.member.findMany({ orderBy: { name: "asc" } }),
-        ]);
+  if (isNaN(challengeId)) {
+    return (
+      <ChallengeDetailClient
+        challengeId={-1}
+        initialChallenge={null}
+        initialMembers={[]}
+        dbAvailable={false}
+        dbError="Invalid challenge."
+      />
+    );
+  }
 
-        if (rawChallenge) {
-          initialChallenge = serializeChallenge(rawChallenge);
-        }
-        initialMembers = await membersToDTOs(rawMembers);
-        dbAvailable = true;
-      } catch (err) {
-        dbError = formatDatabaseError(err);
-        logDatabaseError("ChallengeDetailPage", err);
+  if (!isDatabaseConfigured()) {
+    dbError =
+      "POSTGRES_PRISMA_URL is not set. Configure Postgres env vars for kèo and leaderboard features.";
+  } else {
+    try {
+      const [rawChallenge, rawMembers, summaries] = await Promise.all([
+        db.challenge.findUnique({
+          where: { id: challengeId },
+          include: CHALLENGE_FULL_INCLUDE,
+        }),
+        db.member.findMany({ orderBy: { name: "asc" } }),
+        getAllDebtSummaries(),
+      ]);
+
+      if (rawChallenge) {
+        initialChallenge = serializeChallenge(rawChallenge);
       }
+      initialMembers = rawMembers.map((m) => toMemberDTO(m, debtSummaryFor(m.id, summaries)));
+      dbAvailable = true;
+    } catch (err) {
+      dbError = formatDatabaseError(err);
+      logDatabaseError("ChallengeDetailPage", err);
     }
   }
 
   return (
     <ChallengeDetailClient
-      challengeId={isNaN(challengeId) ? -1 : challengeId}
+      challengeId={challengeId}
       initialChallenge={initialChallenge}
       initialMembers={initialMembers}
       dbAvailable={dbAvailable}

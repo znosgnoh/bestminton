@@ -54,6 +54,7 @@ export default function ChallengeCard({ challenge }: ChallengeCardProps) {
           </p>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             {challenge.format === "DOUBLES" ? t("challenges.doublesShort") : t("challenges.singlesShort")} ·{" "}
+            {t("challenges.pointsToWinShort", { points: challenge.pointsToWin })} ·{" "}
             {formatDate(displayDate, locale)}
           </p>
         </div>

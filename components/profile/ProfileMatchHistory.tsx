@@ -1,0 +1,77 @@
+"use client";
+
+import Link from "next/link";
+import { CheckCircle, MapPin, Users } from "lucide-react";
+import { useI18n } from "@/contexts/LocaleContext";
+import type { Locale } from "@/lib/i18n";
+import type { MemberMatchHistoryItemDTO } from "@/lib/types";
+
+interface ProfileMatchHistoryProps {
+  matches: MemberMatchHistoryItemDTO[];
+}
+
+function intlLocale(locale: Locale): string {
+  if (locale === "zh") return "zh-CN";
+  if (locale === "vi") return "vi-VN";
+  return "en-US";
+}
+
+function formatDate(iso: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(intlLocale(locale), {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
+}
+
+export default function ProfileMatchHistory({ matches }: ProfileMatchHistoryProps) {
+  const { locale, t } = useI18n();
+
+  if (matches.length === 0) {
+    return (
+      <div className="tet-empty py-6">
+        <p>{t("profile.noMatches")}</p>
+      </div>
+    );
+  }
+
+  return (
+    <ul className="space-y-2">
+      {matches.map((match) => (
+        <li key={match.matchId}>
+          <Link href={`/matches/${match.matchId}`} className="tet-card-hover block p-3">
+            <div className="flex items-start justify-between gap-2">
+              <p className="min-w-0 flex-1 font-medium text-gray-900 dark:text-gray-100 truncate">
+                {match.title}
+              </p>
+              {match.synced && (
+                <span className="tet-badge-synced shrink-0">
+                  <CheckCircle size={10} />
+                  {t("common.synced")}
+                </span>
+              )}
+            </div>
+            <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <MapPin size={12} className="shrink-0 text-amber-600 dark:text-amber-400" />
+              <span className="truncate">{match.venue}</span>
+            </div>
+            <div className="mt-2 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+              <span>{formatDate(match.scheduledAt, locale)}</span>
+              <span className="inline-flex items-center gap-1">
+                <Users size={12} />
+                {match.playedFull ? t("common.full") : t("common.halfTime")}
+                {match.guestCount > 0 && (
+                  <span>
+                    · +{match.guestCount} {t("profile.guests")}
+                  </span>
+                )}
+              </span>
+            </div>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}

@@ -61,9 +61,10 @@ export default function ResolveConfirmModal({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const maxHcp = challenge.pointsToWin;
     const parsedHandicap = parseHandicapValue(handicap);
-    if (parsedHandicap === null || parsedHandicap < 0 || parsedHandicap > 21) {
-      setError(t("challenges.handicapRange"));
+    if (parsedHandicap === null || parsedHandicap < 0 || parsedHandicap > maxHcp) {
+      setError(t("challenges.handicapRange", { max: maxHcp }));
       return;
     }
     const trimmedScore = score.trim();
@@ -108,7 +109,7 @@ export default function ResolveConfirmModal({
               id="resolve-handicap"
               type="number"
               min={0}
-              max={21}
+              max={challenge.pointsToWin}
               step={1}
               value={handicap}
               disabled={loading}
@@ -118,6 +119,8 @@ export default function ResolveConfirmModal({
             <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
               {t("challenges.handicapRecipient", { side: recipientSide })}
               {challenge.format === "DOUBLES" && t("challenges.handicapDoublesNote")}
+              {" · "}
+              {t("challenges.pointsToWinShort", { points: challenge.pointsToWin })}
             </span>
           </div>
 
@@ -132,7 +135,11 @@ export default function ResolveConfirmModal({
               disabled={loading}
               onChange={(e) => setScore(e.target.value)}
               className="tet-input mt-1 w-full"
-              placeholder={t("challenges.scorePlaceholder")}
+              placeholder={
+                challenge.pointsToWin === 15
+                  ? t("challenges.scorePlaceholder15")
+                  : t("challenges.scorePlaceholder")
+              }
               autoFocus
             />
           </div>

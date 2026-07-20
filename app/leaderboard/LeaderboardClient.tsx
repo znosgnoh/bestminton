@@ -1,9 +1,12 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
 import EloGuideline from "@/components/leaderboard/EloGuideline";
+import { useRegisterPullToRefresh } from "@/components/PullToRefresh";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import { useI18n } from "@/contexts/LocaleContext";
+import * as dataService from "@/lib/dataService";
 import type { LeaderboardEntryDTO } from "@/lib/types";
 
 interface LeaderboardClientProps {
@@ -11,8 +14,23 @@ interface LeaderboardClientProps {
   dbAvailable: boolean;
 }
 
-export default function LeaderboardClient({ entries, dbAvailable }: LeaderboardClientProps) {
+export default function LeaderboardClient({
+  entries: initialEntries,
+  dbAvailable,
+}: LeaderboardClientProps) {
   const { t } = useI18n();
+  const [entries, setEntries] = useState(initialEntries);
+
+  useEffect(() => {
+    setEntries(initialEntries);
+  }, [initialEntries]);
+
+  const refreshLeaderboard = useCallback(async () => {
+    const next = await dataService.getLeaderboard();
+    setEntries(next);
+  }, []);
+
+  useRegisterPullToRefresh(refreshLeaderboard);
 
   return (
     <div className="mx-auto max-w-lg px-4 py-4 space-y-4">

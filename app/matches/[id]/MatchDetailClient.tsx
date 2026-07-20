@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, MapPin, Clock, Calendar } from "lucide-react";
@@ -9,6 +9,7 @@ import AdminPinModal from "@/components/ui/AdminPinModal";
 import MemberRoster from "@/components/matches/MemberRoster";
 import RegistrationRow from "@/components/matches/RegistrationRow";
 import SettleForm from "@/components/matches/SettleForm";
+import { useRegisterPullToRefresh } from "@/components/PullToRefresh";
 import { YouTubeUrlEditor } from "@/components/ui/YouTubeVideo";
 import { useI18n } from "@/contexts/LocaleContext";
 import { useAdminPin } from "@/hooks/useAdminPin";
@@ -63,18 +64,34 @@ function MatchDetailClientInner({
   const [loading, setLoading] = useState(!dbAvailable);
 
   useEffect(() => {
-    if (!dbAvailable) {
-      Promise.all([
-        dataService.getMatch(matchId),
-        dataService.getMembers(),
-      ]).then(([m, members]) => {
+    if (dbAvailable) {
+      setMatch(initialMatch);
+      setAllMembers(initialMembers);
+      setRegistrations(initialMatch?.registrations ?? []);
+      setLoading(false);
+      return;
+    }
+    Promise.all([dataService.getMatch(matchId), dataService.getMembers()]).then(
+      ([m, members]) => {
         setMatch(m);
         setAllMembers(members);
         setRegistrations(m?.registrations ?? []);
         setLoading(false);
-      });
-    }
-  }, [matchId, dbAvailable]);
+      }
+    );
+  }, [matchId, dbAvailable, initialMatch, initialMembers]);
+
+  const refreshMatch = useCallback(async () => {
+    const [m, members] = await Promise.all([
+      dataService.getMatch(matchId),
+      dataService.getMembers(),
+    ]);
+    setMatch(m);
+    setAllMembers(members);
+    setRegistrations(m?.registrations ?? []);
+  }, [matchId]);
+
+  useRegisterPullToRefresh(refreshMatch);
 
   function handleRegistrationUpdated(updated: RegistrationDTO) {
     setRegistrations((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
 import { useI18n } from "@/contexts/LocaleContext";
@@ -42,25 +43,30 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
             const netCam = entry.debtSummary.netCam;
 
             return (
-              <li key={entry.id} className="flex items-center gap-3 px-3 py-3">
-                <span className="w-6 shrink-0 text-center text-sm font-bold text-gray-400">
-                  {entry.rank}
-                </span>
-                <Avatar name={entry.name} avatarUrl={entry.avatarUrl} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-gray-900 dark:text-gray-100">
-                    {entry.name}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {entry.totalWins}–{losses} · Elo {entry.eloRating}
-                  </p>
-                </div>
-                <div className={`shrink-0 text-right text-xs font-medium ${netCamClass(netCam)}`}>
-                  <span className="inline-flex items-center justify-end gap-0.5">
-                    <OrangeJuiceIcon size={12} />
-                    {formatNetCam(netCam)}
+              <li key={entry.id}>
+                <Link
+                  href={`/members/${entry.id}`}
+                  className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-amber-50/50 dark:hover:bg-gray-800/50"
+                >
+                  <span className="w-6 shrink-0 text-center text-sm font-bold text-gray-400">
+                    {entry.rank}
                   </span>
-                </div>
+                  <Avatar name={entry.name} avatarUrl={entry.avatarUrl} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-gray-900 dark:text-gray-100">
+                      {entry.name}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {entry.totalWins}–{losses} · Elo {entry.eloRating}
+                    </p>
+                  </div>
+                  <div className={`shrink-0 text-right text-xs font-medium ${netCamClass(netCam)}`}>
+                    <span className="inline-flex items-center justify-end gap-0.5">
+                      <OrangeJuiceIcon size={12} />
+                      {formatNetCam(netCam)}
+                    </span>
+                  </div>
+                </Link>
               </li>
             );
           })}
@@ -92,29 +98,35 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
               const netCam = entry.debtSummary.netCam;
 
               return (
-              <tr key={entry.id} className="hover:bg-amber-50/40 dark:hover:bg-gray-800/40">
-                <td className="px-4 py-3 font-bold text-gray-400">{entry.rank}</td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Avatar name={entry.name} avatarUrl={entry.avatarUrl} size="sm" />
-                    <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {entry.name}
+                <tr
+                  key={entry.id}
+                  className="hover:bg-amber-50/40 dark:hover:bg-gray-800/40"
+                >
+                  <td className="px-4 py-3 font-bold text-gray-400">{entry.rank}</td>
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/members/${entry.id}`}
+                      className="flex items-center gap-2 min-w-0 hover:underline"
+                    >
+                      <Avatar name={entry.name} avatarUrl={entry.avatarUrl} size="sm" />
+                      <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {entry.name}
+                      </span>
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-right font-semibold text-emerald-700 dark:text-amber-400">
+                    {entry.eloRating}
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
+                    {entry.totalWins}–{entry.totalMatches - entry.totalWins}
+                  </td>
+                  <td className={`px-4 py-3 text-right font-medium ${netCamClass(netCam)}`}>
+                    <span className="inline-flex items-center justify-end gap-1">
+                      <OrangeJuiceIcon size={12} />
+                      {formatNetCam(netCam)}
                     </span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-right font-semibold text-emerald-700 dark:text-amber-400">
-                  {entry.eloRating}
-                </td>
-                <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
-                  {entry.totalWins}–{entry.totalMatches - entry.totalWins}
-                </td>
-                <td className={`px-4 py-3 text-right font-medium ${netCamClass(netCam)}`}>
-                  <span className="inline-flex items-center justify-end gap-1">
-                    <OrangeJuiceIcon size={12} />
-                    {formatNetCam(netCam)}
-                  </span>
-                </td>
-              </tr>
+                  </td>
+                </tr>
               );
             })}
           </tbody>

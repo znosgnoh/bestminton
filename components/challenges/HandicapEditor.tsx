@@ -18,11 +18,17 @@ export default function HandicapEditor({ challenge, onUpdated }: HandicapEditorP
   const [error, setError] = useState<string | null>(null);
 
   const suggested = useMemo(
-    () => suggestedHandicap(challenge.sideA.averageElo, challenge.sideB.averageElo),
-    [challenge.sideA.averageElo, challenge.sideB.averageElo]
+    () =>
+      suggestedHandicap(
+        challenge.sideA.averageElo,
+        challenge.sideB.averageElo,
+        challenge.pointsToWin
+      ),
+    [challenge.sideA.averageElo, challenge.sideB.averageElo, challenge.pointsToWin]
   );
 
   const recipientSide = challenge.handicapRecipientSide;
+  const handicapMax = challenge.pointsToWin;
 
   useEffect(() => {
     setValue(String(challenge.handicapPoints));
@@ -55,7 +61,7 @@ export default function HandicapEditor({ challenge, onUpdated }: HandicapEditorP
       setValue(String(challenge.handicapPoints));
       return;
     }
-    void save(parsed);
+    void save(Math.min(parsed, handicapMax));
   }
 
   return (
@@ -68,7 +74,7 @@ export default function HandicapEditor({ challenge, onUpdated }: HandicapEditorP
         <input
           type="number"
           min={0}
-          max={21}
+          max={handicapMax}
           step={1}
           value={value}
           disabled={loading}
@@ -79,7 +85,7 @@ export default function HandicapEditor({ challenge, onUpdated }: HandicapEditorP
         <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
           Gợi ý: {suggested} điểm cho Side {recipientSide}
           {challenge.format === "DOUBLES" && " (Elo trung bình thấp hơn)"}
-          {" · "}Có thể chỉnh trước khi bắt đầu kèo
+          {" · "}Tới {challenge.pointsToWin} pts · Có thể chỉnh trước khi bắt đầu kèo
         </span>
       </label>
       {error && <ErrorBanner message={error} onRetry={() => setError(null)} />}

@@ -2,10 +2,12 @@ import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { Be_Vietnam_Pro, Noto_Sans } from "next/font/google";
 import AppHeader from "@/components/layout/AppHeader";
+import NavigationProgress from "@/components/layout/NavigationProgress";
 import PullToRefresh from "@/components/PullToRefresh";
 import PwaRegister from "@/components/PwaRegister";
 import { LocaleProvider } from "@/contexts/LocaleContext";
 import { isLocale, LOCALE_STORAGE_KEY } from "@/lib/i18n";
+import { isTheme, THEME_COOKIE_KEY, THEME_STORAGE_KEY } from "@/lib/theme";
 import { SITE_SHORT, SITE_TITLE } from "./layout.constants";
 import "./globals.css";
 
@@ -54,13 +56,29 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const storedLocale = cookieStore.get(LOCALE_STORAGE_KEY)?.value;
   const initialLocale = storedLocale && isLocale(storedLocale) ? storedLocale : "en";
+  const storedTheme = cookieStore.get(THEME_COOKIE_KEY)?.value;
+  const isDark = isTheme(storedTheme) ? storedTheme === "dark" : false;
+
+  const htmlClass = [
+    "h-full",
+    "antialiased",
+    beVietnamPro.variable,
+    notoSans.variable,
+    isDark ? "dark" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <html lang={initialLocale === "zh" ? "zh-CN" : initialLocale} className={`h-full antialiased ${beVietnamPro.variable} ${notoSans.variable}`} suppressHydrationWarning>
+    <html
+      lang={initialLocale === "zh" ? "zh-CN" : initialLocale}
+      className={htmlClass}
+      suppressHydrationWarning
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(t===null&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})()`,
+            __html: `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var c=${JSON.stringify(THEME_COOKIE_KEY)};var t=localStorage.getItem(k);var dark=t==='dark'||(t===null&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',dark);document.cookie=c+'='+(dark?'dark':'light')+';path=/;max-age=31536000;SameSite=Lax';}catch(e){}})()`,
           }}
         />
         <script
@@ -71,6 +89,7 @@ export default async function RootLayout({
       </head>
       <body className="min-h-full flex min-w-0 flex-col overflow-x-clip">
         <LocaleProvider initialLocale={initialLocale}>
+          <NavigationProgress />
           <AppHeader />
           <main className="flex-1 min-w-0">
             <PullToRefresh>{children}</PullToRefresh>

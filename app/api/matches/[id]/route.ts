@@ -7,10 +7,10 @@ import { revalidateMatchPages } from "@/lib/revalidate";
 import { toDTO } from "@/lib/serialize";
 import { parseYoutubeUrlField } from "@/lib/youtube";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 const CACHE_HEADERS = {
-  "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+  "Cache-Control": "private, no-store, max-age=0",
 };
 
 export async function GET(

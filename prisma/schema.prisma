@@ -100,6 +100,8 @@ model Challenge {
   confirmedHandicapPoints  Int?
   confirmedScore           String?
   notes                    String?
+  /// Game endpoint: 15 or 21 points. Affects handicap scale and Elo score margin.
+  pointsToWin              Int             @default(21)
   isDrinkChallenge         Boolean         @default(false)
   winnerSide               ChallengeSide?
   winnerId                 Int?

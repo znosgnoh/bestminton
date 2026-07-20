@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
+import { buildMemberProfile } from "@/lib/memberProfile";
 import { revalidateMemberPages } from "@/lib/revalidate";
 import { memberToDTO } from "@/lib/memberSerialize";
 import { Prisma } from "@prisma/client";
@@ -14,6 +15,28 @@ function parseOptionalInt(
     return { ok: false, error: `${field} must be an integer.` };
   }
   return { ok: true, value: n };
+}
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id: idStr } = await params;
+  const id = parseInt(idStr);
+  if (isNaN(id)) {
+    return NextResponse.json({ error: "Invalid member ID." }, { status: 400 });
+  }
+
+  try {
+    const profile = await buildMemberProfile(id);
+    if (!profile) {
+      return NextResponse.json({ error: "Member not found." }, { status: 404 });
+    }
+    return NextResponse.json(profile);
+  } catch (err) {
+    console.error("[GET /api/members/:id]", err);
+    return NextResponse.json({ error: "Failed to load member profile." }, { status: 500 });
+  }
 }
 
 export async function PUT(
@@ -151,7 +174,7 @@ export async function PUT(
         ...(totalWins !== undefined && { totalWins }),
       },
     });
-    revalidateMemberPages();
+    revalidateMemberPages(id);
     return NextResponse.json(await memberToDTO(member));
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -260,7 +283,7 @@ export async function DELETE(
       });
       await tx.member.delete({ where: { id } });
     });
-    revalidateMemberPages();
+    revalidateMemberPages(id);
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {

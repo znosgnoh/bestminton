@@ -5,10 +5,10 @@ import { revalidateMemberPages } from "@/lib/revalidate";
 import { memberToDTO, membersToDTOs } from "@/lib/memberSerialize";
 import { Prisma } from "@prisma/client";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 const CACHE_HEADERS = {
-  "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+  "Cache-Control": "private, no-store, max-age=0",
 };
 
 export async function GET() {

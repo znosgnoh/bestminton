@@ -9,13 +9,14 @@ export const dynamic = "force-dynamic";
 
 function parseConfirmedHandicap(value: unknown): number | { error: string } {
   if (value === undefined || value === null) {
-    return { error: "confirmedHandicapPoints is required (0–21)." };
+    return { error: "confirmedHandicapPoints is required." };
   }
   if (typeof value === "string" && value.trim() === "") {
-    return { error: "confirmedHandicapPoints is required (0–21)." };
+    return { error: "confirmedHandicapPoints is required." };
   }
   const parsed =
     typeof value === "string" ? parseInt(value.trim(), 10) : Math.trunc(Number(value));
+  // Upper bound of 21 covers both 15- and 21-pt matches; resolveChallenge enforces match endpoint.
   if (!Number.isInteger(parsed) || parsed < 0 || parsed > 21) {
     return { error: "confirmedHandicapPoints must be a non-negative integer up to 21." };
   }
@@ -96,6 +97,12 @@ export async function POST(
       return NextResponse.json(
         { error: "Kèo phải đang đấu mới chốt được." },
         { status: 409 }
+      );
+    }
+    if (message === "INVALID_HANDICAP") {
+      return NextResponse.json(
+        { error: "Chấp điểm phải từ 0 đến điểm tới thắng của kèo." },
+        { status: 400 }
       );
     }
     return databaseErrorResponse(err, "POST /api/challenges/[id]/resolve");

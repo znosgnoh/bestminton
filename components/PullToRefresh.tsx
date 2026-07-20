@@ -52,8 +52,13 @@ export default function PullToRefresh({ children }: PullToRefreshProps) {
 
   const onRefresh = useCallback(async () => {
     const handlers = [...handlersRef.current];
+    // Page handlers refetch with cache: "no-store" and update client state.
     await Promise.all(handlers.map((fn) => fn()));
+    // Soft-refresh RSC tree. refresh() returns void, so give the flight time to apply.
     router.refresh();
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, handlers.length > 0 ? 250 : 500);
+    });
   }, [router]);
 
   const { t } = useI18n();
