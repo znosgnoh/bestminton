@@ -1,0 +1,5 @@
+# Never upload local env files / symlinks into Vercel builds
+.env
+.env.*
+.mcp.json
+.cursor
