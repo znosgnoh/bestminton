@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
+import StreakBadge from "@/components/ui/StreakBadge";
 import EloHistoryChart from "@/components/profile/EloHistoryChart";
 import ProfileChallengeHistory from "@/components/profile/ProfileChallengeHistory";
 import ProfileCollapsibleSection from "@/components/profile/ProfileCollapsibleSection";
@@ -95,7 +96,14 @@ export default function MemberProfileClient({
         <div className="flex items-center gap-4">
           <Avatar name={member.name} avatarUrl={member.avatarUrl} size="lg" />
           <div className="min-w-0 flex-1">
-            <h1 className="tet-page-title truncate">{member.name}</h1>
+            <h1 className="flex items-center gap-2 tet-page-title min-w-0">
+              <span className="truncate">{member.name}</span>
+              <StreakBadge
+                winStreak={member.singlesWinStreak}
+                loseStreak={member.singlesLoseStreak}
+                className="shrink-0"
+              />
+            </h1>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
               {rank != null && (
                 <span>

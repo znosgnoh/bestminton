@@ -54,6 +54,8 @@ export interface MemberDTO {
   eloRating: number;
   totalMatches: number;
   totalWins: number;
+  singlesWinStreak: number;
+  singlesLoseStreak: number;
   debtSummary: MemberDebtSummary;
 }
 
@@ -113,6 +115,14 @@ export interface ChallengeDebtRecord {
   reason: "match" | "bet";
 }
 
+export interface ChallengeStreakChange {
+  memberId: number;
+  beforeWinStreak: number;
+  beforeLoseStreak: number;
+  afterWinStreak: number;
+  afterLoseStreak: number;
+}
+
 export interface ChallengeResolutionDTO {
   eloChanges: Array<{
     memberId: number;
@@ -122,6 +132,8 @@ export interface ChallengeResolutionDTO {
     delta: number;
   }>;
   debts: ChallengeDebtRecord[];
+  /** Pre/post singles streaks for un-resolve / re-resolve. Absent on older kèo. */
+  streakChanges?: ChallengeStreakChange[];
 }
 
 export interface ChallengeDTO {

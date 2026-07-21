@@ -56,6 +56,10 @@ const en = {
     active: "In play",
     completed: "Done",
   },
+  streak: {
+    fire: "Win streak ×{count}",
+    ice: "Lose streak ×{count}",
+  },
   drink: {
     label: "Orange juice",
     challengeLabel: "Orange juice kèo",
@@ -195,10 +199,10 @@ const en = {
   },
   eloGuide: {
     intro:
-      "Everyone starts at {defaultElo} Elo. After each singles kèo, points change based on expected win rate, score margin, and Elo gap. Doubles kèo do not change Elo (ratings still suggest handicap).",
+      "Everyone starts at {defaultElo} Elo. After each singles kèo, points change based on expected win rate, score margin, Elo gap, and win/lose streaks (3+). Doubles kèo do not change Elo (ratings still suggest handicap).",
     formula: "Formula",
     formulaExpr:
-      "New Elo = Old Elo + K × score factor × gap factor × (result − expected)",
+      "New Elo = Old Elo + K × score factor × gap factor × streak factor × (result − expected)",
     stepKTitle: "K — sensitivity",
     stepKBody:
       "{kNew} per match for new players (under {threshold} kèo), {kEstablished} for established players.",
@@ -211,6 +215,9 @@ const en = {
     stepGapTitle: "Elo gap factor",
     stepGapBody:
       "Upsets with a large Elo gap move more. Expected favorite wins move less.",
+    stepStreakTitle: "Streak factor",
+    stepStreakBody:
+      "A win or lose streak of 3+ amplifies Elo change (×1.25–×1.60). Fire (wins) and ice (losses) also boost when broken — beating a hot streak or snapping a cold streak moves ratings more.",
     winProbTitle: "Win probability example — {a} vs {b}, {handicap} pts for Side {side}",
     noHandicap: "No handicap",
     withHandicap: "With {handicap} pt handicap (Side {side})",

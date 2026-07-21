@@ -15,6 +15,8 @@ type MemberRow = {
   eloRating: number;
   totalMatches: number;
   totalWins: number;
+  singlesWinStreak: number;
+  singlesLoseStreak: number;
 };
 
 export function toMemberDTO(

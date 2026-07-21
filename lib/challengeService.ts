@@ -1,9 +1,14 @@
 import { addDebt } from "./drinkDebt";
 import { db } from "./db";
-import { computeSinglesEloChanges } from "./elo";
+import { computeSinglesEloChanges, nextSinglesStreaks } from "./elo";
 import { CHALLENGE_FULL_INCLUDE } from "./challengeIncludes";
 import { serializeChallenge } from "./challengeSerialize";
-import type { ChallengeDebtRecord, ChallengeResolutionDTO, ChallengeSide } from "./types";
+import type {
+  ChallengeDebtRecord,
+  ChallengeResolutionDTO,
+  ChallengeSide,
+  ChallengeStreakChange,
+} from "./types";
 
 interface Competitor {
   id: number;
@@ -11,6 +16,8 @@ interface Competitor {
   eloRating: number;
   totalMatches: number;
   totalWins: number;
+  singlesWinStreak: number;
+  singlesLoseStreak: number;
   side: ChallengeSide;
 }
 
@@ -32,6 +39,8 @@ function computeEloChanges(
       eloRating: playerA.eloRating,
       totalMatches: playerA.totalMatches,
       side: "A",
+      singlesWinStreak: playerA.singlesWinStreak,
+      singlesLoseStreak: playerA.singlesLoseStreak,
     },
     {
       id: playerB.id,
@@ -39,12 +48,31 @@ function computeEloChanges(
       eloRating: playerB.eloRating,
       totalMatches: playerB.totalMatches,
       side: "B",
+      singlesWinStreak: playerB.singlesWinStreak,
+      singlesLoseStreak: playerB.singlesLoseStreak,
     },
     winnerSide,
     confirmedHandicapPoints,
     confirmedScore,
     pointsToWin
   );
+}
+
+function buildStreakChanges(
+  competitors: Competitor[],
+  winnerSide: ChallengeSide
+): ChallengeStreakChange[] {
+  return competitors.map((c) => {
+    const won = c.side === winnerSide;
+    const after = nextSinglesStreaks(won, c.singlesWinStreak, c.singlesLoseStreak);
+    return {
+      memberId: c.id,
+      beforeWinStreak: c.singlesWinStreak,
+      beforeLoseStreak: c.singlesLoseStreak,
+      afterWinStreak: after.singlesWinStreak,
+      afterLoseStreak: after.singlesLoseStreak,
+    };
+  });
 }
 
 function resolveWinnerId(
@@ -159,6 +187,125 @@ async function recordBetDebts(
   return debts;
 }
 
+const RESOLVE_PLAYER_SELECT = {
+  id: true,
+  name: true,
+  avatarUrl: true,
+  eloRating: true,
+  totalMatches: true,
+  totalWins: true,
+  singlesWinStreak: true,
+  singlesLoseStreak: true,
+} as const;
+
+type Tx = Parameters<Parameters<typeof db.$transaction>[0]>[0];
+
+/**
+ * Replay completed singles history (excluding one challenge) to restore streak counters.
+ * Used when an older resolutionSnapshot lacks streakChanges.
+ */
+async function recomputeMemberSinglesStreaks(
+  tx: Tx,
+  memberId: number,
+  excludeChallengeId: number
+): Promise<{ singlesWinStreak: number; singlesLoseStreak: number }> {
+  const challenges = await tx.challenge.findMany({
+    where: {
+      id: { not: excludeChallengeId },
+      format: "SINGLES",
+      status: "COMPLETED",
+      winnerSide: { not: null },
+      OR: [{ playerAId: memberId }, { playerBId: memberId }],
+    },
+    select: {
+      id: true,
+      playerAId: true,
+      playerBId: true,
+      winnerSide: true,
+      completedAt: true,
+    },
+    orderBy: [{ completedAt: "asc" }, { id: "asc" }],
+  });
+
+  let singlesWinStreak = 0;
+  let singlesLoseStreak = 0;
+  for (const c of challenges) {
+    const isA = c.playerAId === memberId;
+    const won =
+      (isA && c.winnerSide === "A") || (!isA && c.winnerSide === "B");
+    const next = nextSinglesStreaks(won, singlesWinStreak, singlesLoseStreak);
+    singlesWinStreak = next.singlesWinStreak;
+    singlesLoseStreak = next.singlesLoseStreak;
+  }
+  return { singlesWinStreak, singlesLoseStreak };
+}
+
+async function revertEloFromSnapshot(
+  tx: Tx,
+  snapshot: ChallengeResolutionDTO,
+  challengeId: number
+): Promise<void> {
+  for (const change of snapshot.eloChanges) {
+    const member = await tx.member.findUnique({
+      where: { id: change.memberId },
+      select: { totalMatches: true, totalWins: true },
+    });
+    if (!member) continue;
+
+    const won = change.delta > 0;
+    await tx.member.update({
+      where: { id: change.memberId },
+      data: {
+        eloRating: change.before,
+        totalMatches: Math.max(0, member.totalMatches - 1),
+        totalWins: Math.max(0, member.totalWins - (won ? 1 : 0)),
+      },
+    });
+  }
+
+  if (snapshot.streakChanges?.length) {
+    for (const s of snapshot.streakChanges) {
+      await tx.member.update({
+        where: { id: s.memberId },
+        data: {
+          singlesWinStreak: s.beforeWinStreak,
+          singlesLoseStreak: s.beforeLoseStreak,
+        },
+      });
+    }
+    return;
+  }
+
+  // Legacy snapshots: rebuild streaks from history excluding this challenge.
+  const memberIds = [...new Set(snapshot.eloChanges.map((c) => c.memberId))];
+  for (const memberId of memberIds) {
+    const streaks = await recomputeMemberSinglesStreaks(tx, memberId, challengeId);
+    await tx.member.update({
+      where: { id: memberId },
+      data: streaks,
+    });
+  }
+}
+
+function buildCompetitors(challenge: {
+  playerA: Omit<Competitor, "side">;
+  playerA2: Omit<Competitor, "side"> | null;
+  playerB: Omit<Competitor, "side">;
+  playerB2: Omit<Competitor, "side"> | null;
+}): Competitor[] {
+  const competitors: Competitor[] = [
+    { ...challenge.playerA, side: "A" },
+    { ...challenge.playerB, side: "B" },
+  ];
+  if (challenge.playerA2) {
+    competitors.push({ ...challenge.playerA2, side: "A" });
+  }
+  if (challenge.playerB2) {
+    competitors.push({ ...challenge.playerB2, side: "B" });
+  }
+  return competitors;
+}
+
 export async function resolveChallenge(
   challengeId: number,
   winnerSide: ChallengeSide,
@@ -170,46 +317,10 @@ export async function resolveChallenge(
       where: { id: challengeId },
       include: {
         ...CHALLENGE_FULL_INCLUDE,
-        playerA: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true,
-            eloRating: true,
-            totalMatches: true,
-            totalWins: true,
-          },
-        },
-        playerA2: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true,
-            eloRating: true,
-            totalMatches: true,
-            totalWins: true,
-          },
-        },
-        playerB: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true,
-            eloRating: true,
-            totalMatches: true,
-            totalWins: true,
-          },
-        },
-        playerB2: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true,
-            eloRating: true,
-            totalMatches: true,
-            totalWins: true,
-          },
-        },
+        playerA: { select: RESOLVE_PLAYER_SELECT },
+        playerA2: { select: RESOLVE_PLAYER_SELECT },
+        playerB: { select: RESOLVE_PLAYER_SELECT },
+        playerB2: { select: RESOLVE_PLAYER_SELECT },
         bets: {
           include: {
             bettor: {
@@ -237,45 +348,7 @@ export async function resolveChallenge(
       throw new Error("INVALID_HANDICAP");
     }
 
-    const competitors: Competitor[] = [
-      {
-        id: challenge.playerA.id,
-        name: challenge.playerA.name,
-        eloRating: challenge.playerA.eloRating,
-        totalMatches: challenge.playerA.totalMatches,
-        totalWins: challenge.playerA.totalWins,
-        side: "A",
-      },
-      {
-        id: challenge.playerB.id,
-        name: challenge.playerB.name,
-        eloRating: challenge.playerB.eloRating,
-        totalMatches: challenge.playerB.totalMatches,
-        totalWins: challenge.playerB.totalWins,
-        side: "B",
-      },
-    ];
-
-    if (challenge.playerA2) {
-      competitors.push({
-        id: challenge.playerA2.id,
-        name: challenge.playerA2.name,
-        eloRating: challenge.playerA2.eloRating,
-        totalMatches: challenge.playerA2.totalMatches,
-        totalWins: challenge.playerA2.totalWins,
-        side: "A",
-      });
-    }
-    if (challenge.playerB2) {
-      competitors.push({
-        id: challenge.playerB2.id,
-        name: challenge.playerB2.name,
-        eloRating: challenge.playerB2.eloRating,
-        totalMatches: challenge.playerB2.totalMatches,
-        totalWins: challenge.playerB2.totalWins,
-        side: "B",
-      });
-    }
+    const competitors = buildCompetitors(challenge);
 
     const isDoubles = challenge.format === "DOUBLES";
     const eloChanges = isDoubles
@@ -287,6 +360,7 @@ export async function resolveChallenge(
           confirmedScore,
           challenge.pointsToWin
         );
+    const streakChanges = isDoubles ? [] : buildStreakChanges(competitors, winnerSide);
     const matchDebts =
       challenge.isDrinkChallenge && challenge.bets.length === 0
         ? isDoubles
@@ -300,18 +374,25 @@ export async function resolveChallenge(
       for (const change of eloChanges) {
         const competitor = competitors.find((c) => c.id === change.memberId)!;
         const won = competitor.side === winnerSide;
+        const streaks = streakChanges.find((s) => s.memberId === change.memberId)!;
         await tx.member.update({
           where: { id: change.memberId },
           data: {
             eloRating: change.after,
             totalMatches: competitor.totalMatches + 1,
             totalWins: competitor.totalWins + (won ? 1 : 0),
+            singlesWinStreak: streaks.afterWinStreak,
+            singlesLoseStreak: streaks.afterLoseStreak,
           },
         });
       }
     }
 
-    const resolutionSnapshot: ChallengeResolutionDTO = { eloChanges, debts };
+    const resolutionSnapshot: ChallengeResolutionDTO = {
+      eloChanges,
+      debts,
+      ...(streakChanges.length > 0 ? { streakChanges } : {}),
+    };
     const winnerId = resolveWinnerId(
       winnerSide,
       challenge.playerAId,
@@ -336,59 +417,6 @@ export async function resolveChallenge(
 
     return serializeChallenge(updated);
   });
-}
-
-const RESOLVE_PLAYER_SELECT = {
-  id: true,
-  name: true,
-  avatarUrl: true,
-  eloRating: true,
-  totalMatches: true,
-  totalWins: true,
-} as const;
-
-type Tx = Parameters<Parameters<typeof db.$transaction>[0]>[0];
-
-async function revertEloFromSnapshot(
-  tx: Tx,
-  snapshot: ChallengeResolutionDTO
-): Promise<void> {
-  for (const change of snapshot.eloChanges) {
-    const member = await tx.member.findUnique({
-      where: { id: change.memberId },
-      select: { totalMatches: true, totalWins: true },
-    });
-    if (!member) continue;
-
-    const won = change.delta > 0;
-    await tx.member.update({
-      where: { id: change.memberId },
-      data: {
-        eloRating: change.before,
-        totalMatches: Math.max(0, member.totalMatches - 1),
-        totalWins: Math.max(0, member.totalWins - (won ? 1 : 0)),
-      },
-    });
-  }
-}
-
-function buildCompetitors(challenge: {
-  playerA: Omit<Competitor, "side">;
-  playerA2: Omit<Competitor, "side"> | null;
-  playerB: Omit<Competitor, "side">;
-  playerB2: Omit<Competitor, "side"> | null;
-}): Competitor[] {
-  const competitors: Competitor[] = [
-    { ...challenge.playerA, side: "A" },
-    { ...challenge.playerB, side: "B" },
-  ];
-  if (challenge.playerA2) {
-    competitors.push({ ...challenge.playerA2, side: "A" });
-  }
-  if (challenge.playerB2) {
-    competitors.push({ ...challenge.playerB2, side: "B" });
-  }
-  return competitors;
 }
 
 export async function adminEditChallengeWinner(
@@ -416,7 +444,7 @@ export async function adminEditChallengeWinner(
     if (!isDoubles) {
       if (!snapshot?.eloChanges?.length) throw new Error("NO_SNAPSHOT");
 
-      await revertEloFromSnapshot(tx, snapshot);
+      await revertEloFromSnapshot(tx, snapshot, challengeId);
 
       const refreshed = await tx.challenge.findUnique({
         where: { id: challengeId },
@@ -437,16 +465,20 @@ export async function adminEditChallengeWinner(
         refreshed.confirmedScore ?? "",
         refreshed.pointsToWin
       );
+      const streakChanges = buildStreakChanges(competitors, winnerSide);
 
       for (const change of eloChanges) {
         const competitor = competitors.find((c) => c.id === change.memberId)!;
         const won = competitor.side === winnerSide;
+        const streaks = streakChanges.find((s) => s.memberId === change.memberId)!;
         await tx.member.update({
           where: { id: change.memberId },
           data: {
             eloRating: change.after,
             totalMatches: competitor.totalMatches + 1,
             totalWins: competitor.totalWins + (won ? 1 : 0),
+            singlesWinStreak: streaks.afterWinStreak,
+            singlesLoseStreak: streaks.afterLoseStreak,
           },
         });
       }
@@ -465,6 +497,7 @@ export async function adminEditChallengeWinner(
           resolutionSnapshot: {
             eloChanges,
             debts: snapshot.debts,
+            streakChanges,
           } as object,
         },
         include: CHALLENGE_FULL_INCLUDE,
@@ -509,7 +542,7 @@ export async function adminDeleteChallenge(challengeId: number) {
     const debtCount = snapshot?.debts?.length ?? 0;
 
     if (challenge.status === "COMPLETED" && snapshot?.eloChanges?.length) {
-      await revertEloFromSnapshot(tx, snapshot);
+      await revertEloFromSnapshot(tx, snapshot, challengeId);
     }
 
     await tx.challenge.delete({ where: { id: challengeId } });

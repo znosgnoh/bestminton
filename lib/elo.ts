@@ -242,6 +242,10 @@ export interface SinglesEloCompetitor {
   eloRating: number;
   totalMatches: number;
   side: HandicapRecipientSide;
+  /** Pre-match singles win streak (default 0). */
+  singlesWinStreak?: number;
+  /** Pre-match singles lose streak (default 0). */
+  singlesLoseStreak?: number;
 }
 
 export interface SinglesEloChange {
@@ -252,8 +256,62 @@ export interface SinglesEloChange {
   delta: number;
 }
 
+/** Active streak threshold for fire/ice Elo amplification. */
+export const STREAK_ACTIVE_THRESHOLD = 3;
+
 /**
- * Singles Elo update: handicap-adjusted expectation, scaled by score margin and Elo gap.
+ * Scale for an active streak of length n (≥ 3).
+ * 3 → 1.25, 4 → 1.30, … capped at 1.60.
+ */
+export function streakScale(n: number): number {
+  if (n < STREAK_ACTIVE_THRESHOLD) return 1;
+  return Math.min(1.6, 1.25 + 0.05 * (n - STREAK_ACTIVE_THRESHOLD));
+}
+
+/**
+ * Extra K scaling from pre-match win/lose streaks.
+ * Takes the max applicable scale among:
+ * - Winner extending fire / breaking own ice / breaking opponent fire
+ * - Loser extending ice / opponent breaking ice / own fire broken
+ */
+export function streakKMultiplier(
+  player: { singlesWinStreak?: number; singlesLoseStreak?: number },
+  opponent: { singlesWinStreak?: number; singlesLoseStreak?: number },
+  actual: 0 | 1
+): number {
+  const win = player.singlesWinStreak ?? 0;
+  const lose = player.singlesLoseStreak ?? 0;
+  const oppWin = opponent.singlesWinStreak ?? 0;
+  const oppLose = opponent.singlesLoseStreak ?? 0;
+  const scales: number[] = [1];
+
+  if (actual === 1) {
+    if (win >= STREAK_ACTIVE_THRESHOLD) scales.push(streakScale(win));
+    if (lose >= STREAK_ACTIVE_THRESHOLD) scales.push(streakScale(lose));
+    if (oppWin >= STREAK_ACTIVE_THRESHOLD) scales.push(streakScale(oppWin));
+  } else {
+    if (lose >= STREAK_ACTIVE_THRESHOLD) scales.push(streakScale(lose));
+    if (oppLose >= STREAK_ACTIVE_THRESHOLD) scales.push(streakScale(oppLose));
+    if (win >= STREAK_ACTIVE_THRESHOLD) scales.push(streakScale(win));
+  }
+
+  return Math.max(...scales);
+}
+
+/** Post-match streak values after a singles win or loss. */
+export function nextSinglesStreaks(
+  won: boolean,
+  winStreak: number,
+  loseStreak: number
+): { singlesWinStreak: number; singlesLoseStreak: number } {
+  if (won) {
+    return { singlesWinStreak: winStreak + 1, singlesLoseStreak: 0 };
+  }
+  return { singlesWinStreak: 0, singlesLoseStreak: loseStreak + 1 };
+}
+
+/**
+ * Singles Elo update: handicap-adjusted expectation, scaled by score margin, Elo gap, and streaks.
  */
 export function computeSinglesEloChanges(
   playerA: SinglesEloCompetitor,
@@ -278,12 +336,13 @@ export function computeSinglesEloChanges(
     const expected = player.side === "A" ? expectedA : 1 - expectedA;
     const actual: 0 | 1 = player.side === winnerSide ? 1 : 0;
     const gapMult = eloGapKMultiplier(player.eloRating, opponent.eloRating, actual, expected);
+    const streakMult = streakKMultiplier(player, opponent, actual);
     const after = newRating(
       player.eloRating,
       actual,
       expected,
       player.totalMatches,
-      scoreMult * gapMult
+      scoreMult * gapMult * streakMult
     );
     return {
       memberId: player.id,

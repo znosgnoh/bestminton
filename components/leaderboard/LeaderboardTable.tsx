@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
+import StreakBadge from "@/components/ui/StreakBadge";
 import { useI18n } from "@/contexts/LocaleContext";
 import type { LeaderboardEntryDTO } from "@/lib/types";
 
@@ -53,8 +54,13 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                   </span>
                   <Avatar name={entry.name} avatarUrl={entry.avatarUrl} size="sm" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-gray-900 dark:text-gray-100">
-                      {entry.name}
+                    <p className="flex items-center gap-1.5 truncate font-medium text-gray-900 dark:text-gray-100">
+                      <span className="truncate">{entry.name}</span>
+                      <StreakBadge
+                        winStreak={entry.singlesWinStreak}
+                        loseStreak={entry.singlesLoseStreak}
+                        className="shrink-0"
+                      />
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {entry.totalWins}–{losses} · Elo {entry.eloRating}
@@ -109,8 +115,13 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                       className="flex items-center gap-2 min-w-0 hover:underline"
                     >
                       <Avatar name={entry.name} avatarUrl={entry.avatarUrl} size="sm" />
-                      <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                        {entry.name}
+                      <span className="flex min-w-0 items-center gap-1.5 font-medium text-gray-900 dark:text-gray-100">
+                        <span className="truncate">{entry.name}</span>
+                        <StreakBadge
+                          winStreak={entry.singlesWinStreak}
+                          loseStreak={entry.singlesLoseStreak}
+                          className="shrink-0"
+                        />
                       </span>
                     </Link>
                   </td>

@@ -9,14 +9,18 @@ datasource db {
 }
 
 model Member {
-  id           Int      @id @default(autoincrement())
-  name         String
-  avatarUrl    String?
-  splitwiseId  Int?     @unique
-  eloRating    Int      @default(1000)
-  totalMatches Int      @default(0)
-  totalWins    Int      @default(0)
-  createdAt    DateTime @default(now())
+  id                Int      @id @default(autoincrement())
+  name              String
+  avatarUrl         String?
+  splitwiseId       Int?     @unique
+  eloRating         Int      @default(1000)
+  totalMatches      Int      @default(0)
+  totalWins         Int      @default(0)
+  /// Consecutive singles wins (reset on a singles loss). Amplifies Elo when ≥ 3.
+  singlesWinStreak  Int      @default(0)
+  /// Consecutive singles losses (reset on a singles win). Amplifies Elo when ≥ 3.
+  singlesLoseStreak Int      @default(0)
+  createdAt         DateTime @default(now())
 
   registrations      MatchRegistration[]
   paidMatches        Match[]             @relation("MatchPayer")

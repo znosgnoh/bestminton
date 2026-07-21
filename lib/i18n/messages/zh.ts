@@ -58,6 +58,10 @@ const zh: Messages = {
     active: "进行中",
     completed: "已结束",
   },
+  streak: {
+    fire: "连胜 ×{count}",
+    ice: "连败 ×{count}",
+  },
   drink: {
     label: "橙汁",
     challengeLabel: "橙汁对局",
@@ -193,9 +197,9 @@ const zh: Messages = {
   },
   eloGuide: {
     intro:
-      "每人从 {defaultElo} Elo 开始。每次单打对局后，根据预期胜率、比分差距和 Elo 差距调整。双打对局不改变 Elo。",
+      "每人从 {defaultElo} Elo 开始。每次单打对局后，根据预期胜率、比分差距、Elo 差距以及连胜/连败（3 场及以上）调整。双打对局不改变 Elo。",
     formula: "公式",
-    formulaExpr: "新 Elo = 旧 Elo + K × 比分系数 × 差距系数 × (结果 − 预期)",
+    formulaExpr: "新 Elo = 旧 Elo + K × 比分系数 × 差距系数 × 连胜/连败系数 × (结果 − 预期)",
     stepKTitle: "K — 敏感度",
     stepKBody: "新玩家（不足 {threshold} 场）K = {kNew}，老玩家 K = {kEstablished}。",
     stepExpectTitle: "预期胜率（含让分）",
@@ -204,6 +208,9 @@ const zh: Messages = {
     stepScoreBody: "直落或大胜（21-10）→ 变化更大。险胜（21-19, 2-1）→ 变化更小（×0.75–×1.5）。",
     stepGapTitle: "Elo 差距系数",
     stepGapBody: "大差距爆冷 → 变化更大。热门如期获胜 → 变化更小。",
+    stepStreakTitle: "连胜/连败系数",
+    stepStreakBody:
+      "连胜或连败达到 3 场及以上会放大 Elo 变化（×1.25–×1.60）。终结对手连胜或自己连败时，评分变动也会更大。",
     winProbTitle: "胜率示例 — {a} vs {b}，{side} 方让 {handicap} 分",
     noHandicap: "无让分",
     withHandicap: "让 {handicap} 分（{side} 方）",

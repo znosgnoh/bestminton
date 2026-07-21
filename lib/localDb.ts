@@ -21,6 +21,8 @@ interface RawMember {
   eloRating?: number;
   totalMatches?: number;
   totalWins?: number;
+  singlesWinStreak?: number;
+  singlesLoseStreak?: number;
   debtSummary?: { totalOwed: number; totalOwing: number; netCam: number };
   createdAt: string;
 }
@@ -34,6 +36,8 @@ function toMemberDTO(m: RawMember): MemberDTO {
     eloRating: m.eloRating ?? DEFAULT_ELO,
     totalMatches: m.totalMatches ?? 0,
     totalWins: m.totalWins ?? 0,
+    singlesWinStreak: m.singlesWinStreak ?? 0,
+    singlesLoseStreak: m.singlesLoseStreak ?? 0,
     debtSummary: m.debtSummary ?? { totalOwed: 0, totalOwing: 0, netCam: 0 },
   };
 }
@@ -168,6 +172,8 @@ export async function updateMember(
     eloRating: data.eloRating ?? existing.eloRating,
     totalMatches: data.totalMatches ?? existing.totalMatches,
     totalWins: data.totalWins ?? existing.totalWins,
+    singlesWinStreak: existing.singlesWinStreak,
+    singlesLoseStreak: existing.singlesLoseStreak,
     createdAt: existing.createdAt ?? new Date().toISOString(),
   });
 }

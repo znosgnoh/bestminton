@@ -58,6 +58,10 @@ const vi: Messages = {
     active: "Đang đấu",
     completed: "Đã xong",
   },
+  streak: {
+    fire: "Chuỗi thắng ×{count}",
+    ice: "Chuỗi thua ×{count}",
+  },
   drink: {
     label: "Nước cam",
     challengeLabel: "Kèo nước cam",
@@ -196,10 +200,10 @@ const vi: Messages = {
   },
   eloGuide: {
     intro:
-      "Mỗi người bắt đầu ở {defaultElo} Elo. Sau mỗi kèo đơn, điểm thay đổi theo kỳ vọng thắng, độ chênh tỷ số và chênh Elo. Kèo đôi không đổi Elo.",
+      "Mỗi người bắt đầu ở {defaultElo} Elo. Sau mỗi kèo đơn, điểm thay đổi theo kỳ vọng thắng, độ chênh tỷ số, chênh Elo và chuỗi thắng/thua (từ 3 trở lên). Kèo đôi không đổi Elo.",
     formula: "Công thức",
     formulaExpr:
-      "Elo mới = Elo cũ + K × hệ số tỷ số × hệ số chênh Elo × (kết quả − kỳ vọng)",
+      "Elo mới = Elo cũ + K × hệ số tỷ số × hệ số chênh Elo × hệ số chuỗi × (kết quả − kỳ vọng)",
     stepKTitle: "K — độ nhạy",
     stepKBody:
       "{kNew} điểm/ván cho người mới (dưới {threshold} kèo), {kEstablished} cho người đã chơi nhiều.",
@@ -212,6 +216,9 @@ const vi: Messages = {
     stepGapTitle: "Hệ số chênh Elo",
     stepGapBody:
       "Gây bất ngờ khi chênh Elo lớn → cộng/trừ mạnh hơn. Đúng kỳ vọng → đổi nhẹ hơn.",
+    stepStreakTitle: "Hệ số chuỗi",
+    stepStreakBody:
+      "Chuỗi thắng hoặc thua từ 3 trở lên khuếch đại thay đổi Elo (×1.25–×1.60). Phá chuỗi nóng (fire) hoặc chuỗi lạnh (ice) cũng làm điểm đổi mạnh hơn.",
     winProbTitle:
       "Ví dụ xác suất thắng — {a} vs {b}, chấp {handicap} cho Side {side}",
     noHandicap: "Không chấp",

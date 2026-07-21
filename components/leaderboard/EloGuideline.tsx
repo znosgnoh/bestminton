@@ -131,6 +131,11 @@ export default function EloGuideline() {
                 />
                 <FlowStep step={3} title={t("eloGuide.stepScoreTitle")} body={t("eloGuide.stepScoreBody")} />
                 <FlowStep step={4} title={t("eloGuide.stepGapTitle")} body={t("eloGuide.stepGapBody")} />
+                <FlowStep
+                  step={5}
+                  title={t("eloGuide.stepStreakTitle")}
+                  body={t("eloGuide.stepStreakBody")}
+                />
               </div>
             </div>
 
