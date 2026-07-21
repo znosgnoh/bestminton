@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { db } from "./db";
 import { isDatabaseConfigured } from "./dbConfig";
 
-/** Fields added after initial Challenge model — used to detect a stale generated client. */
+/** Fields added after initial Challenge/Member models — used to detect a stale generated client. */
 const REQUIRED_CHALLENGE_FIELDS = [
   "confirmedHandicapPoints",
   "confirmedScore",
@@ -10,9 +10,15 @@ const REQUIRED_CHALLENGE_FIELDS = [
   "notes",
 ] as const;
 
+const REQUIRED_MEMBER_FIELDS = ["singlesWinStreak", "singlesLoseStreak"] as const;
+
 export function isPrismaClientCurrent(): boolean {
-  const fields = Prisma.ChallengeScalarFieldEnum;
-  return REQUIRED_CHALLENGE_FIELDS.every((field) => field in fields);
+  const challengeFields = Prisma.ChallengeScalarFieldEnum;
+  const memberFields = Prisma.MemberScalarFieldEnum;
+  return (
+    REQUIRED_CHALLENGE_FIELDS.every((field) => field in challengeFields) &&
+    REQUIRED_MEMBER_FIELDS.every((field) => field in memberFields)
+  );
 }
 
 export type DbProbeResult =
@@ -71,6 +77,13 @@ export function formatDatabaseError(err: unknown): string {
     if (err.code === "P1001") {
       return "Cannot reach the database server. Check POSTGRES_PRISMA_URL and network access.";
     }
+    if (err.code === "P2024") {
+      return "Database is busy or waking up. Wait a moment and refresh — if it persists, restart the dev server.";
+    }
+  }
+
+  if (err instanceof Error && /connection pool/i.test(err.message)) {
+    return "Database is busy or waking up. Wait a moment and refresh — if it persists, restart the dev server.";
   }
 
   if (err instanceof Prisma.PrismaClientValidationError) {

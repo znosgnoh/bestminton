@@ -51,26 +51,19 @@ export async function getMemberDebts(memberId: number): Promise<{
   owedBy: DrinkDebtDTO[];
   summary: MemberDebtSummary;
 }> {
-  const [owedRows, owingRows] = await Promise.all([
-    db.drinkDebt.findMany({
-      where: { debtorId: memberId, amount: { gt: 0 } },
-      include: {
-        debtor: { select: { id: true, name: true } },
-        creditor: { select: { id: true, name: true } },
-      },
-      orderBy: { amount: "desc" },
-    }),
-    db.drinkDebt.findMany({
-      where: { creditorId: memberId, amount: { gt: 0 } },
-      include: {
-        debtor: { select: { id: true, name: true } },
-        creditor: { select: { id: true, name: true } },
-      },
-      orderBy: { amount: "desc" },
-    }),
-  ]);
+  const rows = await db.drinkDebt.findMany({
+    where: {
+      amount: { gt: 0 },
+      OR: [{ debtorId: memberId }, { creditorId: memberId }],
+    },
+    include: {
+      debtor: { select: { id: true, name: true } },
+      creditor: { select: { id: true, name: true } },
+    },
+    orderBy: { amount: "desc" },
+  });
 
-  const toDto = (r: (typeof owedRows)[number]): DrinkDebtDTO => ({
+  const toDto = (r: (typeof rows)[number]): DrinkDebtDTO => ({
     debtorId: r.debtorId,
     creditorId: r.creditorId,
     amount: r.amount,
@@ -78,6 +71,9 @@ export async function getMemberDebts(memberId: number): Promise<{
     creditorName: r.creditor.name,
     updatedAt: r.updatedAt.toISOString(),
   });
+
+  const owedRows = rows.filter((r) => r.debtorId === memberId);
+  const owingRows = rows.filter((r) => r.creditorId === memberId);
 
   const owes = owedRows.map(toDto);
   const owedBy = owingRows.map(toDto);
