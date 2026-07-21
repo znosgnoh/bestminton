@@ -7,7 +7,7 @@ import DebtsTable from "@/components/cam/DebtsTable";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
 import PageLoader from "@/components/ui/PageLoader";
-import { DRINK_LABEL } from "@/lib/constants";
+import { useI18n } from "@/contexts/LocaleContext";
 import { simplifyDebts } from "@/lib/drinkDebtUtils";
 import * as dataService from "@/lib/dataService";
 import type { DrinkDebtDTO } from "@/lib/types";
@@ -15,17 +15,24 @@ import type { DrinkDebtDTO } from "@/lib/types";
 interface CamPageClientProps {
   initialDebts: DrinkDebtDTO[];
   dbAvailable: boolean;
+  dbError?: string;
 }
 
-export default function CamPageClient({ initialDebts, dbAvailable }: CamPageClientProps) {
+export default function CamPageClient({
+  initialDebts,
+  dbAvailable,
+  dbError,
+}: CamPageClientProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const highlightMemberId = searchParams.get("member")
     ? parseInt(searchParams.get("member")!, 10)
     : undefined;
   const [debts, setDebts] = useState(initialDebts);
+  const [available, setAvailable] = useState(dbAvailable);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(dbError ?? null);
 
   const simplifiedDebts = useMemo(() => simplifyDebts(debts), [debts]);
   const netTotalLy = simplifiedDebts.reduce((sum, d) => sum + d.amount, 0);
@@ -36,6 +43,7 @@ export default function CamPageClient({ initialDebts, dbAvailable }: CamPageClie
     try {
       const fresh = await dataService.getDebts();
       setDebts(fresh);
+      setAvailable(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load debts.");
     } finally {
@@ -52,16 +60,22 @@ export default function CamPageClient({ initialDebts, dbAvailable }: CamPageClie
 
   useEffect(() => {
     setDebts(initialDebts);
-  }, [initialDebts]);
+    setAvailable(dbAvailable);
+    setError(dbError ?? null);
+  }, [initialDebts, dbAvailable, dbError]);
 
-  if (!dbAvailable) {
+  if (!available) {
     return (
       <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
         <h1 className="tet-page-title inline-flex items-center gap-2">
           <OrangeJuiceIcon size={24} className="text-orange-500 dark:text-orange-400" />
-          {DRINK_LABEL}
+          {t("cam.title")}
         </h1>
-        <ErrorBanner message={`${DRINK_LABEL} ledger requires a live database connection.`} />
+        {loading && <PageLoader />}
+        <ErrorBanner
+          message={error ?? t("cam.dbRequired")}
+          onRetry={refreshDebts}
+        />
       </div>
     );
   }
@@ -72,12 +86,16 @@ export default function CamPageClient({ initialDebts, dbAvailable }: CamPageClie
         <div>
           <h1 className="tet-page-title inline-flex items-center gap-2">
             <OrangeJuiceIcon size={24} className="text-orange-500 dark:text-orange-400" />
-            {DRINK_LABEL}
+            {t("cam.title")}
           </h1>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             {simplifiedDebts.length === 0
-              ? "All settled — no outstanding debts."
-              : `${simplifiedDebts.length} net debt${simplifiedDebts.length === 1 ? "" : "s"} · ${netTotalLy} ly total`}
+              ? t("cam.allSettled")
+              : t("cam.netSummary", {
+                  count: simplifiedDebts.length,
+                  suffix: simplifiedDebts.length === 1 ? "" : "s",
+                  total: netTotalLy,
+                })}
           </p>
         </div>
       </div>

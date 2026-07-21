@@ -1,11 +1,18 @@
 import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+/** Bump when pool URL params change so Hot Reload replaces a stale PrismaClient. */
+const POOL_CONFIG_VERSION = "v2-neon-small-pool";
+
+const globalForPrisma = globalThis as unknown as {
+  prisma?: PrismaClient;
+  prismaPoolVersion?: string;
+};
 
 /**
  * Neon + Prisma: keep the client-side pool small and allow cold-start wake time.
- * Without this, Prisma defaults to ~num_cpus*2+1 connections and a 10s pool_timeout,
- * which commonly fails against Neon's pooler during idle wake or Turbopack HMR.
+ * Defaults (~num_cpus*2+1 connections, 10s pool_timeout) routinely fail against
+ * Neon's pooler under Turbopack HMR — and a cached global client never picks up
+ * later URL tweaks unless we version-bust it.
  */
 function datasourceUrl(): string | undefined {
   const raw = process.env.POSTGRES_PRISMA_URL;
@@ -13,21 +20,13 @@ function datasourceUrl(): string | undefined {
 
   try {
     const url = new URL(raw);
-    if (!url.searchParams.has("connection_limit")) {
-      url.searchParams.set(
-        "connection_limit",
-        process.env.NODE_ENV === "production" ? "5" : "3"
-      );
-    }
-    if (!url.searchParams.has("pool_timeout")) {
-      url.searchParams.set("pool_timeout", "20");
-    }
-    if (!url.searchParams.has("connect_timeout")) {
-      url.searchParams.set("connect_timeout", "15");
-    }
-    if (url.hostname.includes("-pooler") && !url.searchParams.has("pgbouncer")) {
-      url.searchParams.set("pgbouncer", "true");
-    }
+    // Always overwrite — env may omit these and an old client may have used defaults.
+    url.searchParams.set(
+      "connection_limit",
+      process.env.NODE_ENV === "production" ? "5" : "2"
+    );
+    url.searchParams.set("pool_timeout", "30");
+    url.searchParams.set("connect_timeout", "30");
     return url.toString();
   } catch {
     return raw;
@@ -42,6 +41,22 @@ function createPrismaClient(): PrismaClient {
   });
 }
 
-export const db = globalForPrisma.prisma ?? createPrismaClient();
+function getPrismaClient(): PrismaClient {
+  if (
+    globalForPrisma.prisma &&
+    globalForPrisma.prismaPoolVersion === POOL_CONFIG_VERSION
+  ) {
+    return globalForPrisma.prisma;
+  }
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+  if (globalForPrisma.prisma) {
+    void globalForPrisma.prisma.$disconnect().catch(() => {});
+  }
+
+  const client = createPrismaClient();
+  globalForPrisma.prisma = client;
+  globalForPrisma.prismaPoolVersion = POOL_CONFIG_VERSION;
+  return client;
+}
+
+export const db = getPrismaClient();

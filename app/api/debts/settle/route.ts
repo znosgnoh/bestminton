@@ -53,10 +53,17 @@ export async function POST(request: NextRequest) {
 
     const result = await settleDebtBetween(debtorId, creditorId, body.amount);
     if (result.settled === 0) {
+      const reason = result.reason ?? "unknown";
+      const message =
+        reason === "no_path"
+          ? "No recorded debt path between these members. Settle the pairwise rows in the recorded ledger instead."
+          : reason === "same_member"
+            ? "Debtor and creditor must differ."
+            : "No debt found to settle.";
       return NextResponse.json(
         {
-          error: "No debt found to settle.",
-          reason: result.reason ?? "unknown",
+          error: message,
+          reason,
           debtorId,
           creditorId,
           requestedAmount: body.amount ?? null,

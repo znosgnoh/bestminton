@@ -226,7 +226,9 @@ export interface SettleDebtRequest {
 
 export interface SettleDebtResult {
   settled: number;
+  /** Unfulfilled portion of this settle request (not pairwise-row leftover). */
   remaining: number;
+  reason?: string;
 }
 
 export interface MemberDebtsResponse {

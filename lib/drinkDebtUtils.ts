@@ -30,6 +30,7 @@ export function netBilateralDebts(debts: Array<DebtEdge>): Array<DebtEdge> {
 /**
  * Greedy net-balance settlement: collapses chains (A→B→C becomes A→C when nets allow)
  * and minimizes the number of displayed payments. Display-only; raw ledger unchanged.
+ * Caller should pass a single connected component — cross-group pairing is incorrect.
  */
 export function minimizeDebtTransactions(debts: Array<DebtEdge>): Array<DebtEdge> {
   const balances = new Map<number, number>();
@@ -73,9 +74,69 @@ export function minimizeDebtTransactions(debts: Array<DebtEdge>): Array<DebtEdge
   return result.sort((a, b) => b.amount - a.amount || a.debtorId - b.debtorId);
 }
 
-/** Bilateral net per pair, then chain / net-balance minimization for display. */
+/**
+ * Split edges into connected components (undirected: A→B links A and B).
+ * Auto-balance must not invent payments across unrelated groups.
+ */
+export function partitionByConnectedComponent(debts: Array<DebtEdge>): Array<DebtEdge[]> {
+  const active = debts.filter((d) => d.amount > 0 && d.debtorId !== d.creditorId);
+  if (active.length === 0) return [];
+
+  const adj = new Map<number, number[]>();
+  function link(a: number, b: number) {
+    const aList = adj.get(a) ?? [];
+    aList.push(b);
+    adj.set(a, aList);
+    const bList = adj.get(b) ?? [];
+    bList.push(a);
+    adj.set(b, bList);
+  }
+  for (const d of active) {
+    link(d.debtorId, d.creditorId);
+  }
+
+  const visited = new Set<number>();
+  const memberComponents: number[][] = [];
+  for (const id of adj.keys()) {
+    if (visited.has(id)) continue;
+    const group: number[] = [];
+    const queue = [id];
+    visited.add(id);
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      group.push(cur);
+      for (const next of adj.get(cur) ?? []) {
+        if (visited.has(next)) continue;
+        visited.add(next);
+        queue.push(next);
+      }
+    }
+    memberComponents.push(group);
+  }
+
+  const componentIndex = new Map<number, number>();
+  memberComponents.forEach((members, index) => {
+    for (const m of members) componentIndex.set(m, index);
+  });
+
+  const buckets: DebtEdge[][] = memberComponents.map(() => []);
+  for (const d of active) {
+    const index = componentIndex.get(d.debtorId);
+    if (index === undefined) continue;
+    buckets[index].push(d);
+  }
+  return buckets.filter((b) => b.length > 0);
+}
+
+/**
+ * Bilateral net per pair, then chain / net-balance minimization **within each
+ * connected component only** — never invents A→C across unrelated debt groups.
+ */
 export function simplifyDebts(debts: Array<DebtEdge>): Array<DebtEdge> {
-  return minimizeDebtTransactions(netBilateralDebts(debts));
+  const bilateraled = netBilateralDebts(debts);
+  const components = partitionByConnectedComponent(bilateraled);
+  const simplified = components.flatMap((component) => minimizeDebtTransactions(component));
+  return simplified.sort((a, b) => b.amount - a.amount || a.debtorId - b.debtorId);
 }
 
 /** BFS path from debtor to creditor along outstanding debt edges. */
@@ -136,6 +197,69 @@ export interface MemberDebtTotals {
   memberId: number;
   totalOwes: number;
   totalOwed: number;
+}
+
+/** Pairwise amount for a directed edge, or 0 if missing. */
+export function pairwiseAmount(
+  ledger: Array<DebtEdge>,
+  debtorId: number,
+  creditorId: number
+): number {
+  const row = ledger.find((d) => d.debtorId === debtorId && d.creditorId === creditorId);
+  return row && row.amount > 0 ? row.amount : 0;
+}
+
+/**
+ * True when a raw pairwise row covers the full displayed amount
+ * (same direction and amount ≥ edge.amount).
+ */
+export function isDirectPairwiseDebt(
+  ledger: Array<DebtEdge>,
+  edge: DebtEdge
+): boolean {
+  return pairwiseAmount(ledger, edge.debtorId, edge.creditorId) >= edge.amount;
+}
+
+/** True when a debt path exists with positive capacity from debtor to creditor. */
+export function canPathSettle(
+  ledger: Array<DebtEdge>,
+  debtorId: number,
+  creditorId: number
+): boolean {
+  const path = findDebtPath(ledger, debtorId, creditorId);
+  if (!path || path.length < 2) return false;
+  return debtAmountOnPath(ledger, path) > 0;
+}
+
+/**
+ * Suggested edge can be settled safely: either fully covered by a pairwise row,
+ * or there is a positive-capacity path in the recorded ledger.
+ */
+export function isSettleableSuggestedEdge(
+  ledger: Array<DebtEdge>,
+  edge: DebtEdge
+): boolean {
+  if (edge.amount <= 0 || edge.debtorId === edge.creditorId) return false;
+  return (
+    isDirectPairwiseDebt(ledger, edge) ||
+    canPathSettle(ledger, edge.debtorId, edge.creditorId)
+  );
+}
+
+/** Net token balance per member: positive = owed cam, negative = owes cam. */
+export function netBalancesByMember(
+  debts: Array<DebtEdge>
+): Array<{ memberId: number; net: number }> {
+  const balances = new Map<number, number>();
+  for (const d of debts) {
+    if (d.amount <= 0 || d.debtorId === d.creditorId) continue;
+    balances.set(d.debtorId, (balances.get(d.debtorId) ?? 0) - d.amount);
+    balances.set(d.creditorId, (balances.get(d.creditorId) ?? 0) + d.amount);
+  }
+  return [...balances.entries()]
+    .map(([memberId, net]) => ({ memberId, net }))
+    .filter((e) => e.net !== 0)
+    .sort((a, b) => Math.abs(b.net) - Math.abs(a.net) || a.memberId - b.memberId);
 }
 
 /** Sum amounts owed and owing per member from a debt list. */

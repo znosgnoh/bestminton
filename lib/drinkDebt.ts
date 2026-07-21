@@ -1,7 +1,12 @@
 import { Prisma } from "@prisma/client";
 import { db } from "./db";
-import { simplifyDebts, type DebtEdge } from "./drinkDebtUtils";
-import type { DrinkDebtDTO, MemberDebtSummary } from "./types";
+import {
+  debtAmountOnPath,
+  findDebtPath,
+  simplifyDebts,
+  type DebtEdge,
+} from "./drinkDebtUtils";
+import type { DrinkDebtDTO, MemberDebtSummary, SettleDebtResult } from "./types";
 
 export { simplifyDebts } from "./drinkDebtUtils";
 
@@ -128,59 +133,12 @@ async function loadDebtEdges(client: Tx): Promise<DebtEdge[]> {
   }));
 }
 
-export type SettleDebtResult = {
-  settled: number;
-  remaining: number;
-  reason?: string;
-};
-
 /**
- * Realize a synthetic D→C transfer on the raw ledger by reducing D's outgoing
- * edges and C's incoming edges in parallel (matches minimizeDebtTransactions).
+ * Settle along a recorded ledger path (BFS). Reduces every edge on the path
+ * by the same step. Refuses when no path exists — never invents cross-component cuts.
+ * `remaining` is always unfulfilled amount of this request.
  */
-async function applyNetTransfer(
-  client: Tx,
-  debtorId: number,
-  creditorId: number,
-  amount: number
-): Promise<number> {
-  let remaining = amount;
-  let applied = 0;
-
-  while (remaining > 0) {
-    const [outRows, inRows] = await Promise.all([
-      client.drinkDebt.findMany({
-        where: { debtorId, amount: { gt: 0 } },
-        orderBy: { amount: "desc" },
-      }),
-      client.drinkDebt.findMany({
-        where: { creditorId, amount: { gt: 0 } },
-        orderBy: { amount: "desc" },
-      }),
-    ]);
-
-    if (outRows.length === 0 || inRows.length === 0) break;
-
-    const chunk = Math.min(remaining, outRows[0].amount, inRows[0].amount);
-    if (chunk <= 0) break;
-
-    const [outStep, inStep] = await Promise.all([
-      reduceDebt(debtorId, outRows[0].creditorId, chunk, client),
-      reduceDebt(inRows[0].debtorId, creditorId, chunk, client),
-    ]);
-
-    if (outStep.settled <= 0 || inStep.settled <= 0) break;
-
-    const step = Math.min(outStep.settled, inStep.settled);
-    applied += step;
-    remaining -= step;
-  }
-
-  return applied;
-}
-
-/** Settle a simplified ledger edge when no direct pairwise row exists. */
-async function settleViaNetBalance(
+async function settleViaPath(
   client: Tx,
   debtorId: number,
   creditorId: number,
@@ -191,35 +149,47 @@ async function settleViaNetBalance(
 
   while (remaining > 0) {
     const ledger = await loadDebtEdges(client);
-    const simplifiedEdge = simplifyDebts(ledger).find(
-      (d) => d.debtorId === debtorId && d.creditorId === creditorId
-    );
-    if (!simplifiedEdge || simplifiedEdge.amount <= 0) {
+    const path = findDebtPath(ledger, debtorId, creditorId);
+    if (!path || path.length < 2) {
       return {
         settled,
-        remaining: targetAmount - settled,
-        reason: settled === 0 ? "no_simplified_edge" : undefined,
+        remaining,
+        reason: settled === 0 ? "no_path" : "partial_no_path",
       };
     }
 
-    const step = Math.min(remaining, simplifiedEdge.amount);
-    const applied = await applyNetTransfer(client, debtorId, creditorId, step);
-    if (applied <= 0) {
+    const capacity = debtAmountOnPath(ledger, path);
+    if (capacity <= 0) {
       return {
         settled,
-        remaining: targetAmount - settled,
-        reason: settled === 0 ? "no_outgoing_or_incoming_edges" : undefined,
+        remaining,
+        reason: settled === 0 ? "no_path" : "partial_no_path",
       };
     }
 
-    settled += applied;
-    remaining -= applied;
+    const step = Math.min(remaining, capacity);
+    for (let i = 0; i < path.length - 1; i++) {
+      const edgeResult = await reduceDebt(path[i], path[i + 1], step, client);
+      if (edgeResult.settled < step) {
+        return {
+          settled,
+          remaining: targetAmount - settled,
+          reason: "path_edge_mismatch",
+        };
+      }
+    }
+
+    settled += step;
+    remaining -= step;
   }
 
-  return { settled, remaining: targetAmount - settled };
+  return { settled, remaining: 0 };
 }
 
-/** Reduce or clear a pairwise debt. Defaults to full settlement when amount is omitted. */
+/**
+ * Reduce or clear a pairwise debt. Defaults to full settlement when amount is omitted.
+ * Note: `remaining` here is leftover on the pairwise row (internal), not request remaining.
+ */
 export async function reduceDebt(
   debtorId: number,
   creditorId: number,
@@ -245,8 +215,8 @@ export async function reduceDebt(
     return { settled: 0, remaining: row.amount };
   }
 
-  const remaining = row.amount - settleAmount;
-  if (remaining <= 0) {
+  const pairwiseRemaining = row.amount - settleAmount;
+  if (pairwiseRemaining <= 0) {
     await client.drinkDebt.delete({
       where: { debtorId_creditorId: { debtorId, creditorId } },
     });
@@ -255,14 +225,17 @@ export async function reduceDebt(
 
   await client.drinkDebt.update({
     where: { debtorId_creditorId: { debtorId, creditorId } },
-    data: { amount: remaining },
+    data: { amount: pairwiseRemaining },
   });
-  return { settled: settleAmount, remaining };
+  return { settled: settleAmount, remaining: pairwiseRemaining };
 }
 
 /**
- * Settle a direct or simplified debt edge. Uses the raw pairwise row when present;
- * otherwise routes payment along ledger paths (e.g. A→B + B→C for a displayed A→C).
+ * Settle a debt edge for `amount` (or the simplified/pairwise total when omitted).
+ * 1) Reduce direct pairwise as much as possible.
+ * 2) Settle any remainder along recorded paths (A→B→C).
+ * Refuses cross-component netting with no path.
+ * `remaining` = unfulfilled portion of this request.
  */
 export async function settleDebtBetween(
   debtorId: number,
@@ -275,43 +248,53 @@ export async function settleDebtBetween(
   }
 
   const run = async (client: Tx): Promise<SettleDebtResult> => {
-    const direct = await reduceDebt(debtorId, creditorId, amount, client);
-    if (direct.settled > 0) {
-      return direct;
-    }
-
     const ledger = await loadDebtEdges(client);
     const simplifiedEdge = simplifyDebts(ledger).find(
       (d) => d.debtorId === debtorId && d.creditorId === creditorId
     );
+    const pairwise = ledger.find(
+      (d) => d.debtorId === debtorId && d.creditorId === creditorId
+    );
+    const pairwiseAmt = pairwise && pairwise.amount > 0 ? pairwise.amount : 0;
 
     let targetAmount: number;
     if (amount == null) {
-      targetAmount = simplifiedEdge?.amount ?? 0;
+      targetAmount = simplifiedEdge?.amount ?? pairwiseAmt;
     } else {
       targetAmount = Math.max(0, Math.floor(amount));
-      if (simplifiedEdge) {
-        targetAmount = Math.min(targetAmount, simplifiedEdge.amount);
-      }
     }
 
     if (targetAmount <= 0) {
-      return {
-        settled: 0,
-        remaining: 0,
-        reason: simplifiedEdge ? "zero_target_amount" : "no_simplified_edge",
-      };
+      return { settled: 0, remaining: 0, reason: "zero_target_amount" };
     }
 
-    const synthetic = await settleViaNetBalance(client, debtorId, creditorId, targetAmount);
-    if (synthetic.settled > 0) {
-      return synthetic;
+    let settled = 0;
+    let stillNeeded = targetAmount;
+
+    if (stillNeeded > 0 && pairwiseAmt > 0) {
+      const direct = await reduceDebt(debtorId, creditorId, stillNeeded, client);
+      settled += direct.settled;
+      stillNeeded -= direct.settled;
+    }
+
+    if (stillNeeded > 0) {
+      const pathResult = await settleViaPath(client, debtorId, creditorId, stillNeeded);
+      settled += pathResult.settled;
+      stillNeeded -= pathResult.settled;
+
+      if (settled === 0) {
+        return {
+          settled: 0,
+          remaining: targetAmount,
+          reason: pathResult.reason ?? "no_path",
+        };
+      }
     }
 
     return {
-      settled: 0,
-      remaining: targetAmount,
-      reason: synthetic.reason ?? "settlement_failed",
+      settled,
+      remaining: stillNeeded,
+      reason: stillNeeded > 0 ? "partial_no_path" : undefined,
     };
   };
 

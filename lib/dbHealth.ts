@@ -105,3 +105,28 @@ export function logDatabaseError(context: string, err: unknown): void {
     console.error(`[${context}]`, err);
   }
 }
+
+function isTransientDbError(err: unknown): boolean {
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    return err.code === "P1001" || err.code === "P2024";
+  }
+  if (err instanceof Error) {
+    return /connection pool|can't reach database|timed out/i.test(err.message);
+  }
+  return false;
+}
+
+/** Retry on Neon cold start / brief pool exhaustion. */
+export async function withDbRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (i === attempts - 1 || !isTransientDbError(err)) throw err;
+      await new Promise((r) => setTimeout(r, 2000 * (i + 1)));
+    }
+  }
+  throw lastError;
+}
