@@ -283,6 +283,10 @@ const zh: Messages = {
     noChallenges: "暂无对局。",
     noMatches: "尚未报名任何场次。",
     guests: "嘉宾",
+    paidBy: "付款人：{name}",
+    courtFee: "场地 {amount}",
+    shuttlecockFee: "羽毛球 {amount}",
+    remittance: "{from} → {to} 羽毛球 {amount}",
   },
   management: {
     title: "管理",

@@ -96,11 +96,11 @@ export default function MatchForm({ initial, onSaved, onCancel }: MatchFormProps
         <label className="tet-label">
           Venue <span className="text-red-500">*</span>
         </label>
-        <input
-          type="text"
+        <textarea
           value={venue}
           onChange={(e) => setVenue(e.target.value)}
-          placeholder="e.g. Sports Complex Court 3"
+          placeholder={"e.g. Sports Complex Court 3\nGate B, level 2"}
+          rows={3}
           className={inputCls}
         />
       </div>

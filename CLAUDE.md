@@ -51,6 +51,7 @@ A scheduled badminton session.
 | `hours` | Float? | Playing duration (set after match) |
 | `totalCost` | Float? | Court fee (set after match) |
 | `paidByMemberId` | Int? | FK → Member who paid |
+| `shuttlecockRecipientMemberId` | Int? | FK → Member who receives shuttlecock fee (settle) |
 | `isRecurring` | Boolean | Whether to auto-generate weekly |
 | `recurDayOfWeek` | Int? | 0=Sun … 6=Sat (when recurring) |
 | `synced` | Boolean | Whether Splitwise sync completed |
@@ -127,6 +128,14 @@ Total court fee is split weighted by playtime and headcount per player.
 - `Owed_i = TotalCost × (W_i / W_total)`
 
 **Rounding:** Shares are rounded to 2 decimal places. Any cent discrepancy is added to / subtracted from the first participant's share so `Σ Owed_i = TotalCost` exactly (required by Splitwise).
+
+**Shuttlecock display (settle UI):** Total entered is still one amount. For display only:
+
+- `shuttlecockFee = min(SHUTTLECOCK_FEE_PER_HOUR × hours, totalCost)` (default rate **7.5** / hour via env)
+- `courtFee = totalCost − shuttlecockFee`
+- Weighted shares still split the **full total** to **Paid By**. UI notes that Paid By remits shuttlecock to the selected **Shuttlecock** recipient (defaults to Tiến Hoàng).
+- On Splitwise sync (non-**single**-title matches): a second expense logs Paid By → Shuttlecock recipient for the shuttlecock fee. Titles matching `/singles?/` skip that remittance. Description = `{title} · {date}`.
+- **Backfill:** Management → Past → “Backfill shuttlecock → Tiến Hoàng” (`POST /api/splitwise/backfill-shuttlecock`) creates remittances for past settled matches not yet flagged `shuttlecockRemitted`.
 
 ### Internationalization (i18n)
 
@@ -239,6 +248,9 @@ POSTGRES_URL_NON_POOLING=
 SPLITWISE_API_KEY=
 SPLITWISE_GROUP_ID=
 SPLITWISE_CURRENCY_CODE=USD
+
+# Shuttlecock fee display (optional — settle UI breakdown; default 7.5)
+SHUTTLECOCK_FEE_PER_HOUR=7.5
 
 # Vercel Blob (optional — only needed for avatar file uploads)
 BLOB_READ_WRITE_TOKEN=

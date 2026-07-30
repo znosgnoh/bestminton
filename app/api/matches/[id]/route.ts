@@ -47,6 +47,7 @@ export async function PUT(
     hours?: number | null;
     totalCost?: number | null;
     paidByMemberId?: number | null;
+    shuttlecockRecipientMemberId?: number | null;
     youtubeUrl?: string | null;
     pin?: string;
   };
@@ -62,7 +63,7 @@ export async function PUT(
   try {
     const existing = await db.match.findUniqueOrThrow({ where: { id } });
 
-    const settlementFields = ["hours", "totalCost", "paidByMemberId"] as const;
+    const settlementFields = ["hours", "totalCost", "paidByMemberId", "shuttlecockRecipientMemberId"] as const;
     if (existing.synced && settlementFields.some((f) => f in body)) {
       return NextResponse.json(
         { error: "Cannot modify settlement data for a synced match." },
@@ -85,6 +86,11 @@ export async function PUT(
     if (body.paidByMemberId !== undefined) {
       data.paidBy = body.paidByMemberId
         ? { connect: { id: body.paidByMemberId } }
+        : { disconnect: true };
+    }
+    if (body.shuttlecockRecipientMemberId !== undefined) {
+      data.shuttlecockRecipient = body.shuttlecockRecipientMemberId
+        ? { connect: { id: body.shuttlecockRecipientMemberId } }
         : { disconnect: true };
     }
     if (body.youtubeUrl !== undefined) {

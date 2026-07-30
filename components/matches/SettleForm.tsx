@@ -5,6 +5,12 @@ import { Loader2, CheckCircle, AlertTriangle, Info } from "lucide-react";
 import { calculateShares } from "@/lib/calculations";
 import { currencyLabel, formatAmount, getCurrencySymbol } from "@/lib/currency";
 import { withAdminPin } from "@/lib/adminPinClient";
+import {
+  findDefaultShuttlecockRecipientId,
+  isSingleMatchTitle,
+  shouldCreateShuttlecockRemittance,
+  splitSettlementFees,
+} from "@/lib/shuttlecock";
 import * as dataService from "@/lib/dataService";
 import type { MatchDTO, RegistrationDTO, CalculatedShare } from "@/lib/types";
 
@@ -13,19 +19,36 @@ interface SettleFormProps {
   registrations: RegistrationDTO[];
   splitwiseConfigured: boolean;
   currencyCode: string;
+  shuttlecockFeePerHour: number;
 }
 
-export default function SettleForm({ match, registrations, splitwiseConfigured, currencyCode }: SettleFormProps) {
+export default function SettleForm({
+  match,
+  registrations,
+  splitwiseConfigured,
+  currencyCode,
+  shuttlecockFeePerHour,
+}: SettleFormProps) {
+  const defaultShuttleRecipient =
+    match.shuttlecockRecipientMemberId ??
+    findDefaultShuttlecockRecipientId(registrations);
+
   const [totalCost, setTotalCost] = useState<number | "">(match.totalCost ?? "");
   const [hours, setHours] = useState<number | "">(match.hours ?? "");
   const [paidByMemberId, setPaidByMemberId] = useState<number | null>(match.paidByMemberId);
+  const [shuttlecockRecipientMemberId, setShuttlecockRecipientMemberId] = useState<number | null>(
+    defaultShuttleRecipient
+  );
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savedOk, setSavedOk] = useState(match.totalCost !== null && match.hours !== null);
   const [synced, setSynced] = useState(match.synced);
   const isFirstRender = useRef(true);
   useEffect(() => {
-    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     setSavedOk(false);
   }, [registrations]);
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "success" | "error">("idle");
@@ -42,6 +65,18 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
       return [];
     return calculateShares(registrations, totalCost, hours);
   }, [totalCost, hours, registrations]);
+
+  const feeSplit = useMemo(() => {
+    if (typeof totalCost !== "number" || typeof hours !== "number" || totalCost <= 0 || hours <= 0) {
+      return null;
+    }
+    return splitSettlementFees(totalCost, hours, shuttlecockFeePerHour);
+  }, [totalCost, hours, shuttlecockFeePerHour]);
+
+  const paidByName =
+    registrations.find((r) => r.memberId === paidByMemberId)?.member.name ?? null;
+  const shuttlecockRecipientName =
+    registrations.find((r) => r.memberId === shuttlecockRecipientMemberId)?.member.name ?? null;
 
   const missingSplitwiseIds = registrations
     .filter((r) => !r.member.splitwiseId)
@@ -69,6 +104,10 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
       setSaveError("Please select who paid.");
       return;
     }
+    if (!shuttlecockRecipientMemberId) {
+      setSaveError("Please select who receives the shuttlecock fee.");
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     try {
@@ -76,6 +115,7 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
         totalCost: totalCost as number,
         hours: hours as number,
         paidByMemberId: paidByMemberId as number,
+        shuttlecockRecipientMemberId,
       });
       setSavedOk(true);
     } catch (err) {
@@ -90,6 +130,25 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
     const paidByReg = registrations.find((r) => r.memberId === paidByMemberId);
     if (!paidByReg?.member.splitwiseId) return;
 
+    const split =
+      typeof hours === "number"
+        ? splitSettlementFees(totalCost, hours, shuttlecockFeePerHour)
+        : null;
+
+    const detailParts: string[] = [];
+    if (match.venue) detailParts.push(`Venue: ${match.venue}`);
+    if (split) {
+      detailParts.push(
+        `Court ${formatAmount(split.courtFee)} + shuttlecock ${formatAmount(split.shuttlecockFee)} ` +
+          `(${formatAmount(split.ratePerHour)}/h × ${hours}h)`
+      );
+      if (shuttlecockRecipientName && paidByName) {
+        detailParts.push(
+          `${paidByName} remits shuttlecock to ${shuttlecockRecipientName}`
+        );
+      }
+    }
+
     setSyncStatus("syncing");
     setSyncError(null);
     try {
@@ -102,7 +161,7 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
             totalCost,
             description: match.title,
             date: match.scheduledAt,
-            details: match.venue ? `Venue: ${match.venue}` : undefined,
+            details: detailParts.length ? detailParts.join("\n") : undefined,
             groupId: 0,
             paidById: paidByReg.member.splitwiseId,
             participants: shares.map((s) => {
@@ -137,9 +196,17 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
             Total Court Cost ({cur})
           </label>
           <input
-            type="number" min="0" step="1" value={totalCost}
-            onChange={(e) => { const v = parseFloat(e.target.value); setTotalCost(isNaN(v) ? "" : v); setSavedOk(false); }}
-            className={inputCls} placeholder="e.g. 800"
+            type="number"
+            min="0"
+            step="1"
+            value={totalCost}
+            onChange={(e) => {
+              const v = parseFloat(e.target.value);
+              setTotalCost(isNaN(v) ? "" : v);
+              setSavedOk(false);
+            }}
+            className={inputCls}
+            placeholder="e.g. 800"
           />
         </div>
 
@@ -148,36 +215,113 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
             Hours Played
           </label>
           <input
-            type="number" min="0" step="0.5" value={hours}
-            onChange={(e) => { const v = parseFloat(e.target.value); setHours(isNaN(v) ? "" : v); setSavedOk(false); }}
-            className={inputCls} placeholder="e.g. 2"
+            type="number"
+            min="0"
+            step="0.5"
+            value={hours}
+            onChange={(e) => {
+              const v = parseFloat(e.target.value);
+              setHours(isNaN(v) ? "" : v);
+              setSavedOk(false);
+            }}
+            className={inputCls}
+            placeholder="e.g. 2"
           />
         </div>
 
         <div>
-          <label className="tet-label text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Paid By</label>
+          <label className="tet-label text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Paid By
+          </label>
           <select
             value={paidByMemberId ?? ""}
-            onChange={(e) => { setPaidByMemberId(e.target.value ? Number(e.target.value) : null); setSavedOk(false); }}
+            onChange={(e) => {
+              setPaidByMemberId(e.target.value ? Number(e.target.value) : null);
+              setSavedOk(false);
+            }}
             className={inputCls}
           >
             <option value="">— Select —</option>
             {registrations.map((r) => (
-              <option key={r.memberId} value={r.memberId}>{r.member.name}</option>
+              <option key={r.memberId} value={r.memberId}>
+                {r.member.name}
+              </option>
             ))}
           </select>
         </div>
 
-        {saveError && (
-          <p className="tet-alert-error">
-            {saveError}
+        <div>
+          <label className="tet-label text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Shuttlecock
+          </label>
+          <select
+            value={shuttlecockRecipientMemberId ?? ""}
+            onChange={(e) => {
+              setShuttlecockRecipientMemberId(e.target.value ? Number(e.target.value) : null);
+              setSavedOk(false);
+            }}
+            className={inputCls}
+          >
+            <option value="">— Select —</option>
+            {registrations.map((r) => (
+              <option key={r.memberId} value={r.memberId}>
+                {r.member.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Who receives the shuttlecock fee (default Tiến Hoàng).
           </p>
+        </div>
+
+        {feeSplit && (
+          <div className="rounded-xl border border-amber-200/50 dark:border-gray-800 bg-amber-50/40 dark:bg-gray-900/40 p-3 space-y-1.5 text-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              Fee breakdown
+            </p>
+            <div className="flex justify-between text-gray-700 dark:text-gray-300">
+              <span>
+                Court fee
+              </span>
+              <span className="font-semibold tabular-nums">{curSym}{formatAmount(feeSplit.courtFee)}</span>
+            </div>
+            <div className="flex justify-between text-gray-700 dark:text-gray-300">
+              <span>
+                Shuttlecock ({formatAmount(feeSplit.ratePerHour)}/h × {hours}h)
+              </span>
+              <span className="font-semibold tabular-nums">
+                {curSym}{formatAmount(feeSplit.shuttlecockFee)}
+              </span>
+            </div>
+            <div className="flex justify-between border-t border-amber-200/60 dark:border-gray-700 pt-1.5 font-semibold text-gray-900 dark:text-gray-100">
+              <span>Total</span>
+              <span className="tabular-nums">
+                {curSym}{typeof totalCost === "number" ? formatAmount(totalCost) : "—"}
+              </span>
+            </div>
+            {paidByName && shuttlecockRecipientName && (
+              <p className="pt-1 text-xs text-gray-600 dark:text-gray-400">
+                Everyone pays {paidByName}. {paidByName} remits shuttlecock (
+                {curSym}
+                {formatAmount(feeSplit.shuttlecockFee)}) to {shuttlecockRecipientName}.
+                {shouldCreateShuttlecockRemittance({
+                  title: match.title,
+                  shuttlecockFee: feeSplit.shuttlecockFee,
+                  paidByMemberId,
+                  shuttlecockRecipientMemberId,
+                }) ? (
+                  <> Sync also logs this remittance in Splitwise.</>
+                ) : isSingleMatchTitle(match.title) ? (
+                  <> Single sessions skip the Splitwise remittance log.</>
+                ) : null}
+              </p>
+            )}
+          </div>
         )}
 
-        <button
-          onClick={handleSave} disabled={saving}
-          className="tet-btn-primary-lg"
-        >
+        {saveError && <p className="tet-alert-error">{saveError}</p>}
+
+        <button onClick={handleSave} disabled={saving} className="tet-btn-primary-lg">
           {saving && <Loader2 size={15} className="animate-spin" />}
           {saving ? "Saving…" : "Save Settlement Data"}
         </button>
@@ -202,27 +346,33 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
                     s.guestCount === 0
                       ? "—"
                       : s.guestsFactor === s.guestCount
-                      ? `+${s.guestCount}`
-                      : `+${s.guestsFactor % 1 === 0 ? s.guestsFactor : s.guestsFactor.toFixed(1)}`;
+                        ? `+${s.guestCount}`
+                        : `+${s.guestsFactor % 1 === 0 ? s.guestsFactor : s.guestsFactor.toFixed(1)}`;
                   return (
-                  <tr key={s.memberId}>
-                    <td className="px-3 py-2.5 font-medium text-gray-900 dark:text-gray-100">{s.name}</td>
-                    <td className="px-3 py-2.5 text-center">
-                      <span className={s.playedFull ? "tet-pill-full" : "tet-pill-half"}>
-                        {s.playedFull ? "Full" : "½"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 text-center text-gray-500 dark:text-gray-400">
-                      {guestLabel}
-                    </td>
-                    <td className="px-3 py-2.5 text-right font-semibold text-gray-900 dark:text-gray-100">{formatAmount(s.owedShare)}</td>
-                  </tr>
+                    <tr key={s.memberId}>
+                      <td className="px-3 py-2.5 font-medium text-gray-900 dark:text-gray-100">
+                        {s.name}
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        <span className={s.playedFull ? "tet-pill-full" : "tet-pill-half"}>
+                          {s.playedFull ? "Full" : "½"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-center text-gray-500 dark:text-gray-400">
+                        {guestLabel}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-semibold text-gray-900 dark:text-gray-100">
+                        {formatAmount(s.owedShare)}
+                      </td>
+                    </tr>
                   );
                 })}
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-amber-200/60 dark:border-gray-700 bg-amber-50/80 dark:bg-gray-800 font-semibold">
-                  <td className="px-3 py-2 text-gray-700 dark:text-gray-300" colSpan={3}>Total</td>
+                  <td className="px-3 py-2 text-gray-700 dark:text-gray-300" colSpan={3}>
+                    Total
+                  </td>
                   <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
                     {typeof totalCost === "number" ? formatAmount(totalCost) : "—"}
                   </td>
@@ -244,14 +394,16 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
                 {!splitwiseConfigured && (
                   <div className="tet-alert-info">
                     <Info size={15} className="mt-0.5 shrink-0" />
-                    Splitwise sync is disabled. Add SPLITWISE_API_KEY and SPLITWISE_GROUP_ID to your environment.
+                    Splitwise sync is disabled. Add SPLITWISE_API_KEY and SPLITWISE_GROUP_ID to your
+                    environment.
                   </div>
                 )}
                 {splitwiseConfigured && missingSplitwiseIds.length > 0 && (
                   <div className="tet-alert-info">
                     <AlertTriangle size={15} className="mt-0.5 shrink-0" />
                     <span>
-                      Missing Splitwise ID for: <strong>{missingSplitwiseIds.join(", ")}</strong>. Update in Management.
+                      Missing Splitwise ID for: <strong>{missingSplitwiseIds.join(", ")}</strong>.
+                      Update in Management.
                     </span>
                   </div>
                 )}
@@ -262,12 +414,11 @@ export default function SettleForm({ match, registrations, splitwiseConfigured, 
                   </div>
                 )}
                 {syncStatus === "error" && syncError && (
-                  <p className="tet-alert-error">
-                    {syncError}
-                  </p>
+                  <p className="tet-alert-error">{syncError}</p>
                 )}
                 <button
-                  onClick={handleSync} disabled={!canSync}
+                  onClick={handleSync}
+                  disabled={!canSync}
                   className="tet-btn-primary-lg disabled:cursor-not-allowed disabled:bg-gray-200 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-600"
                 >
                   {syncStatus === "syncing" && <Loader2 size={15} className="animate-spin" />}

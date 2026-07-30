@@ -23,6 +23,7 @@ interface MatchDetailClientProps {
   dbAvailable: boolean;
   splitwiseConfigured: boolean;
   currencyCode: string;
+  shuttlecockFeePerHour: number;
   isManage: boolean;
 }
 
@@ -49,6 +50,7 @@ function MatchDetailClientInner({
   dbAvailable,
   splitwiseConfigured,
   currencyCode,
+  shuttlecockFeePerHour,
   isManage,
 }: MatchDetailClientProps) {
   const searchParams = useSearchParams();
@@ -167,7 +169,7 @@ function MatchDetailClientInner({
         <div className="mt-3 space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
           <div className="flex items-center gap-2">
             <MapPin size={14} className="shrink-0 text-amber-600 dark:text-amber-400" />
-            {match.venue}
+            <span className="whitespace-pre-line">{match.venue}</span>
           </div>
           <div className="flex items-center gap-2">
             <Calendar size={14} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
@@ -223,6 +225,7 @@ function MatchDetailClientInner({
           registrations={registrations}
           splitwiseConfigured={splitwiseConfigured}
           currencyCode={currencyCode}
+          shuttlecockFeePerHour={shuttlecockFeePerHour}
         />
       )}
     </div>

@@ -24,6 +24,7 @@ model Member {
 
   registrations      MatchRegistration[]
   paidMatches        Match[]             @relation("MatchPayer")
+  shuttlecockMatches Match[]             @relation("MatchShuttlecockRecipient")
   betsPlaced         Bet[]               @relation("BetBettor")
   betsAsCounterparty Bet[]               @relation("BetCounterparty")
   debtsOwed          DrinkDebt[]         @relation("DebtDebtor")
@@ -36,21 +37,25 @@ model Member {
 }
 
 model Match {
-  id             Int      @id @default(autoincrement())
-  title          String
-  venue          String
-  scheduledAt    DateTime
-  hours          Float?
-  totalCost      Float?
-  paidByMemberId Int?
-  isRecurring    Boolean  @default(false)
-  recurDayOfWeek Int?
-  synced         Boolean  @default(false)
-  youtubeUrl     String?
-  createdAt      DateTime @default(now())
+  id                          Int      @id @default(autoincrement())
+  title                       String
+  venue                       String
+  scheduledAt                 DateTime
+  hours                       Float?
+  totalCost                   Float?
+  paidByMemberId              Int?
+  shuttlecockRecipientMemberId Int?
+  isRecurring                 Boolean  @default(false)
+  recurDayOfWeek              Int?
+  synced                      Boolean  @default(false)
+  /// Splitwise shuttlecock remittance (Paid By → recipient) already logged
+  shuttlecockRemitted         Boolean  @default(false)
+  youtubeUrl                  String?
+  createdAt                   DateTime @default(now())
 
-  paidBy        Member?             @relation("MatchPayer", fields: [paidByMemberId], references: [id])
-  registrations MatchRegistration[]
+  paidBy                Member?             @relation("MatchPayer", fields: [paidByMemberId], references: [id])
+  shuttlecockRecipient  Member?             @relation("MatchShuttlecockRecipient", fields: [shuttlecockRecipientMemberId], references: [id])
+  registrations         MatchRegistration[]
 }
 
 model MatchRegistration {

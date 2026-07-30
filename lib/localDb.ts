@@ -50,9 +50,11 @@ interface RawMatch {
   hours: number | null;
   totalCost: number | null;
   paidByMemberId: number | null;
+  shuttlecockRecipientMemberId: number | null;
   isRecurring: boolean;
   recurDayOfWeek: number | null;
   synced: boolean;
+  shuttlecockRemitted?: boolean;
   youtubeUrl?: string | null;
   createdAt: string;
 }
@@ -106,9 +108,11 @@ async function buildMatchDTO(match: RawMatch): Promise<MatchDTO> {
     hours: match.hours,
     totalCost: match.totalCost,
     paidByMemberId: match.paidByMemberId,
+    shuttlecockRecipientMemberId: match.shuttlecockRecipientMemberId ?? null,
     isRecurring: match.isRecurring,
     recurDayOfWeek: match.recurDayOfWeek,
     synced: match.synced,
+    shuttlecockRemitted: match.shuttlecockRemitted ?? false,
     youtubeUrl: match.youtubeUrl ?? null,
     registrations: regDTOs,
   };
@@ -215,9 +219,11 @@ export async function createMatches(data: {
       hours: null,
       totalCost: null,
       paidByMemberId: null,
+      shuttlecockRecipientMemberId: null,
       isRecurring: data.isRecurring,
       recurDayOfWeek: data.isRecurring ? dayOfWeek : null,
       synced: false,
+      shuttlecockRemitted: false,
       createdAt: new Date().toISOString(),
     };
     const id = await idbAdd("matches", raw);
@@ -235,6 +241,7 @@ export async function updateMatch(
     hours?: number | null;
     totalCost?: number | null;
     paidByMemberId?: number | null;
+    shuttlecockRecipientMemberId?: number | null;
     youtubeUrl?: string | null;
   }
 ): Promise<MatchDTO> {

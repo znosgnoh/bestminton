@@ -4,6 +4,11 @@ import { serializeChallengeList } from "@/lib/challengeSerialize";
 import { getMemberDebts } from "@/lib/drinkDebt";
 import { DEFAULT_ELO } from "@/lib/elo";
 import { toMemberDTO } from "@/lib/memberSerialize";
+import {
+  getShuttlecockFeePerHour,
+  shouldCreateShuttlecockRemittance,
+  splitSettlementFees,
+} from "@/lib/shuttlecock";
 import type {
   ChallengeResolutionDTO,
   EloHistoryPointDTO,
@@ -105,7 +110,12 @@ export async function buildMemberProfile(memberId: number): Promise<MemberProfil
     db.matchRegistration.findMany({
       where: { memberId },
       include: {
-        match: true,
+        match: {
+          include: {
+            paidBy: { select: { id: true, name: true } },
+            shuttlecockRecipient: { select: { id: true, name: true } },
+          },
+        },
         guests: true,
       },
       orderBy: { match: { scheduledAt: "desc" } },
@@ -119,15 +129,42 @@ export async function buildMemberProfile(memberId: number): Promise<MemberProfil
 
   const memberDto = toMemberDTO(member, debtSummary);
 
-  const matchHistory: MemberMatchHistoryItemDTO[] = registrations.map((reg) => ({
-    matchId: reg.matchId,
-    title: reg.match.title,
-    venue: reg.match.venue,
-    scheduledAt: reg.match.scheduledAt.toISOString(),
-    playedFull: reg.playedFull,
-    guestCount: reg.guests.length,
-    synced: reg.match.synced,
-  }));
+  const matchHistory: MemberMatchHistoryItemDTO[] = registrations.map((reg) => {
+    const m = reg.match;
+    const hasSettlement =
+      m.totalCost != null && m.totalCost > 0 && m.hours != null && m.hours > 0;
+    const split = hasSettlement
+      ? splitSettlementFees(m.totalCost!, m.hours!, getShuttlecockFeePerHour())
+      : null;
+    const shuttlecockRemittance = Boolean(
+      split &&
+        shouldCreateShuttlecockRemittance({
+          title: m.title,
+          shuttlecockFee: split.shuttlecockFee,
+          paidByMemberId: m.paidByMemberId,
+          shuttlecockRecipientMemberId: m.shuttlecockRecipientMemberId,
+        })
+    );
+
+    return {
+      matchId: reg.matchId,
+      title: m.title,
+      venue: m.venue,
+      scheduledAt: m.scheduledAt.toISOString(),
+      playedFull: reg.playedFull,
+      guestCount: reg.guests.length,
+      synced: m.synced,
+      hours: m.hours,
+      totalCost: m.totalCost,
+      paidByMemberId: m.paidByMemberId,
+      paidByName: m.paidBy?.name ?? null,
+      shuttlecockRecipientMemberId: m.shuttlecockRecipientMemberId,
+      shuttlecockRecipientName: m.shuttlecockRecipient?.name ?? null,
+      shuttlecockFee: split?.shuttlecockFee ?? null,
+      courtFee: split?.courtFee ?? null,
+      shuttlecockRemittance,
+    };
+  });
 
   const challengeHistory = challenges.map(serializeChallengeList);
 

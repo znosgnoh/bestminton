@@ -12,6 +12,7 @@ interface ManagementPageClientProps {
   completedChallenges: ChallengeDTO[];
   dbAvailable: boolean;
   splitwiseConfigured: boolean;
+  shuttlecockFeePerHour: number;
 }
 
 export default function ManagementPageClient({
@@ -20,6 +21,7 @@ export default function ManagementPageClient({
   completedChallenges,
   dbAvailable,
   splitwiseConfigured,
+  shuttlecockFeePerHour,
 }: ManagementPageClientProps) {
   return (
     <ManagementGate>
@@ -40,7 +42,11 @@ export default function ManagementPageClient({
           initialChallenges={completedChallenges}
           dbAvailable={dbAvailable}
         />
-        <MatchesSection initialMatches={initialMatches} dbAvailable={dbAvailable} />
+        <MatchesSection
+          initialMatches={initialMatches}
+          dbAvailable={dbAvailable}
+          shuttlecockFeePerHour={shuttlecockFeePerHour}
+        />
       </div>
     </ManagementGate>
   );

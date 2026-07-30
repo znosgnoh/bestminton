@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { isDatabaseConfigured } from "@/lib/dbConfig";
 import { isSplitwiseConfigured } from "@/lib/splitwise";
+import { getShuttlecockFeePerHour } from "@/lib/shuttlecock";
 import { MATCH_LIST_INCLUDE } from "@/lib/prismaIncludes";
 import { CHALLENGE_LIST_INCLUDE } from "@/lib/challengeIncludes";
 import { membersToDTOs } from "@/lib/memberSerialize";
@@ -47,6 +48,7 @@ export default async function ManagementPage() {
       completedChallenges={completedChallenges}
       dbAvailable={dbAvailable}
       splitwiseConfigured={isSplitwiseConfigured()}
+      shuttlecockFeePerHour={getShuttlecockFeePerHour()}
     />
   );
 }

@@ -7,10 +7,17 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import MatchForm from "./MatchForm";
 import * as dataService from "@/lib/dataService";
+import {
+  getShuttlecockFeePerHour,
+  shouldCreateShuttlecockRemittance,
+  splitSettlementFees,
+} from "@/lib/shuttlecock";
+import { formatAmount, getCurrencySymbol } from "@/lib/currency";
 import type { MatchDTO } from "@/lib/types";
 
 interface MatchManageRowProps {
   match: MatchDTO;
+  shuttlecockFeePerHour: number;
   onUpdated: (m: MatchDTO) => void;
   onDeleted: (id: number) => void;
 }
@@ -29,11 +36,40 @@ function totalHeadcount(match: MatchDTO): number {
   return match.registrations.reduce((sum, r) => sum + 1 + r.guests.length, 0);
 }
 
-export default function MatchManageRow({ match, onUpdated, onDeleted }: MatchManageRowProps) {
+export default function MatchManageRow({
+  match,
+  shuttlecockFeePerHour,
+  onUpdated,
+  onDeleted,
+}: MatchManageRowProps) {
   const [mode, setMode] = useState<"view" | "editing" | "deleting">("view");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const settleHref = `/matches/${match.id}?manage=1`;
+  const curSym = getCurrencySymbol();
+
+  const paidByName =
+    match.registrations.find((r) => r.memberId === match.paidByMemberId)?.member.name ?? null;
+  const shuttlecockRecipientName =
+    match.registrations.find((r) => r.memberId === match.shuttlecockRecipientMemberId)?.member
+      .name ?? null;
+
+  const feeSplit =
+    match.totalCost != null &&
+    match.totalCost > 0 &&
+    match.hours != null &&
+    match.hours > 0
+      ? splitSettlementFees(match.totalCost, match.hours, shuttlecockFeePerHour)
+      : null;
+
+  const showRemittance =
+    feeSplit &&
+    shouldCreateShuttlecockRemittance({
+      title: match.title,
+      shuttlecockFee: feeSplit.shuttlecockFee,
+      paidByMemberId: match.paidByMemberId,
+      shuttlecockRecipientMemberId: match.shuttlecockRecipientMemberId,
+    });
 
   async function handleDelete() {
     setDeleting(true);
@@ -96,6 +132,23 @@ export default function MatchManageRow({ match, onUpdated, onDeleted }: MatchMan
               <Users size={11} />
               {headcount} {headcount === 1 ? "player" : "players"}
             </p>
+            {feeSplit && paidByName && (
+              <div className="mt-1.5 space-y-0.5 text-xs text-gray-600 dark:text-gray-400">
+                <p>
+                  Paid by {paidByName}
+                  {" · "}
+                  Court {curSym}{formatAmount(feeSplit.courtFee)}
+                  {" · "}
+                  Shuttlecock {curSym}{formatAmount(feeSplit.shuttlecockFee)}
+                </p>
+                {showRemittance && shuttlecockRecipientName && (
+                  <p className="font-medium text-emerald-700 dark:text-amber-400">
+                    {paidByName} → {shuttlecockRecipientName} shuttlecock{" "}
+                    {curSym}{formatAmount(feeSplit.shuttlecockFee)}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex gap-1 shrink-0">
             {isPast && (

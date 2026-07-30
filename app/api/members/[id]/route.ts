@@ -269,6 +269,10 @@ export async function DELETE(
         where: { paidByMemberId: id },
         data: { paidByMemberId: null },
       });
+      await tx.match.updateMany({
+        where: { shuttlecockRecipientMemberId: id },
+        data: { shuttlecockRecipientMemberId: null },
+      });
       await tx.challenge.updateMany({
         where: { winnerId: id },
         data: { winnerId: null },

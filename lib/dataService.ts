@@ -194,7 +194,12 @@ export function saveMatchYoutubeUrl(id: number, youtubeUrl: string | null): Prom
 
 export function saveMatchSettlement(
   id: number,
-  data: { totalCost: number; hours: number; paidByMemberId: number }
+  data: {
+    totalCost: number;
+    hours: number;
+    paidByMemberId: number;
+    shuttlecockRecipientMemberId: number | null;
+  }
 ): Promise<MatchDTO> {
   return via(
     () =>
@@ -463,6 +468,35 @@ export function resetAllElo(pin?: string): Promise<ResetEloResult> {
     method: "POST",
     headers: JSON_HEADERS,
     body: JSON.stringify(pin ? { pin } : {}),
+  });
+}
+
+export interface ShuttlecockBackfillResult {
+  success: boolean;
+  dryRun: boolean;
+  ratePerHour: number;
+  summary: { created: number; skipped: number; failed: number };
+  created: Array<{
+    matchId: number;
+    title: string;
+    fee: number;
+    paidBy: string;
+    recipient: string;
+    expenseId?: number;
+    description: string;
+  }>;
+  skipped: Array<{ matchId: number; title: string; reason: string }>;
+  failed: Array<{ matchId: number; title: string; error: string }>;
+}
+
+/** Backfill Splitwise shuttlecock remittances for past non-single matches. */
+export function backfillShuttlecockRemittances(
+  opts?: { dryRun?: boolean }
+): Promise<ShuttlecockBackfillResult> {
+  return challengeFetch<ShuttlecockBackfillResult>("/api/splitwise/backfill-shuttlecock", {
+    method: "POST",
+    headers: { ...JSON_HEADERS, ...adminPinHeaders() },
+    body: JSON.stringify(withAdminPin({ dryRun: opts?.dryRun ?? false })),
   });
 }
 

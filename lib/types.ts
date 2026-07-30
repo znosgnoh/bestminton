@@ -246,6 +246,17 @@ export interface MemberMatchHistoryItemDTO {
   playedFull: boolean;
   guestCount: number;
   synced: boolean;
+  hours: number | null;
+  totalCost: number | null;
+  paidByMemberId: number | null;
+  paidByName: string | null;
+  shuttlecockRecipientMemberId: number | null;
+  shuttlecockRecipientName: string | null;
+  /** Derived shuttlecock fee when settlement hours+cost exist; else null. */
+  shuttlecockFee: number | null;
+  courtFee: number | null;
+  /** True when remittance applies (not a single-title match, fee > 0, payer ≠ recipient). */
+  shuttlecockRemittance: boolean;
 }
 
 export interface EloHistoryPointDTO {
@@ -304,9 +315,11 @@ export interface MatchDTO {
   hours: number | null;
   totalCost: number | null;
   paidByMemberId: number | null;
+  shuttlecockRecipientMemberId: number | null;
   isRecurring: boolean;
   recurDayOfWeek: number | null;
   synced: boolean;
+  shuttlecockRemitted: boolean;
   youtubeUrl: string | null;
   registrations: RegistrationDTO[];
 }

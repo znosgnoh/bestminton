@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { isDatabaseConfigured } from "@/lib/dbConfig";
 import { isSplitwiseConfigured, getCurrencyCode } from "@/lib/splitwise";
+import { getShuttlecockFeePerHour } from "@/lib/shuttlecock";
 import { MATCH_FULL_INCLUDE } from "@/lib/prismaIncludes";
 import { toDTO } from "@/lib/serialize";
 import MatchDetailClient from "./MatchDetailClient";
@@ -26,6 +27,7 @@ export default async function MatchDetailLoader({
         dbAvailable={false}
         splitwiseConfigured={isSplitwiseConfigured()}
         currencyCode={getCurrencyCode()}
+        shuttlecockFeePerHour={getShuttlecockFeePerHour()}
         isManage={isManage}
       />
     );
@@ -63,6 +65,7 @@ export default async function MatchDetailLoader({
       dbAvailable={dbAvailable}
       splitwiseConfigured={isSplitwiseConfigured()}
       currencyCode={getCurrencyCode()}
+      shuttlecockFeePerHour={getShuttlecockFeePerHour()}
       isManage={isManage}
     />
   );

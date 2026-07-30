@@ -107,6 +107,70 @@ export function buildCreateExpensePayload(req: CreateExpenseRequest): SplitwiseF
   return payload;
 }
 
+/** Paid By owes shuttlecockFee to recipient (recipient is Splitwise "payer"/creditor). */
+export function buildShuttlecockRemittancePayload(opts: {
+  groupId: number;
+  fee: number;
+  description: string;
+  date: string;
+  details?: string;
+  paidBySplitwiseId: number;
+  recipientSplitwiseId: number;
+}): SplitwiseFlatPayload {
+  return buildCreateExpensePayload({
+    totalCost: opts.fee,
+    description: opts.description,
+    date: opts.date,
+    details: opts.details,
+    groupId: opts.groupId,
+    paidById: opts.recipientSplitwiseId,
+    participants: [
+      { userId: opts.paidBySplitwiseId, owedShare: opts.fee },
+      { userId: opts.recipientSplitwiseId, owedShare: 0 },
+    ],
+  });
+}
+
+export async function postSplitwiseExpense(
+  payload: SplitwiseFlatPayload
+): Promise<{ expenseId?: number; error?: string; status?: number }> {
+  let res: Response;
+  try {
+    res = await splitwiseFetch("/create_expense", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: toFormUrlEncoded(payload),
+    });
+  } catch {
+    return { error: "Could not reach Splitwise. Please check your connection.", status: 502 };
+  }
+
+  let data: SplitwiseCreateExpenseResponse;
+  try {
+    data = (await res.json()) as SplitwiseCreateExpenseResponse;
+  } catch {
+    return { error: "Splitwise returned an invalid response.", status: 502 };
+  }
+
+  const splitwiseError = humanizeSplitwiseExpenseError(parseSplitwiseErrors(data.errors));
+  if (!res.ok || hasSplitwiseErrors(data)) {
+    return {
+      error: splitwiseError ?? `Splitwise error: ${res.statusText}`,
+      status: res.ok ? 422 : res.status,
+    };
+  }
+
+  const expenseId = getSplitwiseExpenseId(data);
+  if (!expenseId) {
+    return {
+      error: "Splitwise accepted the request but did not return an expense ID.",
+      status: 502,
+    };
+  }
+
+  return { expenseId };
+}
+
 export function toFormUrlEncoded(payload: SplitwiseFlatPayload): string {
   return Object.entries(payload)
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
@@ -144,4 +208,66 @@ export function splitwiseMemberName(
   last: string | null | undefined
 ): string {
   return [first, last].filter(Boolean).join(" ").trim() || first;
+}
+
+export interface SplitwiseGroupMemberRef {
+  id: number;
+  displayName: string;
+}
+
+/** Fetch group members for membership checks before create_expense. */
+export async function fetchGroupMembers(
+  groupId: string
+): Promise<{ members: SplitwiseGroupMemberRef[]; groupName?: string } | { error: string }> {
+  let res: Response;
+  try {
+    res = await splitwiseFetch(`/get_group/${groupId}`);
+  } catch {
+    return { error: "Could not reach Splitwise to verify group members." };
+  }
+
+  let data: SplitwiseGroupResponse;
+  try {
+    data = (await res.json()) as SplitwiseGroupResponse;
+  } catch {
+    return { error: "Splitwise returned an invalid group response." };
+  }
+
+  const splitwiseError = parseSplitwiseErrors(data.errors);
+  if (!res.ok || hasSplitwiseErrors(data)) {
+    return { error: splitwiseError ?? `Could not load Splitwise group ${groupId}.` };
+  }
+
+  const members = (data.group?.members ?? [])
+    .filter((m) => m.registration_status !== "dummy")
+    .map((m) => ({
+      id: m.id,
+      displayName: splitwiseMemberName(m.first_name, m.last_name),
+    }));
+
+  return { members, groupName: data.group?.name };
+}
+
+/**
+ * Splitwise returns a cryptic "does not involve yourself" error when any
+ * participant is not in the target group. Detect that up front.
+ */
+export function findParticipantsMissingFromGroup(
+  participants: Array<{ userId: number }>,
+  groupMembers: SplitwiseGroupMemberRef[]
+): number[] {
+  const inGroup = new Set(groupMembers.map((m) => m.id));
+  return [...new Set(participants.map((p) => p.userId).filter((id) => !inGroup.has(id)))];
+}
+
+export function humanizeSplitwiseExpenseError(raw: string | null): string | null {
+  if (!raw) return null;
+  if (raw.includes("does not involve yourself")) {
+    return (
+      `${raw} ` +
+      "Usually this means one or more players have a Splitwise ID that is not in the configured group — " +
+      "add them to the group (or fix their Splitwise ID), then try again."
+    );
+  }
+  return raw;
 }

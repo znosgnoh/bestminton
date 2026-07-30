@@ -296,6 +296,10 @@ const vi: Messages = {
     noChallenges: "Chưa có kèo nào.",
     noMatches: "Chưa đăng ký buổi chơi nào.",
     guests: "khách",
+    paidBy: "Người trả: {name}",
+    courtFee: "Sân {amount}",
+    shuttlecockFee: "Cầu {amount}",
+    remittance: "{from} → {to} cầu {amount}",
   },
   management: {
     title: "Quản lý",

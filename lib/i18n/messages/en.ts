@@ -294,6 +294,10 @@ const en = {
     noChallenges: "No kèo yet.",
     noMatches: "No sessions registered yet.",
     guests: "guests",
+    paidBy: "Paid by {name}",
+    courtFee: "Court {amount}",
+    shuttlecockFee: "Shuttlecock {amount}",
+    remittance: "{from} → {to} shuttlecock {amount}",
   },
   management: {
     title: "Management",
