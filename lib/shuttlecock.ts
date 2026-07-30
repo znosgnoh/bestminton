@@ -60,13 +60,20 @@ export function shouldCreateShuttlecockRemittance(opts: {
   return true;
 }
 
+export function findMemberIdByShuttlecockDefaultName(
+  members: Array<{ id: number; name: string }>
+): number | null {
+  const target = DEFAULT_SHUTTLECOCK_RECIPIENT_NAME.toLowerCase();
+  const exact = members.find((m) => m.name.trim().toLowerCase() === target);
+  return exact?.id ?? null;
+}
+
 export function findDefaultShuttlecockRecipientId(
   registrations: Array<{ memberId: number; member: { name: string } }>
 ): number | null {
-  const exact = registrations.find(
-    (r) => r.member.name.trim().toLowerCase() === DEFAULT_SHUTTLECOCK_RECIPIENT_NAME.toLowerCase()
+  return findMemberIdByShuttlecockDefaultName(
+    registrations.map((r) => ({ id: r.memberId, name: r.member.name }))
   );
-  return exact?.memberId ?? null;
 }
 
 /** Splitwise expense description: match title + date. */

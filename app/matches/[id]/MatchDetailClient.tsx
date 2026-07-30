@@ -223,6 +223,7 @@ function MatchDetailClientInner({
         <SettleForm
           match={match}
           registrations={registrations}
+          members={allMembers}
           splitwiseConfigured={splitwiseConfigured}
           currencyCode={currencyCode}
           shuttlecockFeePerHour={shuttlecockFeePerHour}

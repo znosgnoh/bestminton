@@ -7,16 +7,18 @@ import { currencyLabel, formatAmount, getCurrencySymbol } from "@/lib/currency";
 import { withAdminPin } from "@/lib/adminPinClient";
 import {
   findDefaultShuttlecockRecipientId,
+  findMemberIdByShuttlecockDefaultName,
   isSingleMatchTitle,
   shouldCreateShuttlecockRemittance,
   splitSettlementFees,
 } from "@/lib/shuttlecock";
 import * as dataService from "@/lib/dataService";
-import type { MatchDTO, RegistrationDTO, CalculatedShare } from "@/lib/types";
+import type { MatchDTO, MemberDTO, RegistrationDTO, CalculatedShare } from "@/lib/types";
 
 interface SettleFormProps {
   match: MatchDTO;
   registrations: RegistrationDTO[];
+  members: MemberDTO[];
   splitwiseConfigured: boolean;
   currencyCode: string;
   shuttlecockFeePerHour: number;
@@ -25,12 +27,14 @@ interface SettleFormProps {
 export default function SettleForm({
   match,
   registrations,
+  members,
   splitwiseConfigured,
   currencyCode,
   shuttlecockFeePerHour,
 }: SettleFormProps) {
   const defaultShuttleRecipient =
     match.shuttlecockRecipientMemberId ??
+    findMemberIdByShuttlecockDefaultName(members) ??
     findDefaultShuttlecockRecipientId(registrations);
 
   const [totalCost, setTotalCost] = useState<number | "">(match.totalCost ?? "");
@@ -53,6 +57,7 @@ export default function SettleForm({
   }, [registrations]);
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "success" | "error">("idle");
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [shuttlecockSynced, setShuttlecockSynced] = useState(false);
 
   const shares: CalculatedShare[] = useMemo(() => {
     if (
@@ -74,9 +79,13 @@ export default function SettleForm({
   }, [totalCost, hours, shuttlecockFeePerHour]);
 
   const paidByName =
-    registrations.find((r) => r.memberId === paidByMemberId)?.member.name ?? null;
+    registrations.find((r) => r.memberId === paidByMemberId)?.member.name ??
+    members.find((m) => m.id === paidByMemberId)?.name ??
+    null;
   const shuttlecockRecipientName =
-    registrations.find((r) => r.memberId === shuttlecockRecipientMemberId)?.member.name ?? null;
+    members.find((m) => m.id === shuttlecockRecipientMemberId)?.name ??
+    registrations.find((r) => r.memberId === shuttlecockRecipientMemberId)?.member.name ??
+    null;
 
   const missingSplitwiseIds = registrations
     .filter((r) => !r.member.splitwiseId)
@@ -171,10 +180,16 @@ export default function SettleForm({
           })
         ),
       });
-      const data = (await res.json()) as { success?: boolean; error?: string };
+      const data = (await res.json()) as {
+        success?: boolean;
+        error?: string;
+        shuttlecockExpenseId?: number | null;
+        shuttlecockRemitted?: boolean;
+      };
       if (!res.ok) throw new Error(data.error ?? "Sync failed.");
       setSyncStatus("success");
       setSynced(true);
+      setShuttlecockSynced(Boolean(data.shuttlecockRemitted || data.shuttlecockExpenseId));
     } catch (err) {
       setSyncStatus("error");
       setSyncError(err instanceof Error ? err.message : "Sync failed.");
@@ -263,14 +278,15 @@ export default function SettleForm({
             className={inputCls}
           >
             <option value="">— Select —</option>
-            {registrations.map((r) => (
-              <option key={r.memberId} value={r.memberId}>
-                {r.member.name}
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
               </option>
             ))}
           </select>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Who receives the shuttlecock fee (default Tiến Hoàng).
+            Who receives the shuttlecock fee (default Tiến Hoàng). Sync logs Paid By → this person in
+            Splitwise (skipped for Single-title matches).
           </p>
         </div>
 
@@ -387,7 +403,12 @@ export default function SettleForm({
             {synced || syncStatus === "success" ? (
               <div className="tet-alert-success">
                 <CheckCircle size={16} />
-                Synced to Splitwise successfully.
+                <span>
+                  Synced to Splitwise successfully.
+                  {shuttlecockSynced
+                    ? " Shuttlecock remittance (Paid By → Shuttlecock) was logged too."
+                    : null}
+                </span>
               </div>
             ) : (
               <>

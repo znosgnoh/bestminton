@@ -15,6 +15,7 @@ import type { CreateExpenseRequest } from "@/lib/types";
 import { db } from "@/lib/db";
 import { revalidateMatchPages } from "@/lib/revalidate";
 import {
+  DEFAULT_SHUTTLECOCK_RECIPIENT_NAME,
   formatShuttlecockRemittanceDescription,
   getShuttlecockFeePerHour,
   shouldCreateShuttlecockRemittance,
@@ -122,6 +123,27 @@ export async function POST(request: NextRequest) {
       ? splitSettlementFees(totalForFee, hoursForFee, getShuttlecockFeePerHour())
       : null;
 
+  // Resolve shuttlecock recipient: saved on match, else default Tiến Hoàng (same as backfill).
+  let resolvedRecipient =
+    match?.shuttlecockRecipient ??
+    (null as {
+      id: number;
+      name: string;
+      splitwiseId: number | null;
+    } | null);
+  let resolvedRecipientMemberId = match?.shuttlecockRecipientMemberId ?? null;
+
+  if (match && !resolvedRecipientMemberId && split && split.shuttlecockFee > 0) {
+    const tienHoang = await db.member.findFirst({
+      where: { name: { equals: DEFAULT_SHUTTLECOCK_RECIPIENT_NAME, mode: "insensitive" } },
+      select: { id: true, name: true, splitwiseId: true },
+    });
+    if (tienHoang) {
+      resolvedRecipient = tienHoang;
+      resolvedRecipientMemberId = tienHoang.id;
+    }
+  }
+
   const remittance =
     match &&
     !match.shuttlecockRemitted &&
@@ -130,12 +152,13 @@ export async function POST(request: NextRequest) {
       title: match.title,
       shuttlecockFee: split.shuttlecockFee,
       paidByMemberId: match.paidByMemberId,
-      shuttlecockRecipientMemberId: match.shuttlecockRecipientMemberId,
+      shuttlecockRecipientMemberId: resolvedRecipientMemberId,
     })
       ? {
           fee: split.shuttlecockFee,
           paidBy: match.paidBy,
-          recipient: match.shuttlecockRecipient,
+          recipient: resolvedRecipient,
+          recipientMemberId: resolvedRecipientMemberId!,
         }
       : null;
 
@@ -218,7 +241,12 @@ export async function POST(request: NextRequest) {
         where: { id: matchId },
         data: {
           synced: true,
-          ...(shuttlecockExpenseId ? { shuttlecockRemitted: true } : {}),
+          ...(shuttlecockExpenseId
+            ? {
+                shuttlecockRemitted: true,
+                shuttlecockRecipientMemberId: remittance!.recipientMemberId,
+              }
+            : {}),
         },
       });
       revalidateMatchPages(matchId);
@@ -231,5 +259,6 @@ export async function POST(request: NextRequest) {
     success: true,
     expenseId: mainResult.expenseId,
     shuttlecockExpenseId: shuttlecockExpenseId ?? null,
+    shuttlecockRemitted: Boolean(shuttlecockExpenseId),
   });
 }
