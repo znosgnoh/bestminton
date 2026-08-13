@@ -9,6 +9,8 @@ import type {
   ChallengeDTO,
   LeaderboardEntryDTO,
   CreateChallengeRequest,
+  CreateBulkChallengesRequest,
+  CreateBulkChallengesResponse,
   UpdateChallengeRequest,
   ChallengeSide,
   DrinkDebtDTO,
@@ -346,6 +348,16 @@ export function createChallenge(data: CreateChallengeRequest): Promise<Challenge
     method: "POST",
     headers: JSON_HEADERS,
     body: JSON.stringify(data),
+  });
+}
+
+export function createBulkChallenges(
+  data: CreateBulkChallengesRequest
+): Promise<CreateBulkChallengesResponse> {
+  return challengeFetch<CreateBulkChallengesResponse>("/api/challenges/bulk", {
+    method: "POST",
+    headers: jsonHeaders(),
+    body: JSON.stringify(withAdminPin(data)),
   });
 }
 

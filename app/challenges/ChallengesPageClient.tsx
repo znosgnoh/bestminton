@@ -62,18 +62,27 @@ export default function ChallengesPageClient({
 
   return (
     <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="tet-page-title">{t("challenges.title")}</h1>
           <EloGuidelineLink className="mt-1" />
         </div>
-        <Link
-          href="/challenges/new"
-          className="tet-btn-primary flex items-center gap-1.5 px-4 py-2 text-sm shrink-0"
-        >
-          <Plus size={16} />
-          {t("challenges.newKeo")}
-        </Link>
+        <div className="flex flex-col items-stretch gap-2 shrink-0">
+          <Link
+            href="/challenges/new"
+            className="tet-btn-primary flex items-center justify-center gap-1.5 px-3 py-2 text-sm"
+          >
+            <Plus size={16} />
+            {t("challenges.newKeo")}
+          </Link>
+          <Link
+            href="/challenges/bulk"
+            className="tet-btn-ghost flex items-center justify-center gap-1.5 px-3 py-2 text-sm"
+          >
+            <Plus size={16} />
+            {t("challenges.bulkKeo")}
+          </Link>
+        </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1">

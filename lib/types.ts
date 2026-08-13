@@ -170,6 +170,18 @@ export interface CreateChallengeRequest {
   notes?: string | null;
 }
 
+export interface CreateBulkChallengesRequest {
+  memberIds: number[];
+  perPair?: number;
+  isDrinkChallenge?: boolean;
+  pointsToWin?: number;
+  pin?: string;
+}
+
+export interface CreateBulkChallengesResponse {
+  created: number;
+}
+
 export interface UpdateChallengeRequest {
   isDrinkChallenge?: boolean;
   pointsToWin?: number;

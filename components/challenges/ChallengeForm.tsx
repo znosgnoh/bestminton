@@ -7,6 +7,7 @@ import ErrorBanner from "@/components/ui/ErrorBanner";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
 import { DRINK_CHALLENGE_LABEL } from "@/lib/constants";
 import EloGuidelineLink from "@/components/leaderboard/EloGuidelineLink";
+import PointsToWinToggle from "@/components/challenges/PointsToWinToggle";
 import {
   DEFAULT_POINTS_TO_WIN,
   maxHandicapPoints,
@@ -251,47 +252,14 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
         </p>
       )}
 
-      <div className="flex items-center justify-center gap-3 rounded-xl border border-amber-100/80 bg-amber-50/40 px-3 py-3 dark:border-gray-700 dark:bg-gray-800/40">
-        <span
-          className={`text-sm tabular-nums ${
-            pointsToWin === 21
-              ? "font-semibold text-gray-900 dark:text-gray-100"
-              : "text-gray-500 dark:text-gray-400"
-          }`}
-        >
-          21 points
-        </span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={pointsToWin === 15}
-          aria-label="Points to win"
-          onClick={() => {
-            setPointsToWin(pointsToWin === 21 ? 15 : 21);
+      <div className="rounded-xl border border-amber-100/80 bg-amber-50/40 px-3 py-3 dark:border-gray-700 dark:bg-gray-800/40">
+        <PointsToWinToggle
+          value={pointsToWin}
+          onChange={(next) => {
+            setPointsToWin(next);
             setHandicapTouched(false);
           }}
-          className={`relative h-7 w-12 shrink-0 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:focus-visible:outline-amber-500 ${
-            pointsToWin === 15
-              ? "bg-emerald-600 dark:bg-emerald-500"
-              : "bg-gray-300 dark:bg-gray-600"
-          }`}
-        >
-          <span
-            aria-hidden
-            className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
-              pointsToWin === 15 ? "translate-x-5" : "translate-x-0"
-            }`}
-          />
-        </button>
-        <span
-          className={`text-sm tabular-nums ${
-            pointsToWin === 15
-              ? "font-semibold text-gray-900 dark:text-gray-100"
-              : "text-gray-500 dark:text-gray-400"
-          }`}
-        >
-          15 points
-        </span>
+        />
       </div>
 
       <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-100/80 bg-amber-50/40 p-3 dark:border-gray-700 dark:bg-gray-800/40">
