@@ -104,6 +104,10 @@ const en = {
     syncSplitwise: "Sync to Splitwise",
     syncing: "Syncing…",
     syncedSuccess: "Synced to Splitwise successfully.",
+    recordExpense: "Record expense",
+    recording: "Recording…",
+    recordedOnBalances: "Recorded on balances.",
+    splitwiseFailedRetry: "Saved here, Splitwise failed — retry.",
     syncDisabled:
       "Splitwise sync is disabled. Add SPLITWISE_API_KEY and SPLITWISE_GROUP_ID to your environment.",
     missingSplitwise: "Missing Splitwise ID for: {names}. Update in Management.",
@@ -342,6 +346,11 @@ const en = {
     title: "Management",
     subtitle: "Captain tools for members, matches and kèo",
     enterPin: "Enter the captain PIN to manage members, matches, and kèo.",
+    importBalances: "Import Splitwise balances",
+    importingBalances: "Importing balances…",
+    importBalancesCreated: "Imported {created} opening balance(s).",
+    importBalancesSkipped: "Skipped unmapped: {names}.",
+    importBalancesSkippedZero: "{count} with zero net skipped.",
   },
 } as const;
 

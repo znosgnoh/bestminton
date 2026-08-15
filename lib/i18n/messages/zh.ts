@@ -105,6 +105,10 @@ const zh: Messages = {
     syncSplitwise: "同步到 Splitwise",
     syncing: "同步中…",
     syncedSuccess: "已成功同步到 Splitwise。",
+    recordExpense: "记录费用",
+    recording: "记录中…",
+    recordedOnBalances: "已记入账本。",
+    splitwiseFailedRetry: "已保存在此，Splitwise 失败 — 请重试。",
     syncDisabled: "未启用 Splitwise。请在环境中添加 SPLITWISE_API_KEY 和 SPLITWISE_GROUP_ID。",
     missingSplitwise: "缺少 Splitwise ID：{names}。请在管理中更新。",
     saveBeforeSync: "请先保存结算数据再同步。",
@@ -330,6 +334,11 @@ const zh: Messages = {
     title: "管理",
     subtitle: "队长工具：成员、比赛和对局",
     enterPin: "输入队长 PIN 以管理成员、比赛和对局。",
+    importBalances: "导入 Splitwise 余额",
+    importingBalances: "正在导入余额…",
+    importBalancesCreated: "已导入 {created} 笔期初余额。",
+    importBalancesSkipped: "跳过未映射：{names}。",
+    importBalancesSkippedZero: "跳过 {count} 笔净额为零。",
   },
 };
 

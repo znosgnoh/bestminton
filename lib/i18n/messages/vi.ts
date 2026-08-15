@@ -106,6 +106,10 @@ const vi: Messages = {
     syncSplitwise: "Sync Splitwise",
     syncing: "Đang sync…",
     syncedSuccess: "Đã sync Splitwise thành công.",
+    recordExpense: "Ghi chi phí",
+    recording: "Đang ghi…",
+    recordedOnBalances: "Đã ghi vào sổ.",
+    splitwiseFailedRetry: "Đã lưu ở đây, Splitwise lỗi — thử lại.",
     syncDisabled:
       "Chưa bật Splitwise. Thêm SPLITWISE_API_KEY và SPLITWISE_GROUP_ID vào môi trường.",
     missingSplitwise: "Thiếu Splitwise ID: {names}. Cập nhật trong Quản lý.",
@@ -344,6 +348,11 @@ const vi: Messages = {
     title: "Quản lý",
     subtitle: "Công cụ đội trưởng: thành viên, trận đấu và kèo",
     enterPin: "Nhập PIN đội trưởng để quản lý thành viên, trận đấu và kèo.",
+    importBalances: "Nhập số dư Splitwise",
+    importingBalances: "Đang nhập số dư…",
+    importBalancesCreated: "Đã nhập {created} số dư đầu kỳ.",
+    importBalancesSkipped: "Bỏ qua chưa map: {names}.",
+    importBalancesSkippedZero: "Bỏ qua {count} số dư bằng 0.",
   },
 };
 

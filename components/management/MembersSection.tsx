@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { UserPlus, ChevronDown, ChevronUp, Download, Loader2, Info, RotateCcw } from "lucide-react";
+import { UserPlus, ChevronDown, ChevronUp, Download, Loader2, Info, RotateCcw, Wallet } from "lucide-react";
 import MemberCard from "./MemberCard";
 import MemberForm from "./MemberForm";
 import AdminPinModal from "@/components/ui/AdminPinModal";
@@ -10,6 +10,7 @@ import { useAdminPin } from "@/hooks/useAdminPin";
 import { adminPinHeaders } from "@/lib/adminPinClient";
 import * as dataService from "@/lib/dataService";
 import { DEFAULT_ELO } from "@/lib/elo";
+import { useI18n } from "@/contexts/LocaleContext";
 import type { MemberDTO, SplitwiseMember } from "@/lib/types";
 
 interface MembersSectionProps {
@@ -31,6 +32,7 @@ export default function MembersSection({
   const [listExpanded, setListExpanded] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importingBalances, setImportingBalances] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importMessage, setImportMessage] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -39,6 +41,7 @@ export default function MembersSection({
   const [resetError, setResetError] = useState<string | null>(null);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
   const { unlocked, pinRequired, unlock, getStoredPin } = useAdminPin();
+  const { t } = useI18n();
 
   useEffect(() => {
     if (!dbAvailable) {
@@ -144,6 +147,32 @@ export default function MembersSection({
     }
   }
 
+  async function handleImportOpeningBalances() {
+    setImportingBalances(true);
+    setImportError(null);
+    setImportMessage(null);
+
+    try {
+      const result = await dataService.importOpeningBalances();
+      const parts = [t("management.importBalancesCreated", { created: result.created })];
+      if (result.skippedUnmapped.length > 0) {
+        parts.push(
+          t("management.importBalancesSkipped", {
+            names: result.skippedUnmapped.map((s) => s.name).join(", "),
+          })
+        );
+      }
+      if (result.skippedZero > 0) {
+        parts.push(t("management.importBalancesSkippedZero", { count: result.skippedZero }));
+      }
+      setImportMessage(parts.join(" "));
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Import failed.");
+    } finally {
+      setImportingBalances(false);
+    }
+  }
+
   async function runResetElo(pin?: string) {
     setResetting(true);
     setResetError(null);
@@ -235,15 +264,28 @@ export default function MembersSection({
       >
         <div className="overflow-hidden">
       {splitwiseConfigured ? (
-        <div className="mb-4">
+        <div className="mb-4 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={handleImportFromSplitwise}
-            disabled={importing || !dbAvailable}
+            disabled={importing || importingBalances || !dbAvailable}
             className="tet-btn-ghost border border-gray-200 dark:border-gray-700 bg-white/85 dark:bg-gray-900/85 px-3 py-2.5 disabled:opacity-60"
           >
             {importing ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
             {importing ? "Loading from Splitwise…" : "Load from Splitwise"}
+          </button>
+          <button
+            type="button"
+            onClick={handleImportOpeningBalances}
+            disabled={importing || importingBalances || !dbAvailable}
+            className="tet-btn-ghost border border-gray-200 dark:border-gray-700 bg-white/85 dark:bg-gray-900/85 px-3 py-2.5 disabled:opacity-60"
+          >
+            {importingBalances ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : (
+              <Wallet size={15} />
+            )}
+            {importingBalances ? t("management.importingBalances") : t("management.importBalances")}
           </button>
         </div>
       ) : (
