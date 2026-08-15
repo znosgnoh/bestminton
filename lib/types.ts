@@ -336,6 +336,83 @@ export interface MatchDTO {
   registrations: RegistrationDTO[];
 }
 
+// --- Internal ledger DTOs ---
+
+export type LedgerExpenseKind = "MATCH" | "SHUTTLECOCK" | "OPENING";
+export type LedgerExpenseStatus = "OPEN" | "SETTLED";
+
+export interface LedgerExpenseShareDTO {
+  id: number;
+  expenseId: number;
+  memberId: number;
+  memberName: string;
+  owed: number;
+  paid: number;
+}
+
+export interface LedgerExpenseDTO {
+  id: number;
+  kind: LedgerExpenseKind;
+  matchId: number | null;
+  title: string;
+  amount: number;
+  currency: string;
+  paidByMemberId: number;
+  paidByName: string;
+  status: LedgerExpenseStatus;
+  splitwiseExpenseId: number | null;
+  createdAt: string;
+  shares: LedgerExpenseShareDTO[];
+}
+
+export interface LedgerEdgeDTO {
+  debtorId: number;
+  debtorName: string;
+  creditorId: number;
+  creditorName: string;
+  amount: number;
+}
+
+export interface LedgerBreakdownItemDTO {
+  expenseId: number;
+  kind: LedgerExpenseKind;
+  title: string;
+  createdAt: string;
+  remainder: number;
+}
+
+export interface LedgerSnapshotDTO {
+  currency: string;
+  bridgeOn: boolean;
+  edges: LedgerEdgeDTO[];
+  expenses: LedgerExpenseDTO[];
+}
+
+export interface RecordMatchLedgerRequest {
+  matchId: number;
+  pin?: string;
+}
+
+export interface RecordMatchLedgerResponse {
+  matchExpense: LedgerExpenseDTO | null;
+  shuttlecockExpense: LedgerExpenseDTO | null;
+  splitwiseSynced: boolean;
+  splitwiseError: string | null;
+}
+
+export interface ImportOpeningBalancesResponse {
+  created: number;
+  skippedUnmapped: Array<{ splitwiseId: number; name: string; net: number }>;
+  skippedZero: number;
+}
+
+export interface MarkLedgerPaidRequest {
+  debtorId: number;
+  creditorId: number;
+  amount: number;
+  pin?: string;
+}
+
 // --- Calculated share ---
 
 export interface CalculatedShare {

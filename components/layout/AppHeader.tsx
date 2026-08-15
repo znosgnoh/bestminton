@@ -55,6 +55,12 @@ export default function AppHeader() {
             <OrangeJuiceIcon size={14} className="text-orange-500 dark:text-orange-400" />
             <span>{t("nav.orangeJuice")}</span>
           </Link>
+          <Link
+            href="/balances"
+            className="shrink-0 text-gray-600 hover:text-emerald-700 dark:text-gray-400 dark:hover:text-amber-400"
+          >
+            {t("nav.balances")}
+          </Link>
         </nav>
       </div>
     </header>

@@ -26,6 +26,7 @@ export interface SplitwiseGroupResponse {
       email: string;
       registration_status?: string;
       picture?: { small?: string; medium?: string; large?: string };
+      balance?: Array<{ amount: string; currency_code: string }>;
     }>;
   };
   errors?: SplitwiseErrors;

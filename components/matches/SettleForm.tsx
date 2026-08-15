@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { Loader2, CheckCircle, AlertTriangle, Info } from "lucide-react";
 import { calculateShares } from "@/lib/calculations";
 import { currencyLabel, formatAmount, getCurrencySymbol } from "@/lib/currency";
-import { withAdminPin } from "@/lib/adminPinClient";
+import { useI18n } from "@/contexts/LocaleContext";
 import {
   findDefaultShuttlecockRecipientId,
   findMemberIdByShuttlecockDefaultName,
@@ -32,6 +32,7 @@ export default function SettleForm({
   currencyCode,
   shuttlecockFeePerHour,
 }: SettleFormProps) {
+  const { t } = useI18n();
   const defaultShuttleRecipient =
     match.shuttlecockRecipientMemberId ??
     findMemberIdByShuttlecockDefaultName(members) ??
@@ -55,9 +56,12 @@ export default function SettleForm({
     }
     setSavedOk(false);
   }, [registrations]);
-  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "success" | "error">("idle");
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const [shuttlecockSynced, setShuttlecockSynced] = useState(false);
+  const [recordStatus, setRecordStatus] = useState<
+    "idle" | "recording" | "success" | "splitwiseError" | "error"
+  >("idle");
+  const [recordError, setRecordError] = useState<string | null>(null);
+  const [recordedOnBalances, setRecordedOnBalances] = useState(false);
+  const [shuttlecockSynced, setShuttlecockSynced] = useState(match.shuttlecockRemitted);
 
   const shares: CalculatedShare[] = useMemo(() => {
     if (
@@ -91,14 +95,15 @@ export default function SettleForm({
     .filter((r) => !r.member.splitwiseId)
     .map((r) => r.member.name);
 
-  const canSync =
-    splitwiseConfigured &&
+  const missingIdsBlock = splitwiseConfigured && missingSplitwiseIds.length > 0;
+  const alreadyComplete = splitwiseConfigured ? synced : recordedOnBalances || synced;
+  const canRecord =
     shares.length > 0 &&
     paidByMemberId !== null &&
-    missingSplitwiseIds.length === 0 &&
     savedOk &&
-    !synced &&
-    syncStatus !== "syncing";
+    !missingIdsBlock &&
+    !alreadyComplete &&
+    recordStatus !== "recording";
 
   async function handleSave() {
     if (typeof totalCost !== "number" || totalCost <= 0) {
@@ -134,65 +139,29 @@ export default function SettleForm({
     }
   }
 
-  async function handleSync() {
-    if (!canSync || typeof totalCost !== "number") return;
-    const paidByReg = registrations.find((r) => r.memberId === paidByMemberId);
-    if (!paidByReg?.member.splitwiseId) return;
+  async function handleRecord() {
+    if (!canRecord) return;
+    if (splitwiseConfigured && missingSplitwiseIds.length > 0) return;
 
-    const split =
-      typeof hours === "number"
-        ? splitSettlementFees(totalCost, hours, shuttlecockFeePerHour)
-        : null;
-
-    const detailParts: string[] = [];
-    if (match.venue) detailParts.push(`Venue: ${match.venue}`);
-    if (split) {
-      detailParts.push(
-        `Court ${formatAmount(split.courtFee)} + shuttlecock ${formatAmount(split.shuttlecockFee)} ` +
-          `(${formatAmount(split.ratePerHour)}/h × ${hours}h)`
-      );
-      if (shuttlecockRecipientName && paidByName) {
-        detailParts.push(
-          `${paidByName} remits shuttlecock to ${shuttlecockRecipientName}`
-        );
-      }
-    }
-
-    setSyncStatus("syncing");
-    setSyncError(null);
+    setRecordStatus("recording");
+    setRecordError(null);
     try {
-      const res = await fetch("/api/splitwise/expense", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          withAdminPin({
-            matchId: match.id,
-            totalCost,
-            description: match.title,
-            date: match.scheduledAt,
-            details: detailParts.length ? detailParts.join("\n") : undefined,
-            groupId: 0,
-            paidById: paidByReg.member.splitwiseId,
-            participants: shares.map((s) => {
-              const reg = registrations.find((r) => r.memberId === s.memberId);
-              return { userId: reg!.member.splitwiseId!, owedShare: s.owedShare };
-            }),
-          })
-        ),
-      });
-      const data = (await res.json()) as {
-        success?: boolean;
-        error?: string;
-        shuttlecockExpenseId?: number | null;
-        shuttlecockRemitted?: boolean;
-      };
-      if (!res.ok) throw new Error(data.error ?? "Sync failed.");
-      setSyncStatus("success");
-      setSynced(true);
-      setShuttlecockSynced(Boolean(data.shuttlecockRemitted || data.shuttlecockExpenseId));
+      const result = await dataService.recordMatchLedger(match.id);
+      setShuttlecockSynced(Boolean(result.shuttlecockExpense?.splitwiseExpenseId));
+      if (result.splitwiseError) {
+        setRecordStatus("splitwiseError");
+        setRecordError(result.splitwiseError);
+        return;
+      }
+      setRecordStatus("success");
+      if (result.splitwiseSynced) {
+        setSynced(true);
+      } else {
+        setRecordedOnBalances(true);
+      }
     } catch (err) {
-      setSyncStatus("error");
-      setSyncError(err instanceof Error ? err.message : "Sync failed.");
+      setRecordStatus("error");
+      setRecordError(err instanceof Error ? err.message : t("matches.somethingWrong"));
     }
   }
 
@@ -285,8 +254,10 @@ export default function SettleForm({
             ))}
           </select>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Who receives the shuttlecock fee (default Tiến Hoàng). Sync logs Paid By → this person in
-            Splitwise (skipped for Single-title matches).
+            Who receives the shuttlecock fee (default Tiến Hoàng).
+            {splitwiseConfigured
+              ? " Sync logs Paid By → this person in Splitwise (skipped for Single-title matches)."
+              : ""}
           </p>
         </div>
 
@@ -326,9 +297,9 @@ export default function SettleForm({
                   paidByMemberId,
                   shuttlecockRecipientMemberId,
                 }) ? (
-                  <> Sync also logs this remittance in Splitwise.</>
+                  splitwiseConfigured ? <> Sync also logs this remittance in Splitwise.</> : null
                 ) : isSingleMatchTitle(match.title) ? (
-                  <> Single sessions skip the Splitwise remittance log.</>
+                  <> Single sessions skip the shuttlecock remittance.</>
                 ) : null}
               </p>
             )}
@@ -398,52 +369,65 @@ export default function SettleForm({
           </div>
 
           <div className="rounded-xl border border-amber-200/50 dark:border-gray-800 p-4 space-y-3">
-            <h3 className="tet-section-title text-sm">Sync to Splitwise</h3>
+            <h3 className="tet-section-title text-sm">
+              {splitwiseConfigured ? t("matches.syncSplitwise") : t("matches.recordExpense")}
+            </h3>
 
-            {synced || syncStatus === "success" ? (
+            {splitwiseConfigured && synced ? (
               <div className="tet-alert-success">
                 <CheckCircle size={16} />
                 <span>
-                  Synced to Splitwise successfully.
+                  {t("matches.syncedSuccess")}
                   {shuttlecockSynced
                     ? " Shuttlecock remittance (Paid By → Shuttlecock) was logged too."
                     : null}
                 </span>
               </div>
+            ) : !splitwiseConfigured && (synced || recordedOnBalances) ? (
+              <div className="tet-alert-success">
+                <CheckCircle size={16} />
+                <span>{t("matches.recordedOnBalances")}</span>
+              </div>
             ) : (
               <>
-                {!splitwiseConfigured && (
-                  <div className="tet-alert-info">
-                    <Info size={15} className="mt-0.5 shrink-0" />
-                    Splitwise sync is disabled. Add SPLITWISE_API_KEY and SPLITWISE_GROUP_ID to your
-                    environment.
-                  </div>
-                )}
                 {splitwiseConfigured && missingSplitwiseIds.length > 0 && (
                   <div className="tet-alert-info">
                     <AlertTriangle size={15} className="mt-0.5 shrink-0" />
                     <span>
-                      Missing Splitwise ID for: <strong>{missingSplitwiseIds.join(", ")}</strong>.
-                      Update in Management.
+                      {t("matches.missingSplitwise", { names: missingSplitwiseIds.join(", ") })}
                     </span>
                   </div>
                 )}
-                {splitwiseConfigured && !savedOk && (
+                {!savedOk && (
                   <div className="tet-alert-info bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 ring-gray-200 dark:ring-gray-700">
                     <Info size={15} className="mt-0.5 shrink-0" />
-                    Save settlement data first before syncing.
+                    {t("matches.saveBeforeSync")}
                   </div>
                 )}
-                {syncStatus === "error" && syncError && (
-                  <p className="tet-alert-error">{syncError}</p>
+                {recordStatus === "splitwiseError" && (
+                  <div className="tet-alert-error">
+                    <p>{t("matches.splitwiseFailedRetry")}</p>
+                    {recordError && <p className="mt-1">{recordError}</p>}
+                  </div>
+                )}
+                {recordStatus === "error" && recordError && (
+                  <p className="tet-alert-error">{recordError}</p>
                 )}
                 <button
-                  onClick={handleSync}
-                  disabled={!canSync}
+                  onClick={handleRecord}
+                  disabled={!canRecord}
                   className="tet-btn-primary-lg disabled:cursor-not-allowed disabled:bg-gray-200 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-600"
                 >
-                  {syncStatus === "syncing" && <Loader2 size={15} className="animate-spin" />}
-                  {syncStatus === "syncing" ? "Syncing…" : "Sync to Splitwise"}
+                  {recordStatus === "recording" && <Loader2 size={15} className="animate-spin" />}
+                  {recordStatus === "recording"
+                    ? splitwiseConfigured
+                      ? t("matches.syncing")
+                      : t("matches.recording")
+                    : recordStatus === "splitwiseError"
+                      ? t("common.retry")
+                      : splitwiseConfigured
+                        ? t("matches.syncSplitwise")
+                        : t("matches.recordExpense")}
                 </button>
               </>
             )}

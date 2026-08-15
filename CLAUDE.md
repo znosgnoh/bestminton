@@ -113,6 +113,37 @@ Friendly singles/doubles match with optional drink-token betting. **Singles** up
 
 Pairwise drink-token balances between members (`debtorId`, `creditorId`, `amount`).
 
+### Expense
+
+Court-money ledger entry (match fee, shuttlecock remittance, or Splitwise opening).
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | Int (PK) | Auto-increment |
+| `kind` | Enum | `MATCH`, `SHUTTLECOCK`, `OPENING` |
+| `matchId` | Int? | FK → Match (`ON DELETE SET NULL`) |
+| `title` | String | |
+| `amount` | Decimal | |
+| `currency` | String | |
+| `paidByMemberId` | Int | FK → Member (creditor) |
+| `status` | Enum | `OPEN` or `SETTLED` |
+| `splitwiseExpenseId` | Int? | Set when dual-written |
+| `createdAt` | DateTime | |
+| *(unique)* | `(matchId, kind)` | |
+
+### ExpenseShare
+
+Who owes how much on an expense (`owed − paid` is the remainder).
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | Int (PK) | Auto-increment |
+| `expenseId` | Int | FK → Expense |
+| `memberId` | Int | FK → Member (debtor) |
+| `owed` | Decimal | Weighted share |
+| `paid` | Decimal | FIFO mark-paid amount (default 0) |
+| *(unique)* | `(expenseId, memberId)` | |
+
 ---
 
 ## 4. Core Logic & Cost Calculation Formula
@@ -128,6 +159,8 @@ Total court fee is split weighted by playtime and headcount per player.
 - `Owed_i = TotalCost × (W_i / W_total)`
 
 **Rounding:** Shares are rounded to 2 decimal places. Any cent discrepancy is added to / subtracted from the first participant's share so `Σ Owed_i = TotalCost` exactly (required by Splitwise).
+
+**Court-money ledger:** Per-share remainders (`owed − paid`) are summed pairwise (debtor = share member, creditor = `paidByMemberId`), then collapsed with `simplifyDebts` for the `/balances` display. Mark-paid is FIFO on the **direct** pair only (same debtor share + `paidByMemberId === creditor`). Nước cam stays on `DrinkDebt`.
 
 **Shuttlecock display (settle UI):** Total entered is still one amount. For display only:
 
@@ -167,6 +200,7 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/challenges/new` | Page | Create a new kèo |
 | `/challenges/[id]` | Page | Kèo detail — betting board, start/resolve (captain) |
 | `/leaderboard` | Page | Elo rankings |
+| `/balances` | Page | Court-money ledger — My / Group tabs (Sổ) |
 | `/api/health` | Route | `GET` DB availability check |
 | `/api/admin/verify-pin` | Route | `POST` verify captain PIN (client gate) |
 | `/api/challenges` | Route | `GET` list, `POST` create |
@@ -176,6 +210,10 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/api/challenges/[id]/resolve` | Route | `POST` record winner, confirmed handicap/score, Elo, payouts |
 | `/api/leaderboard` | Route | `GET` Elo leaderboard |
 | `/api/debts` | Route | `GET` drink debt ledger |
+| `/api/ledger` | Route | `GET` court-money ledger snapshot |
+| `/api/ledger/record` | Route | `POST` record match expenses on the ledger (then Splitwise if bridge on) |
+| `/api/ledger/import` | Route | `POST` import Splitwise nets as `OPENING` balances (PIN; bridge on) |
+| `/api/ledger/settle` | Route | `POST` mark a simplified edge paid (PIN, FIFO) |
 | `/api/members` | Route | `GET` list, `POST` create |
 | `/api/members/[id]` | Route | `PUT` update, `DELETE` remove |
 | `/api/matches` | Route | `GET` list, `POST` create |
@@ -184,10 +222,10 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/api/matches/[id]/guests` | Route | `POST` add guest |
 | `/api/matches/[id]/guests/[guestId]` | Route | `PUT` update guest (playtime), `DELETE` remove |
 | `/api/splitwise/members` | Route | `GET` fetch Splitwise group members |
-| `/api/splitwise/expense` | Route | `POST` create Splitwise expense |
+| `/api/splitwise/expense` | Route | `POST` thin PIN + `matchId` wrapper around ledger record (returns 502 if Splitwise fails); **clients use `/api/ledger/record`** |
 | `/api/upload/avatar` | Route | `POST` upload member avatar (JPG/PNG, max 2MB) to Vercel Blob |
 
-**Captain PIN on APIs:** When `CAPTAIN_PIN` (or legacy `ADMIN_PIN`) is set, mutating captain routes require the PIN in the JSON body (`pin`) or `X-Captain-Pin` header. This includes member/match CRUD, settlement `PUT` on `/api/matches/[id]`, Splitwise sync/import, avatar upload, and challenge admin actions. `dataService` attaches the stored session PIN via `lib/adminPinClient.ts`. Read-only routes (e.g. `GET /api/members`) stay open.
+**Captain PIN on APIs:** When `CAPTAIN_PIN` (or legacy `ADMIN_PIN`) is set, mutating captain routes require the PIN in the JSON body (`pin`) or `X-Captain-Pin` header. This includes member/match CRUD, settlement `PUT` on `/api/matches/[id]`, ledger record/import/mark-paid, Splitwise sync/import, avatar upload, and challenge admin actions. `dataService` attaches the stored session PIN via `lib/adminPinClient.ts`. Read-only routes (e.g. `GET /api/members`) stay open.
 
 ---
 
@@ -230,8 +268,8 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 
 - **CORS constraint:** All Splitwise calls go through Next.js route handlers — never from the browser directly.
 - **Member import:** `/management` can import members from Splitwise via `GET /api/splitwise/members` to pre-fill Splitwise IDs.
-- **Expense creation:** `POST /api/splitwise/expense` receives the calculated shares and transforms them into Splitwise's `users__i__field` flat payload format.
-- **Env vars required for sync only:** `SPLITWISE_API_KEY` and `SPLITWISE_GROUP_ID`. The app runs fully without these; the sync button is disabled if they are absent.
+- **Expense creation:** Settle records the in-app ledger first (`POST /api/ledger/record`). When the Splitwise bridge is on, the same action dual-writes to Splitwise. `POST /api/splitwise/expense` is a thin server wrapper (PIN + `matchId`); clients must not call it.
+- **Bridge:** `SPLITWISE_API_KEY` and `SPLITWISE_GROUP_ID` both set = bridge **on**. Unset = bridge **off**; ledger and `/balances` still work, Import Splitwise balances is hidden, and settle does not require `splitwiseId`.
 - **Avatar uploads:** Stored in Vercel Blob via `POST /api/upload/avatar`. Requires `BLOB_READ_WRITE_TOKEN` (auto-set when a Blob store is linked in Vercel). Without it, captains can still paste avatar URLs.
 
 ---
@@ -244,7 +282,7 @@ POSTGRES_URL=
 POSTGRES_PRISMA_URL=
 POSTGRES_URL_NON_POOLING=
 
-# Splitwise (optional — only needed for expense sync)
+# Splitwise (optional — both set = bridge on / dual-write; unset = bridge off, ledger still works)
 SPLITWISE_API_KEY=
 SPLITWISE_GROUP_ID=
 SPLITWISE_CURRENCY_CODE=USD
@@ -260,13 +298,15 @@ CAPTAIN_PIN=
 # ADMIN_PIN=          # legacy alias for CAPTAIN_PIN
 ```
 
+**Splitwise cutover:** Unset `SPLITWISE_API_KEY` and `SPLITWISE_GROUP_ID` to turn the bridge **off**. Settle still records the in-app ledger (`POST /api/ledger/record` via `dataService.recordMatchLedger`); the settle button is **Record expense** and does not require `splitwiseId`. “Import Splitwise balances” is hidden. Drink debts (`DrinkDebt`) are unchanged.
+
 ---
 
 ## 9. Key Implementation Notes
 
 - **Dual storage:** `lib/dataService.ts` calls `/api/health` on first use; if DB is unavailable it falls back to `lib/localDb.ts` (IndexedDB). All mutations go through `dataService.*`.
 - **Management access:** `/management` is intentionally not linked in the nav header. It is accessible by typing the URL directly. `ManagementGate` prompts for `CAPTAIN_PIN` when the env var is set; unlock state and PIN live in `sessionStorage` (`lib/adminPinClient.ts`, `hooks/useAdminPin.ts`). Server routes use `requireAdminPin` in `lib/apiHelpers.ts`. If `CAPTAIN_PIN` is unset, no gate and APIs accept mutations without a PIN (local dev convenience).
-- **Settlement URL:** The Settle section (`SettleForm`) only renders when `?manage=1` is present in the URL — enforced at the server page level. Saving settlement or syncing Splitwise sends the stored captain PIN when configured.
+- **Settlement URL:** The Settle section (`SettleForm`) only renders when `?manage=1` is present in the URL — enforced at the server page level. Saving settlement or recording the ledger (`dataService.recordMatchLedger`) sends the stored captain PIN when configured. Bridge on dual-writes Splitwise; bridge off records the ledger only.
 - **Kèo copy:** Challenge UI uses Vietnamese **kèo** labels in the product; routes remain `/challenges` for URLs.
 - **Recurring matches:** Creating a recurring match auto-generates instances for the next 8 weeks at the same day/time.
 - **After Prisma migrations:** Run `npx prisma migrate deploy` (or `migrate dev` locally) so the DB matches `schema.prisma`, then `npx prisma generate` and restart the dev server. Resolve (`POST /api/challenges/[id]/resolve`) requires migration `20260626120000_challenge_resolve_confirmation` (`confirmedHandicapPoints`, `confirmedScore` on `Challenge`); without it the transaction rolls back after Elo updates and the API returns 503.
