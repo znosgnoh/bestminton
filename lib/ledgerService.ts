@@ -36,10 +36,7 @@ const MATCH_LEDGER_INCLUDE = {
 type ExpenseWithRelations = Prisma.ExpenseGetPayload<{ include: typeof EXPENSE_INCLUDE }>;
 type LedgerTx = Prisma.TransactionClient;
 
-export type LedgerServiceErrorCode =
-  | "NOT_FOUND"
-  | "INVALID_SETTLEMENT"
-  | "NO_MATCH_EXPENSE";
+export type LedgerServiceErrorCode = "NOT_FOUND" | "INVALID_SETTLEMENT";
 
 export class LedgerServiceError extends Error {
   readonly code: LedgerServiceErrorCode;
@@ -328,13 +325,6 @@ export async function recordMatchExpenses(
       shares: debtShares.map((s) => ({ memberId: s.memberId, owed: s.owedShare })),
     });
 
-    if (!recordedMatch) {
-      throw new LedgerServiceError(
-        "NO_MATCH_EXPENSE",
-        "No MATCH expense to record (no debts to the court payer)."
-      );
-    }
-
     const recordedShuttlecock = await findOrCreateShuttlecockExpense(tx, {
       matchId,
       title: match.title,
@@ -349,7 +339,7 @@ export async function recordMatchExpenses(
   });
 
   return {
-    matchExpense: toExpenseDTO(matchExpense),
+    matchExpense: matchExpense ? toExpenseDTO(matchExpense) : null,
     shuttlecockExpense: shuttlecockExpense ? toExpenseDTO(shuttlecockExpense) : null,
     splitwiseSynced: false,
     splitwiseError: null,

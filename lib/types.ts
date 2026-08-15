@@ -394,7 +394,7 @@ export interface RecordMatchLedgerRequest {
 }
 
 export interface RecordMatchLedgerResponse {
-  matchExpense: LedgerExpenseDTO;
+  matchExpense: LedgerExpenseDTO | null;
   shuttlecockExpense: LedgerExpenseDTO | null;
   splitwiseSynced: boolean;
   splitwiseError: string | null;
