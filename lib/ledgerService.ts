@@ -2,7 +2,15 @@ import { Prisma } from "@prisma/client";
 import { calculateShares } from "./calculations";
 import { getCurrencyCode } from "./currency";
 import { db } from "./db";
-import { expenseStatus, fromCents, ledgerSimplifiedEdges, toCents } from "./ledgerMath";
+import { openingPairsFromNets, parseGroupMemberNet } from "./ledgerOpening";
+import {
+  applyMarkPaidFifo,
+  expenseStatus,
+  fromCents,
+  ledgerSimplifiedEdges,
+  toCents,
+  type FifoShare,
+} from "./ledgerMath";
 import { MATCH_FULL_INCLUDE } from "./prismaIncludes";
 import { revalidateMatchPages } from "./revalidate";
 import {
@@ -12,9 +20,14 @@ import {
   findParticipantsMissingFromGroup,
   formatShareAmount,
   getGroupId,
+  hasSplitwiseErrors,
   isSplitwiseConfigured,
+  parseSplitwiseErrors,
   postSplitwiseExpense,
+  splitwiseFetch,
+  splitwiseMemberName,
   validateExpenseShares,
+  type SplitwiseGroupResponse,
 } from "./splitwise";
 import {
   DEFAULT_SHUTTLECOCK_RECIPIENT_NAME,
@@ -24,6 +37,7 @@ import {
 } from "./shuttlecock";
 import type {
   CalculatedShare,
+  ImportOpeningBalancesResponse,
   LedgerEdgeDTO,
   LedgerExpenseDTO,
   LedgerExpenseShareDTO,
@@ -51,7 +65,11 @@ type SplitwiseMemberRef = { id: number; name: string; splitwiseId: number | null
 type ExpenseWithRelations = Prisma.ExpenseGetPayload<{ include: typeof EXPENSE_INCLUDE }>;
 type LedgerTx = Prisma.TransactionClient;
 
-export type LedgerServiceErrorCode = "NOT_FOUND" | "INVALID_SETTLEMENT";
+export type LedgerServiceErrorCode =
+  | "NOT_FOUND"
+  | "INVALID_SETTLEMENT"
+  | "BRIDGE_OFF"
+  | "SPLITWISE_ERROR";
 
 export class LedgerServiceError extends Error {
   readonly code: LedgerServiceErrorCode;
@@ -61,7 +79,14 @@ export class LedgerServiceError extends Error {
     super(message);
     this.name = "LedgerServiceError";
     this.code = code;
-    this.status = code === "NOT_FOUND" ? 404 : 400;
+    this.status =
+      code === "NOT_FOUND"
+        ? 404
+        : code === "BRIDGE_OFF"
+          ? 503
+          : code === "SPLITWISE_ERROR"
+            ? 502
+            : 400;
   }
 }
 
@@ -688,4 +713,189 @@ export async function recordMatchExpenses(
     matchExpense,
     shuttlecockExpense,
   });
+}
+
+const BRIDGE_OFF_MESSAGE =
+  "Splitwise is not configured. Add SPLITWISE_API_KEY and SPLITWISE_GROUP_ID to your environment.";
+
+export async function importOpeningBalances(): Promise<ImportOpeningBalancesResponse> {
+  if (!isSplitwiseConfigured()) {
+    throw new LedgerServiceError("BRIDGE_OFF", BRIDGE_OFF_MESSAGE);
+  }
+
+  let groupId: string;
+  try {
+    groupId = getGroupId();
+  } catch {
+    throw new LedgerServiceError("BRIDGE_OFF", BRIDGE_OFF_MESSAGE);
+  }
+
+  let res: Response;
+  try {
+    res = await splitwiseFetch(`/get_group/${groupId}`);
+  } catch {
+    throw new LedgerServiceError(
+      "SPLITWISE_ERROR",
+      "Could not reach Splitwise. Please check your connection."
+    );
+  }
+
+  let data: SplitwiseGroupResponse;
+  try {
+    data = (await res.json()) as SplitwiseGroupResponse;
+  } catch {
+    throw new LedgerServiceError(
+      "SPLITWISE_ERROR",
+      "Splitwise returned an invalid group response."
+    );
+  }
+
+  const splitwiseError = parseSplitwiseErrors(data.errors);
+  if (!res.ok || hasSplitwiseErrors(data)) {
+    throw new LedgerServiceError(
+      "SPLITWISE_ERROR",
+      splitwiseError ?? `Could not load Splitwise group ${groupId}.`
+    );
+  }
+
+  const currency = getCurrencyCode();
+  const mapped = await db.member.findMany({
+    where: { splitwiseId: { not: null } },
+    select: { id: true, splitwiseId: true },
+  });
+  const memberBySwId = new Map(mapped.map((m) => [m.splitwiseId!, m.id] as const));
+
+  const skippedUnmapped: ImportOpeningBalancesResponse["skippedUnmapped"] = [];
+  let skippedZero = 0;
+  const nets: Array<{ memberId: number; net: number }> = [];
+
+  for (const sw of data.group?.members ?? []) {
+    if (sw.registration_status === "dummy") continue;
+    const net = parseGroupMemberNet(sw.balance ?? [], currency);
+    const memberId = memberBySwId.get(sw.id);
+    if (memberId == null) {
+      skippedUnmapped.push({
+        splitwiseId: sw.id,
+        name: splitwiseMemberName(sw.first_name, sw.last_name),
+        net,
+      });
+      continue;
+    }
+    if (Math.abs(net) < 0.005) {
+      skippedZero += 1;
+      continue;
+    }
+    nets.push({ memberId, net });
+  }
+
+  const pairs = openingPairsFromNets(nets);
+
+  await db.$transaction(async (tx) => {
+    await tx.expense.deleteMany({ where: { kind: "OPENING" } });
+    for (const pair of pairs) {
+      await tx.expense.create({
+        data: {
+          kind: "OPENING",
+          matchId: null,
+          title: "Splitwise opening",
+          amount: pair.amount,
+          currency,
+          paidByMemberId: pair.creditorId,
+          status: expenseStatus([{ owed: pair.amount, paid: 0 }]),
+          shares: {
+            create: [{ memberId: pair.debtorId, owed: pair.amount, paid: 0 }],
+          },
+        },
+      });
+    }
+  });
+
+  return { created: pairs.length, skippedUnmapped, skippedZero };
+}
+
+function simplifiedEdgeCents(
+  snapshot: LedgerSnapshotDTO,
+  debtorId: number,
+  creditorId: number
+): number {
+  const edge = snapshot.edges.find(
+    (e) => e.debtorId === debtorId && e.creditorId === creditorId
+  );
+  return edge ? toCents(edge.amount) : 0;
+}
+
+export async function markLedgerPaid(
+  debtorId: number,
+  creditorId: number,
+  amount: number
+): Promise<LedgerSnapshotDTO> {
+  const snapshot = await getLedgerSnapshot();
+  const shares = await db.expenseShare.findMany({
+    where: {
+      memberId: debtorId,
+      expense: { paidByMemberId: creditorId },
+    },
+    include: { expense: { select: { createdAt: true } } },
+    orderBy: [{ expense: { createdAt: "asc" } }, { id: "asc" }],
+  });
+
+  const unpaid = shares.filter(
+    (s) => toCents(decimalToNumber(s.owed)) > toCents(decimalToNumber(s.paid))
+  );
+  const pairRemainderCents = unpaid.reduce(
+    (sum, s) =>
+      sum + (toCents(decimalToNumber(s.owed)) - toCents(decimalToNumber(s.paid))),
+    0
+  );
+  const amountCents = toCents(amount);
+
+  if (amountCents > pairRemainderCents && simplifiedEdgeCents(snapshot, debtorId, creditorId) === 0) {
+    return snapshot;
+  }
+
+  const applyCents = Math.min(amountCents, pairRemainderCents);
+  if (applyCents <= 0) return snapshot;
+
+  const fifoShares: FifoShare[] = unpaid.map((s) => ({
+    id: s.id,
+    debtorId,
+    creditorId,
+    owed: decimalToNumber(s.owed),
+    paid: decimalToNumber(s.paid),
+    createdAt: s.expense.createdAt.toISOString(),
+  }));
+  const nextById = new Map(
+    applyMarkPaidFifo(fifoShares, fromCents(applyCents)).map((s) => [s.id, s] as const)
+  );
+
+  await db.$transaction(async (tx) => {
+    const touchedExpenseIds = new Set<number>();
+    for (const share of unpaid) {
+      const next = nextById.get(share.id);
+      if (!next) continue;
+      if (toCents(next.paid) === toCents(decimalToNumber(share.paid))) continue;
+      await tx.expenseShare.update({
+        where: { id: share.id },
+        data: { paid: next.paid },
+      });
+      touchedExpenseIds.add(share.expenseId);
+    }
+
+    for (const expenseId of touchedExpenseIds) {
+      const allShares = await tx.expenseShare.findMany({ where: { expenseId } });
+      await tx.expense.update({
+        where: { id: expenseId },
+        data: {
+          status: expenseStatus(
+            allShares.map((s) => ({
+              owed: decimalToNumber(s.owed),
+              paid: decimalToNumber(s.paid),
+            }))
+          ),
+        },
+      });
+    }
+  });
+
+  return getLedgerSnapshot();
 }

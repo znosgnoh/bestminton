@@ -18,6 +18,9 @@ import type {
   MemberProfileDTO,
   SettleDebtResult,
   ResetEloResult,
+  LedgerSnapshotDTO,
+  RecordMatchLedgerResponse,
+  ImportOpeningBalancesResponse,
 } from "./types";
 
 type StorageMode = "api" | "local";
@@ -536,5 +539,39 @@ export function settleDebt(data: {
     method: "POST",
     headers: JSON_HEADERS,
     body: JSON.stringify(data),
+  });
+}
+
+// ---- Court-money ledger (API-only — no IndexedDB fallback) ----
+
+export function getLedger(): Promise<LedgerSnapshotDTO> {
+  return challengeFetch<LedgerSnapshotDTO>("/api/ledger");
+}
+
+export function recordMatchLedger(matchId: number): Promise<RecordMatchLedgerResponse> {
+  return challengeFetch<RecordMatchLedgerResponse>("/api/ledger/record", {
+    method: "POST",
+    headers: jsonHeaders(),
+    body: JSON.stringify(withAdminPin({ matchId })),
+  });
+}
+
+export function importOpeningBalances(): Promise<ImportOpeningBalancesResponse> {
+  return challengeFetch<ImportOpeningBalancesResponse>("/api/ledger/import", {
+    method: "POST",
+    headers: jsonHeaders(),
+    body: JSON.stringify(withAdminPin({})),
+  });
+}
+
+export function markLedgerPaid(
+  debtorId: number,
+  creditorId: number,
+  amount: number
+): Promise<LedgerSnapshotDTO> {
+  return challengeFetch<LedgerSnapshotDTO>("/api/ledger/settle", {
+    method: "POST",
+    headers: jsonHeaders(),
+    body: JSON.stringify(withAdminPin({ debtorId, creditorId, amount })),
   });
 }
