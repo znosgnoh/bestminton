@@ -55,11 +55,15 @@ export default function BalanceEdgeRow({
               {money}
             </span>
           </p>
-          {canPay && (
+          {canPay ? (
             <span className="mt-1 inline-flex items-center gap-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400">
               {t("balances.breakdown")}
               {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
             </span>
+          ) : (
+            <p className="mt-1 text-[11px] leading-snug text-gray-500 dark:text-gray-400">
+              {t("balances.chainOnly")}
+            </p>
           )}
         </button>
         {canPay && (

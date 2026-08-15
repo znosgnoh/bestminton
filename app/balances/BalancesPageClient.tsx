@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Wallet } from "lucide-react";
+import { pairDirectRemainder } from "@/components/balances/BalanceBreakdown";
 import BalanceGroupTab from "@/components/balances/BalanceGroupTab";
 import BalanceMeTab from "@/components/balances/BalanceMeTab";
 import { useRegisterPullToRefresh } from "@/components/PullToRefresh";
@@ -11,7 +12,9 @@ import ErrorBanner from "@/components/ui/ErrorBanner";
 import PageLoader from "@/components/ui/PageLoader";
 import { useAdminPin } from "@/hooks/useAdminPin";
 import { useI18n } from "@/contexts/LocaleContext";
+import { formatCurrency } from "@/lib/currency";
 import * as dataService from "@/lib/dataService";
+import { toCents } from "@/lib/ledgerMath";
 import type { LedgerEdgeDTO, LedgerSnapshotDTO, MemberDTO } from "@/lib/types";
 
 const BALANCE_MEMBER_KEY = "bestminton_balance_member";
@@ -104,13 +107,32 @@ export default function BalancesPageClient({
       setError(null);
       setSuccess(null);
       try {
+        const beforeRemainder = pairDirectRemainder(
+          snapshot.expenses,
+          edge.debtorId,
+          edge.creditorId
+        );
         const next = await dataService.markLedgerPaid(
           edge.debtorId,
           edge.creditorId,
           edge.amount
         );
         setSnapshot(next);
-        setSuccess(t("balances.paidOk"));
+        const remaining = pairDirectRemainder(
+          next.expenses,
+          edge.debtorId,
+          edge.creditorId
+        );
+        const appliedCents = toCents(beforeRemainder) - toCents(remaining);
+        if (appliedCents > 0 && remaining <= 0) {
+          setSuccess(t("balances.paidOk"));
+        } else if (appliedCents > 0) {
+          setSuccess(
+            t("balances.paidPartial", {
+              remaining: formatCurrency(remaining, next.currency),
+            })
+          );
+        }
         router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to mark paid.");
@@ -119,7 +141,7 @@ export default function BalancesPageClient({
         setPending(null);
       }
     },
-    [router, t]
+    [router, snapshot.expenses, t]
   );
 
   function handlePaid(edge: LedgerEdgeDTO) {

@@ -406,7 +406,8 @@ export default function SettleForm({
                 )}
                 {recordStatus === "splitwiseError" && (
                   <div className="tet-alert-error">
-                    {t("matches.splitwiseFailedRetry")}
+                    <p>{t("matches.splitwiseFailedRetry")}</p>
+                    {recordError && <p className="mt-1">{recordError}</p>}
                   </div>
                 )}
                 {recordStatus === "error" && recordError && (

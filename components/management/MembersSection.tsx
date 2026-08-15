@@ -291,7 +291,8 @@ export default function MembersSection({
       ) : (
         <div className="mb-4 tet-alert-info">
           <Info size={15} className="mt-0.5 shrink-0" />
-          Add SPLITWISE_API_KEY and SPLITWISE_GROUP_ID to enable member import and expense sync.
+          Add SPLITWISE_API_KEY and SPLITWISE_GROUP_ID to enable member import and Splitwise sync.
+          Expense recording still works without them.
         </div>
       )}
 

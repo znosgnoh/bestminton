@@ -111,7 +111,7 @@ const en = {
     syncDisabled:
       "Splitwise sync is disabled. Add SPLITWISE_API_KEY and SPLITWISE_GROUP_ID to your environment.",
     missingSplitwise: "Missing Splitwise ID for: {names}. Update in Management.",
-    saveBeforeSync: "Save settlement data first before syncing.",
+    saveBeforeSync: "Save settlement data first.",
     costPositive: "Total cost must be a positive number.",
     hoursPositive: "Hours played must be a positive number.",
     selectWhoPaid: "Please select who paid.",
@@ -307,6 +307,8 @@ const en = {
     allClear: "All clear — nothing outstanding.",
     markPaid: "Paid",
     paidOk: "Marked as paid.",
+    paidPartial: "Marked the direct amount as paid. {remaining} still outstanding on this pair.",
+    chainOnly: "This net is via other players. Only direct debts can be marked paid.",
     breakdown: "Breakdown",
     opening: "Opening",
     match: "Match",

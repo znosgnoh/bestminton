@@ -113,6 +113,37 @@ Friendly singles/doubles match with optional drink-token betting. **Singles** up
 
 Pairwise drink-token balances between members (`debtorId`, `creditorId`, `amount`).
 
+### Expense
+
+Court-money ledger entry (match fee, shuttlecock remittance, or Splitwise opening).
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | Int (PK) | Auto-increment |
+| `kind` | Enum | `MATCH`, `SHUTTLECOCK`, `OPENING` |
+| `matchId` | Int? | FK → Match (`ON DELETE SET NULL`) |
+| `title` | String | |
+| `amount` | Decimal | |
+| `currency` | String | |
+| `paidByMemberId` | Int | FK → Member (creditor) |
+| `status` | Enum | `OPEN` or `SETTLED` |
+| `splitwiseExpenseId` | Int? | Set when dual-written |
+| `createdAt` | DateTime | |
+| *(unique)* | `(matchId, kind)` | |
+
+### ExpenseShare
+
+Who owes how much on an expense (`owed − paid` is the remainder).
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | Int (PK) | Auto-increment |
+| `expenseId` | Int | FK → Expense |
+| `memberId` | Int | FK → Member (debtor) |
+| `owed` | Decimal | Weighted share |
+| `paid` | Decimal | FIFO mark-paid amount (default 0) |
+| *(unique)* | `(expenseId, memberId)` | |
+
 ---
 
 ## 4. Core Logic & Cost Calculation Formula
@@ -128,6 +159,8 @@ Total court fee is split weighted by playtime and headcount per player.
 - `Owed_i = TotalCost × (W_i / W_total)`
 
 **Rounding:** Shares are rounded to 2 decimal places. Any cent discrepancy is added to / subtracted from the first participant's share so `Σ Owed_i = TotalCost` exactly (required by Splitwise).
+
+**Court-money ledger:** Per-share remainders (`owed − paid`) are summed pairwise (debtor = share member, creditor = `paidByMemberId`), then collapsed with `simplifyDebts` for the `/balances` display. Mark-paid is FIFO on the **direct** pair only (same debtor share + `paidByMemberId === creditor`). Nước cam stays on `DrinkDebt`.
 
 **Shuttlecock display (settle UI):** Total entered is still one amount. For display only:
 
