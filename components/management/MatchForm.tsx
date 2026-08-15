@@ -2,11 +2,18 @@
 
 import { useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
+import { useI18n } from "@/contexts/LocaleContext";
 import * as dataService from "@/lib/dataService";
 import type { MatchDTO } from "@/lib/types";
 
+export type MatchFormPrefill = Pick<
+  MatchDTO,
+  "title" | "venue" | "scheduledAt" | "isRecurring"
+>;
+
 interface MatchFormProps {
   initial?: MatchDTO;
+  prefill?: MatchFormPrefill;
   onSaved: (matches: MatchDTO[]) => void;
   onCancel?: () => void;
 }
@@ -28,12 +35,14 @@ function toInputTime(iso: string): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-export default function MatchForm({ initial, onSaved, onCancel }: MatchFormProps) {
-  const [title, setTitle] = useState(initial?.title ?? "");
-  const [venue, setVenue] = useState(initial?.venue ?? "");
+export default function MatchForm({ initial, prefill, onSaved, onCancel }: MatchFormProps) {
+  const { t } = useI18n();
+  const source = initial ?? prefill;
+  const [title, setTitle] = useState(source?.title ?? "");
+  const [venue, setVenue] = useState(source?.venue ?? "");
   const [date, setDate] = useState(initial ? toInputDate(initial.scheduledAt) : "");
-  const [time, setTime] = useState(initial ? toInputTime(initial.scheduledAt) : "20:00");
-  const [isRecurring, setIsRecurring] = useState(initial?.isRecurring ?? false);
+  const [time, setTime] = useState(source ? toInputTime(source.scheduledAt) : "20:00");
+  const [isRecurring, setIsRecurring] = useState(source?.isRecurring ?? false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,6 +88,9 @@ export default function MatchForm({ initial, onSaved, onCancel }: MatchFormProps
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
+      {prefill && !initial && (
+        <p className="tet-alert-info px-3 py-2 text-xs">{t("management.cloneHint")}</p>
+      )}
       <div>
         <label className="tet-label">
           Title <span className="text-red-500">*</span>

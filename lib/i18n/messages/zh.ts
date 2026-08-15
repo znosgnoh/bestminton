@@ -341,6 +341,9 @@ const zh: Messages = {
     importBalancesCreated: "已导入 {created} 笔期初余额。",
     importBalancesSkipped: "跳过未映射：{names}。",
     importBalancesSkippedZero: "跳过 {count} 笔净额为零。",
+    clone: "复制",
+    cloneTitle: "复制比赛",
+    cloneHint: "已复制标题、场地、时间和每周设置。请选择新日期 — 不会复制报名。",
   },
 };
 

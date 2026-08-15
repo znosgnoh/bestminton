@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Pencil, Trash2, Loader2, MapPin, Users, RefreshCw, CheckCircle, ClipboardList } from "lucide-react";
+import { Pencil, Trash2, Loader2, MapPin, Users, RefreshCw, CheckCircle, ClipboardList, Copy } from "lucide-react";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import MatchForm from "./MatchForm";
+import { useI18n } from "@/contexts/LocaleContext";
 import * as dataService from "@/lib/dataService";
 import {
   getShuttlecockFeePerHour,
@@ -20,6 +21,7 @@ interface MatchManageRowProps {
   shuttlecockFeePerHour: number;
   onUpdated: (m: MatchDTO) => void;
   onDeleted: (id: number) => void;
+  onClone: (m: MatchDTO) => void;
 }
 
 function formatDate(iso: string): string {
@@ -41,7 +43,9 @@ export default function MatchManageRow({
   shuttlecockFeePerHour,
   onUpdated,
   onDeleted,
+  onClone,
 }: MatchManageRowProps) {
+  const { t } = useI18n();
   const [mode, setMode] = useState<"view" | "editing" | "deleting">("view");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -160,6 +164,14 @@ export default function MatchManageRow({
                 <ClipboardList size={16} />
               </Link>
             )}
+            <button
+              type="button"
+              onClick={() => onClone(match)}
+              className="tet-btn-icon"
+              title={t("management.clone")}
+            >
+              <Copy size={16} />
+            </button>
             <button onClick={() => setMode("editing")} className="tet-btn-icon">
               <Pencil size={16} />
             </button>

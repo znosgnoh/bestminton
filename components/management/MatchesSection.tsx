@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { CalendarPlus, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import MatchManageRow from "./MatchManageRow";
 import MatchForm from "./MatchForm";
@@ -36,6 +36,8 @@ export default function MatchesSection({
   const [matches, setMatches] = useState<MatchDTO[]>(initialMatches);
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [showForm, setShowForm] = useState(false);
+  const [cloneFrom, setCloneFrom] = useState<MatchDTO | null>(null);
+  const formPanelRef = useRef<HTMLDivElement>(null);
   const [backfilling, setBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState<ShuttlecockBackfillResult | null>(null);
   const [backfillError, setBackfillError] = useState<string | null>(null);
@@ -55,13 +57,35 @@ export default function MatchesSection({
 
   useRegisterPullToRefresh(refreshMatches);
 
+  function closeForm() {
+    setShowForm(false);
+    setCloneFrom(null);
+  }
+
+  function toggleCreate() {
+    if (showForm) {
+      closeForm();
+      return;
+    }
+    setCloneFrom(null);
+    setShowForm(true);
+  }
+
+  function handleClone(match: MatchDTO) {
+    setCloneFrom(match);
+    setShowForm(true);
+    requestAnimationFrame(() => {
+      formPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   function handleSaved(created: MatchDTO[]) {
     setMatches((prev) => {
       const existing = new Map(prev.map((m) => [m.id, m]));
       for (const m of created) existing.set(m.id, m);
       return Array.from(existing.values());
     });
-    setShowForm(false);
+    closeForm();
   }
 
   function handleDeleted(id: number) {
@@ -101,7 +125,7 @@ export default function MatchesSection({
       <div className="flex items-center justify-between mb-3">
         <h2 className="tet-section-title">Matches</h2>
         <button
-          onClick={() => setShowForm((v) => !v)}
+          onClick={toggleCreate}
           className="tet-btn-primary"
         >
           <CalendarPlus size={15} />
@@ -118,8 +142,27 @@ export default function MatchesSection({
       </div>
 
       {showForm && (
-        <div className="mb-4 tet-panel">
-          <MatchForm onSaved={handleSaved} onCancel={() => setShowForm(false)} />
+        <div ref={formPanelRef} className="mb-4 tet-panel">
+          {cloneFrom && (
+            <p className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {t("management.cloneTitle")}
+            </p>
+          )}
+          <MatchForm
+            key={cloneFrom ? `clone-${cloneFrom.id}` : "new"}
+            prefill={
+              cloneFrom
+                ? {
+                    title: cloneFrom.title,
+                    venue: cloneFrom.venue,
+                    scheduledAt: cloneFrom.scheduledAt,
+                    isRecurring: cloneFrom.isRecurring,
+                  }
+                : undefined
+            }
+            onSaved={handleSaved}
+            onCancel={closeForm}
+          />
         </div>
       )}
 
@@ -193,6 +236,7 @@ export default function MatchesSection({
               shuttlecockFeePerHour={shuttlecockFeePerHour}
               onUpdated={handleUpdated}
               onDeleted={handleDeleted}
+              onClone={handleClone}
             />
           ))}
         </div>
