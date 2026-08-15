@@ -177,6 +177,22 @@ export function CamPageSkeleton() {
   );
 }
 
+export function BalancesPageSkeleton() {
+  return (
+    <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
+      <Skeleton className="h-8 w-28" />
+      <div className="flex gap-2">
+        <Skeleton className="h-9 w-16 rounded-xl" />
+        <Skeleton className="h-9 w-20 rounded-xl" />
+      </div>
+      <div className="space-y-3">
+        <ChallengeCardSkeleton />
+        <ChallengeCardSkeleton />
+      </div>
+    </div>
+  );
+}
+
 export function MemberProfileSkeleton() {
   return (
     <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
