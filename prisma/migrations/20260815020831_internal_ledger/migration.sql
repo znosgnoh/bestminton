@@ -4,9 +4,6 @@ CREATE TYPE "LedgerExpenseKind" AS ENUM ('MATCH', 'SHUTTLECOCK', 'OPENING');
 -- CreateEnum
 CREATE TYPE "LedgerExpenseStatus" AS ENUM ('OPEN', 'SETTLED');
 
--- DropForeignKey
-ALTER TABLE "Bet" DROP CONSTRAINT "Bet_counterpartyId_fkey";
-
 -- CreateTable
 CREATE TABLE "Expense" (
     "id" SERIAL NOT NULL,
@@ -42,9 +39,6 @@ CREATE UNIQUE INDEX "Expense_matchId_kind_key" ON "Expense"("matchId", "kind");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ExpenseShare_expenseId_memberId_key" ON "ExpenseShare"("expenseId", "memberId");
-
--- AddForeignKey
-ALTER TABLE "Bet" ADD CONSTRAINT "Bet_counterpartyId_fkey" FOREIGN KEY ("counterpartyId") REFERENCES "Member"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Expense" ADD CONSTRAINT "Expense_matchId_fkey" FOREIGN KEY ("matchId") REFERENCES "Match"("id") ON DELETE SET NULL ON UPDATE CASCADE;
