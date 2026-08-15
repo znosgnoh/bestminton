@@ -355,6 +355,10 @@ const vi: Messages = {
     importBalancesCreated: "Đã nhập {created} số dư đầu kỳ.",
     importBalancesSkipped: "Bỏ qua chưa map: {names}.",
     importBalancesSkippedZero: "Bỏ qua {count} số dư bằng 0.",
+    clone: "Nhân bản",
+    cloneTitle: "Nhân bản trận",
+    cloneHint:
+      "Đã copy tên, sân, giờ và lịch tuần. Chọn ngày mới — người chơi không được copy.",
   },
 };
 

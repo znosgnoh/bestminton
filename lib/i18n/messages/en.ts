@@ -353,6 +353,10 @@ const en = {
     importBalancesCreated: "Imported {created} opening balance(s).",
     importBalancesSkipped: "Skipped unmapped: {names}.",
     importBalancesSkippedZero: "{count} with zero net skipped.",
+    clone: "Clone",
+    cloneTitle: "Clone match",
+    cloneHint:
+      "Copied title, venue, time, and weekly setting. Pick a new date — players are not copied.",
   },
 } as const;
 
