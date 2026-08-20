@@ -181,7 +181,7 @@ Total court fee is split weighted by playtime and headcount per player.
 Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts: **Leaderboard** (`/leaderboard#elo-guideline`, `components/leaderboard/EloGuideline.tsx`, data in `lib/eloGuideline.ts`). Kèo pages link via `EloGuidelineLink`.
 
 - **Suggested handicap:** Sub-linear scaling from average side Elo gap — calibrated so a 300-point gap suggests 6 points; doubling the gap yields ~1.5× points (not 2×). The weaker side receives the handicap. **System-only:** create and `PENDING` updates cannot override it (`POST` ignores client `handicapPoints`; `PATCH` rejects it). Changing 21/15 while `PENDING` recalculates the suggestion. Resolve still confirms handicap + score for Elo.
-- **Stale pending kèo:** `PENDING` challenges (never started or resolved) are deleted 3 days after `createdAt`. `ACTIVE` and `COMPLETED` are kept. Cleanup runs on kèo list/detail loads and hourly via `GET /api/cron/stale-challenges`. Bets cascade.
+- **Stale pending kèo:** `PENDING` challenges (never started or resolved) are deleted 3 days after `createdAt`. `ACTIVE` and `COMPLETED` are kept. Cleanup runs on kèo list/detail loads and daily (16:00 UTC / midnight VN) via `GET /api/cron/stale-challenges`. Bets cascade.
 - **Displayed win rate:** `sideWinProbabilities` treats each handicap point as a **50 Elo** boost on the recipient (`ELO_PER_HANDICAP_POINT`), then applies the standard Elo expected-score formula. Win percentages follow the system handicap.
 - **Resolve — singles:** `computeSinglesEloChanges` in `lib/elo.ts` — `newRating = old + K × scoreMarginMult × eloGapMult × (actual − expected)`, where **expected** uses `confirmedHandicapPoints` (handicap-adjusted), **scoreMarginMult** parses `confirmedScore` (close 2-1 / 21-19 → smaller swing; straight-set / large margins → up to ~1.5×), **eloGapMult** scales upsets vs expected favorites, **K** is 32 (&lt;10 kèo) or 16 (established). Updates `eloRating`, `totalMatches`, and `totalWins`; optional nước cam debts when `isDrinkChallenge` or bets exist.
 - **Resolve — doubles:** Handicap/win % still use current singles Elo averages; no Elo/`totalMatches`/`totalWins` updates (`resolutionSnapshot.eloChanges` is empty). When `isDrinkChallenge` and no bets: each winner earns exactly 1 ly nước cam, debtor is a loser on the opposing side (round-robin across losers, not fixed pairs). Bet debts unchanged (1:1 bettor vs counterparty).
@@ -205,7 +205,7 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/api/admin/verify-pin` | Route | `POST` verify captain PIN (client gate) |
 | `/api/challenges` | Route | `GET` list (purges stale pending), `POST` create |
 | `/api/challenges/[id]` | Route | `GET` detail, `PATCH` notes/21-15/drink/YouTube, `PUT` edit winner, `DELETE` |
-| `/api/cron/stale-challenges` | Route | `GET` hourly cron — delete `PENDING` kèo older than 3 days |
+| `/api/cron/stale-challenges` | Route | `GET` daily cron (Hobby) — delete `PENDING` kèo older than 3 days |
 | `/api/challenges/[id]/bets` | Route | `POST` upsert bet, `DELETE` remove |
 | `/api/challenges/[id]/start` | Route | `POST` lock bets and start kèo |
 | `/api/challenges/[id]/resolve` | Route | `POST` record winner, confirmed handicap/score, Elo, payouts |
