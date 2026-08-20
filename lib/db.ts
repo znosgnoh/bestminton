@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
-/** Bump when pool URL params change so Hot Reload replaces a stale PrismaClient. */
-const POOL_CONFIG_VERSION = "v2-neon-small-pool";
+/** Bump when pool URL params or Prisma schema scalar types change so Hot Reload replaces a stale PrismaClient. */
+const POOL_CONFIG_VERSION = "v3-splitwise-expense-id-bigint";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;

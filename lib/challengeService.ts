@@ -3,6 +3,7 @@ import { db } from "./db";
 import { computeSinglesEloChanges, nextSinglesStreaks } from "./elo";
 import { CHALLENGE_FULL_INCLUDE } from "./challengeIncludes";
 import { serializeChallenge } from "./challengeSerialize";
+import { stalePendingCutoff } from "./staleChallenges";
 import type {
   ChallengeDebtRecord,
   ChallengeResolutionDTO,
@@ -549,6 +550,17 @@ export async function adminDeleteChallenge(challengeId: number) {
 
     return { debtCount };
   });
+}
+
+/** Removes PENDING kèo that were never started or resolved, after 3 days. */
+export async function purgeStalePendingChallenges(now: Date = new Date()): Promise<number> {
+  const result = await db.challenge.deleteMany({
+    where: {
+      status: "PENDING",
+      createdAt: { lte: stalePendingCutoff(now) },
+    },
+  });
+  return result.count;
 }
 
 export async function startChallenge(challengeId: number) {

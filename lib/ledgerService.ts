@@ -26,6 +26,7 @@ import {
   postSplitwiseExpense,
   splitwiseFetch,
   splitwiseMemberName,
+  toJsonSplitwiseId,
   validateExpenseShares,
   type SplitwiseGroupResponse,
 } from "./splitwise";
@@ -123,7 +124,7 @@ function toExpenseDTO(expense: ExpenseWithRelations): LedgerExpenseDTO {
     paidByMemberId: expense.paidByMemberId,
     paidByName: expense.paidBy.name,
     status: expenseStatus(shares),
-    splitwiseExpenseId: expense.splitwiseExpenseId,
+    splitwiseExpenseId: toJsonSplitwiseId(expense.splitwiseExpenseId),
     createdAt: expense.createdAt.toISOString(),
     shares,
   };
@@ -357,7 +358,7 @@ async function attachSplitwiseExpenseId(
   splitwiseExpenseId: number
 ): Promise<ExpenseWithRelations | null> {
   if (!expense) return null;
-  if (expense.splitwiseExpenseId === splitwiseExpenseId) return expense;
+  if (toJsonSplitwiseId(expense.splitwiseExpenseId) === splitwiseExpenseId) return expense;
   return db.expense.update({
     where: { id: expense.id },
     data: { splitwiseExpenseId },

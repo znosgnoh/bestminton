@@ -4,7 +4,7 @@ import { useState } from "react";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import PointsToWinToggle from "@/components/challenges/PointsToWinToggle";
 import { useI18n } from "@/contexts/LocaleContext";
-import { isPointsToWin, suggestedHandicap, type PointsToWin } from "@/lib/elo";
+import { isPointsToWin, type PointsToWin } from "@/lib/elo";
 import * as dataService from "@/lib/dataService";
 import type { ChallengeDTO } from "@/lib/types";
 
@@ -25,28 +25,12 @@ export default function PointsToWinEditor({ challenge, onUpdated }: PointsToWinE
   async function handleChange(next: PointsToWin) {
     if (next === value || loading) return;
 
-    const oldSuggested = suggestedHandicap(
-      challenge.sideA.averageElo,
-      challenge.sideB.averageElo,
-      value
-    );
-    const newSuggested = suggestedHandicap(
-      challenge.sideA.averageElo,
-      challenge.sideB.averageElo,
-      next
-    );
-    const nextHandicap =
-      challenge.handicapPoints === oldSuggested
-        ? newSuggested
-        : Math.min(challenge.handicapPoints, next);
-
     setLoading(true);
     setError(null);
 
     try {
       const updated = await dataService.updateChallenge(challenge.id, {
         pointsToWin: next,
-        handicapPoints: nextHandicap,
       });
       onUpdated(updated);
     } catch (err) {

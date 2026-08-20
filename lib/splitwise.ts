@@ -77,6 +77,13 @@ export function getSplitwiseExpenseId(data: SplitwiseCreateExpenseResponse): num
   return data.expenses?.[0]?.id ?? data.expense?.id;
 }
 
+/** Prisma BigInt / JS number → JSON-safe number. Splitwise IDs still fit in MAX_SAFE_INTEGER. */
+export function toJsonSplitwiseId(id: bigint | number | null | undefined): number | null {
+  if (id == null) return null;
+  const n = typeof id === "bigint" ? Number(id) : id;
+  return Number.isSafeInteger(n) ? n : null;
+}
+
 export function formatShareAmount(amount: number): string {
   return amount.toFixed(2);
 }

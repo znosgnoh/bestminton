@@ -92,7 +92,7 @@ Friendly singles/doubles match with optional drink-token betting. **Singles** up
 | `status` | Enum | `PENDING` → `ACTIVE` → `COMPLETED` |
 | `playerAId`, `playerBId` | Int (FK) | Side competitors |
 | `playerA2Id`, `playerB2Id` | Int? (FK) | Doubles partners |
-| `handicapPoints` | Int | Points given to the weaker side (editable before start) |
+| `handicapPoints` | Int | Points given to the weaker side (system-calculated from Elo; not user-editable) |
 | `confirmedHandicapPoints` | Int? | Captain-confirmed handicap at resolve (for future algo tuning) |
 | `confirmedScore` | String? | Captain-confirmed final score at resolve (e.g. `21-15, 21-18`) |
 | `notes` | String? | Optional custom rules or extra info (editable while `PENDING`) |
@@ -127,7 +127,7 @@ Court-money ledger entry (match fee, shuttlecock remittance, or Splitwise openin
 | `currency` | String | |
 | `paidByMemberId` | Int | FK → Member (creditor) |
 | `status` | Enum | `OPEN` or `SETTLED` |
-| `splitwiseExpenseId` | Int? | Set when dual-written |
+| `splitwiseExpenseId` | BigInt? | Splitwise expense id when dual-written (BIGINT — IDs exceed INT4) |
 | `createdAt` | DateTime | |
 | *(unique)* | `(matchId, kind)` | |
 
@@ -180,9 +180,9 @@ Total court fee is split weighted by playtime and headcount per player.
 
 Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts: **Leaderboard** (`/leaderboard#elo-guideline`, `components/leaderboard/EloGuideline.tsx`, data in `lib/eloGuideline.ts`). Kèo pages link via `EloGuidelineLink`.
 
-- **Suggested handicap:** Sub-linear scaling from average side Elo gap — calibrated so a 300-point gap suggests 6 points; doubling the gap yields ~1.5× points (not 2×). The weaker side receives the handicap.
-- **Editable handicap:** On create (`/challenges/new`) and while status is `PENDING` (management or `HandicapEditor`), captains can override the suggestion.
-- **Displayed win rate:** `sideWinProbabilities` treats each handicap point as a **50 Elo** boost on the recipient (`ELO_PER_HANDICAP_POINT`), then applies the standard Elo expected-score formula. Win percentages update when handicap changes.
+- **Suggested handicap:** Sub-linear scaling from average side Elo gap — calibrated so a 300-point gap suggests 6 points; doubling the gap yields ~1.5× points (not 2×). The weaker side receives the handicap. **System-only:** create and `PENDING` updates cannot override it (`POST` ignores client `handicapPoints`; `PATCH` rejects it). Changing 21/15 while `PENDING` recalculates the suggestion. Resolve still confirms handicap + score for Elo.
+- **Stale pending kèo:** `PENDING` challenges (never started or resolved) are deleted 3 days after `createdAt`. `ACTIVE` and `COMPLETED` are kept. Cleanup runs on kèo list/detail loads and hourly via `GET /api/cron/stale-challenges`. Bets cascade.
+- **Displayed win rate:** `sideWinProbabilities` treats each handicap point as a **50 Elo** boost on the recipient (`ELO_PER_HANDICAP_POINT`), then applies the standard Elo expected-score formula. Win percentages follow the system handicap.
 - **Resolve — singles:** `computeSinglesEloChanges` in `lib/elo.ts` — `newRating = old + K × scoreMarginMult × eloGapMult × (actual − expected)`, where **expected** uses `confirmedHandicapPoints` (handicap-adjusted), **scoreMarginMult** parses `confirmedScore` (close 2-1 / 21-19 → smaller swing; straight-set / large margins → up to ~1.5×), **eloGapMult** scales upsets vs expected favorites, **K** is 32 (&lt;10 kèo) or 16 (established). Updates `eloRating`, `totalMatches`, and `totalWins`; optional nước cam debts when `isDrinkChallenge` or bets exist.
 - **Resolve — doubles:** Handicap/win % still use current singles Elo averages; no Elo/`totalMatches`/`totalWins` updates (`resolutionSnapshot.eloChanges` is empty). When `isDrinkChallenge` and no bets: each winner earns exactly 1 ly nước cam, debtor is a loser on the opposing side (round-robin across losers, not fixed pairs). Bet debts unchanged (1:1 bettor vs counterparty).
 
@@ -203,8 +203,9 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/balances` | Page | Court-money ledger — My / Group tabs (Sổ) |
 | `/api/health` | Route | `GET` DB availability check |
 | `/api/admin/verify-pin` | Route | `POST` verify captain PIN (client gate) |
-| `/api/challenges` | Route | `GET` list, `POST` create |
-| `/api/challenges/[id]` | Route | `GET` detail, `PUT` update (e.g. handicap), `DELETE` |
+| `/api/challenges` | Route | `GET` list (purges stale pending), `POST` create |
+| `/api/challenges/[id]` | Route | `GET` detail, `PATCH` notes/21-15/drink/YouTube, `PUT` edit winner, `DELETE` |
+| `/api/cron/stale-challenges` | Route | `GET` hourly cron — delete `PENDING` kèo older than 3 days |
 | `/api/challenges/[id]/bets` | Route | `POST` upsert bet, `DELETE` remove |
 | `/api/challenges/[id]/start` | Route | `POST` lock bets and start kèo |
 | `/api/challenges/[id]/resolve` | Route | `POST` record winner, confirmed handicap/score, Elo, payouts |
@@ -257,9 +258,9 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 ### 6.4 Kèo (challenges)
 
 1. Captain or players open **Kèo** in the nav → `/challenges`
-2. **New kèo:** pick singles/doubles competitors; review sub-linear **suggested handicap** and edit if needed → `PENDING`
-3. While `PENDING`, others place bets on a side; captain can still edit handicap (win % reflects current points)
-4. Captain **starts** the kèo → `ACTIVE` (bets locked)
+2. **New kèo:** pick singles/doubles competitors; review system handicap (Elo-based, not editable) → `PENDING`
+3. While `PENDING`, others place bets on a side. Unused pending kèo are auto-removed after 3 days.
+4. Captain **starts** the kèo → `ACTIVE` (bets locked; no longer eligible for auto-clean)
 5. After play, captain **resolves** — confirms handicap + final score, then picks winning side → **singles:** Elo + optional drink payouts; **doubles:** optional drink payouts only (no Elo)
 
 ---
@@ -296,6 +297,9 @@ BLOB_READ_WRITE_TOKEN=
 # Captain PIN (optional — gates /management UI and captain mutating APIs when set)
 CAPTAIN_PIN=
 # ADMIN_PIN=          # legacy alias for CAPTAIN_PIN
+
+# Optional — Vercel Cron Authorization: Bearer CRON_SECRET for GET /api/cron/stale-challenges
+CRON_SECRET=
 ```
 
 **Splitwise cutover:** Unset `SPLITWISE_API_KEY` and `SPLITWISE_GROUP_ID` to turn the bridge **off**. Settle still records the in-app ledger (`POST /api/ledger/record` via `dataService.recordMatchLedger`); the settle button is **Record expense** and does not require `splitwiseId`. “Import Splitwise balances” is hidden. Drink debts (`DrinkDebt`) are unchanged.
@@ -309,4 +313,4 @@ CAPTAIN_PIN=
 - **Settlement URL:** The Settle section (`SettleForm`) only renders when `?manage=1` is present in the URL — enforced at the server page level. Saving settlement or recording the ledger (`dataService.recordMatchLedger`) sends the stored captain PIN when configured. Bridge on dual-writes Splitwise; bridge off records the ledger only.
 - **Kèo copy:** Challenge UI uses Vietnamese **kèo** labels in the product; routes remain `/challenges` for URLs.
 - **Recurring matches:** Creating a recurring match auto-generates instances for the next 8 weeks at the same day/time.
-- **After Prisma migrations:** Run `npx prisma migrate deploy` (or `migrate dev` locally) so the DB matches `schema.prisma`, then `npx prisma generate` and restart the dev server. Resolve (`POST /api/challenges/[id]/resolve`) requires migration `20260626120000_challenge_resolve_confirmation` (`confirmedHandicapPoints`, `confirmedScore` on `Challenge`); without it the transaction rolls back after Elo updates and the API returns 503.
+- **After Prisma migrations:** Run `npx prisma migrate deploy` (or `migrate dev` locally) so the DB matches `schema.prisma`, then `npx prisma generate` and restart the dev server. Resolve (`POST /api/challenges/[id]/resolve`) requires migration `20260626120000_challenge_resolve_confirmation` (`confirmedHandicapPoints`, `confirmedScore` on `Challenge`); without it the transaction rolls back after Elo updates and the API returns 503. Splitwise sync requires `20260820120000_splitwise_expense_id_bigint` (`Expense.splitwiseExpenseId` as BIGINT).

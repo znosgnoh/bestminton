@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import ChallengeMatchInfo from "@/components/challenges/ChallengeMatchInfo";
-import HandicapEditor from "@/components/challenges/HandicapEditor";
 import PointsToWinEditor from "@/components/challenges/PointsToWinEditor";
 import NotesEditor from "@/components/challenges/NotesEditor";
 import BettingBoard from "@/components/challenges/BettingBoard";
@@ -215,8 +214,6 @@ export default function ChallengeDetailClient({
       />
 
       <PointsToWinEditor challenge={challenge} onUpdated={handleChallengeUpdated} />
-
-      <HandicapEditor challenge={challenge} onUpdated={handleChallengeUpdated} />
 
       <NotesEditor challenge={challenge} onUpdated={handleChallengeUpdated} />
 

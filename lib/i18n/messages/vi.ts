@@ -165,6 +165,7 @@ const vi: Messages = {
     doublesShort: "Đôi",
     suggestedHandicap: "Chấp điểm gợi ý",
     handicapPts: "Chấp điểm",
+    handicapSystemHint: "Hệ thống tự tính từ Elo — không chỉnh được.",
     handicapRecipient: "Side {side} được chấp",
     winProbability: "Xác suất thắng",
     singlesEloNote:

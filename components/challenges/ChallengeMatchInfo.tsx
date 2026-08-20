@@ -43,7 +43,7 @@ export default function ChallengeMatchInfo({ challenge }: ChallengeMatchInfoProp
         />
       </div>
 
-      {challenge.status !== "PENDING" && handicapPoints > 0 && (
+      {handicapPoints > 0 && (
         <p className="text-center text-sm text-gray-600 dark:text-gray-400">
           Chấp điểm: <strong>{handicapPoints}</strong> điểm cho Side {handicapRecipientSide}
           {challenge.format === "DOUBLES" && " (Elo trung bình thấp hơn)"}
