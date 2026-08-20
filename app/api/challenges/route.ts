@@ -4,25 +4,12 @@ import { db } from "@/lib/db";
 import { databaseErrorResponse, requireDatabase } from "@/lib/apiHelpers";
 import { CHALLENGE_LIST_INCLUDE } from "@/lib/challengeIncludes";
 import { serializeChallengeList } from "@/lib/challengeSerialize";
-import { sideAverageElo, suggestedHandicap, isPointsToWin, maxHandicapPoints, DEFAULT_POINTS_TO_WIN } from "@/lib/elo";
+import { sideAverageElo, suggestedHandicap, isPointsToWin, DEFAULT_POINTS_TO_WIN } from "@/lib/elo";
+import { purgeStalePendingChallenges } from "@/lib/challengeService";
 import { revalidateChallengePages } from "@/lib/revalidate";
 import type { CreateChallengeRequest } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
-
-function parseHandicapPoints(
-  value: unknown,
-  fallback: number,
-  pointsToWin: number
-): number | { error: string } {
-  if (value === undefined) return fallback;
-  const parsed = Number(value);
-  const max = maxHandicapPoints(pointsToWin);
-  if (!Number.isInteger(parsed) || parsed < 0 || parsed > max) {
-    return { error: `handicapPoints must be a non-negative integer up to ${max}.` };
-  }
-  return parsed;
-}
 
 function parsePointsToWin(value: unknown): number | { error: string } {
   if (value === undefined || value === null) return DEFAULT_POINTS_TO_WIN;
@@ -57,6 +44,7 @@ export async function GET(request: NextRequest) {
       : undefined;
 
   try {
+    await purgeStalePendingChallenges();
     const challenges = await db.challenge.findMany({
       where,
       include: CHALLENGE_LIST_INCLUDE,
@@ -147,12 +135,7 @@ export async function POST(request: NextRequest) {
     }
     const pointsToWin = pointsToWinResult;
 
-    const suggested = suggestedHandicap(sideAAvg, sideBAvg, pointsToWin);
-    const handicapResult = parseHandicapPoints(body.handicapPoints, suggested, pointsToWin);
-    if (typeof handicapResult === "object") {
-      return NextResponse.json({ error: handicapResult.error }, { status: 400 });
-    }
-    const handicapPoints = handicapResult;
+    const handicapPoints = suggestedHandicap(sideAAvg, sideBAvg, pointsToWin);
     const isDrinkChallenge = body.isDrinkChallenge === true;
     const notesResult = parseNotes(body.notes);
     if (typeof notesResult === "object" && notesResult !== null && "error" in notesResult) {

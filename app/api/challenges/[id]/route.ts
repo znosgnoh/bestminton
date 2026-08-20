@@ -7,7 +7,9 @@ import { serializeChallenge } from "@/lib/challengeSerialize";
 import {
   adminDeleteChallenge,
   adminEditChallengeWinner,
+  purgeStalePendingChallenges,
 } from "@/lib/challengeService";
+import { sideAverageElo, suggestedHandicap } from "@/lib/elo";
 import { revalidateChallengePages, revalidateMemberPages } from "@/lib/revalidate";
 import type { AdminDeleteChallengeRequest, AdminEditChallengeRequest, UpdateChallengeRequest } from "@/lib/types";
 import { parseYoutubeUrlField } from "@/lib/youtube";
@@ -41,6 +43,7 @@ export async function GET(
   }
 
   try {
+    await purgeStalePendingChallenges();
     const challenge = await db.challenge.findUnique({
       where: { id },
       include: CHALLENGE_FULL_INCLUDE,
@@ -78,12 +81,24 @@ export async function PATCH(
 
   if (
     body.isDrinkChallenge === undefined &&
-    body.handicapPoints === undefined &&
     body.pointsToWin === undefined &&
     body.notes === undefined &&
     body.youtubeUrl === undefined
   ) {
+    if (body.handicapPoints !== undefined) {
+      return NextResponse.json(
+        { error: "Handicap is set by the system and cannot be updated." },
+        { status: 400 }
+      );
+    }
     return NextResponse.json({ error: "No fields to update." }, { status: 400 });
+  }
+
+  if (body.handicapPoints !== undefined) {
+    return NextResponse.json(
+      { error: "Handicap is set by the system and cannot be updated." },
+      { status: 400 }
+    );
   }
 
   const data: {
@@ -135,7 +150,15 @@ export async function PATCH(
   try {
     const existing = await db.challenge.findUnique({
       where: { id: challengeId },
-      select: { status: true, format: true, pointsToWin: true, handicapPoints: true },
+      select: {
+        status: true,
+        format: true,
+        pointsToWin: true,
+        playerA: { select: { eloRating: true } },
+        playerA2: { select: { eloRating: true } },
+        playerB: { select: { eloRating: true } },
+        playerB2: { select: { eloRating: true } },
+      },
     });
 
     if (!existing) {
@@ -149,20 +172,20 @@ export async function PATCH(
       );
     }
 
-    const endpoint = data.pointsToWin ?? existing.pointsToWin;
-
-    if (body.handicapPoints !== undefined) {
-      const parsed = Number(body.handicapPoints);
-      if (!Number.isInteger(parsed) || parsed < 0 || parsed > endpoint) {
-        return NextResponse.json(
-          { error: `handicapPoints must be a non-negative integer up to ${endpoint}.` },
-          { status: 400 }
-        );
-      }
-      data.handicapPoints = parsed;
-    } else if (data.pointsToWin !== undefined && existing.handicapPoints > data.pointsToWin) {
-      // Cap existing handicap when switching to a shorter game.
-      data.handicapPoints = data.pointsToWin;
+    if (data.pointsToWin !== undefined) {
+      const sideARatings =
+        existing.format === "DOUBLES" && existing.playerA2
+          ? [existing.playerA.eloRating, existing.playerA2.eloRating]
+          : [existing.playerA.eloRating];
+      const sideBRatings =
+        existing.format === "DOUBLES" && existing.playerB2
+          ? [existing.playerB.eloRating, existing.playerB2.eloRating]
+          : [existing.playerB.eloRating];
+      data.handicapPoints = suggestedHandicap(
+        sideAverageElo(sideARatings),
+        sideAverageElo(sideBRatings),
+        data.pointsToWin
+      );
     }
 
     const updated = await db.challenge.update({

@@ -163,6 +163,7 @@ const en = {
     doublesShort: "Doubles",
     suggestedHandicap: "Suggested handicap",
     handicapPts: "Handicap points",
+    handicapSystemHint: "Set automatically from Elo — not editable.",
     handicapRecipient: "Side {side} receives handicap",
     winProbability: "Win probability",
     singlesEloNote:

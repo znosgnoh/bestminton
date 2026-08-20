@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import AvatarTile from "@/components/matches/AvatarTile";
 import ErrorBanner from "@/components/ui/ErrorBanner";
@@ -10,7 +10,6 @@ import EloGuidelineLink from "@/components/leaderboard/EloGuidelineLink";
 import PointsToWinToggle from "@/components/challenges/PointsToWinToggle";
 import {
   DEFAULT_POINTS_TO_WIN,
-  maxHandicapPoints,
   sideAverageElo,
   suggestedHandicap,
   type PointsToWin,
@@ -31,14 +30,10 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
   const [playerBId, setPlayerBId] = useState<number | null>(null);
   const [playerB2Id, setPlayerB2Id] = useState<number | null>(null);
   const [isDrinkChallenge, setIsDrinkChallenge] = useState(false);
-  const [handicapPoints, setHandicapPoints] = useState(0);
-  const [handicapTouched, setHandicapTouched] = useState(false);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
-  const handicapMax = maxHandicapPoints(pointsToWin);
 
   const selectedIds = new Set(
     [playerAId, playerA2Id, playerBId, playerB2Id].filter((id): id is number => id !== null)
@@ -109,16 +104,6 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
   const handicapRecipientSide =
     sideAAvg !== null && sideBAvg !== null ? (sideAAvg <= sideBAvg ? "A" : "B") : null;
 
-  useEffect(() => {
-    if (!handicapTouched && suggested !== null) {
-      setHandicapPoints(suggested);
-    }
-  }, [suggested, handicapTouched]);
-
-  useEffect(() => {
-    setHandicapPoints((prev) => Math.min(prev, handicapMax));
-  }, [handicapMax]);
-
   async function handleSubmit() {
     if (!canSubmit || submitting) return;
 
@@ -133,7 +118,6 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
         playerBId: playerBId!,
         isDrinkChallenge,
         pointsToWin,
-        handicapPoints: Math.min(handicapPoints, handicapMax),
         notes: notes.trim() || null,
         ...(format === "DOUBLES"
           ? { playerA2Id: playerA2Id!, playerB2Id: playerB2Id! }
@@ -186,7 +170,6 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
               setFormat(f);
               setPlayerA2Id(null);
               setPlayerB2Id(null);
-              setHandicapTouched(false);
               if (f === "DOUBLES") setIsDrinkChallenge(true);
             }}
             className={format === f ? "tet-tab-active flex-1 tet-tab" : "tet-tab-inactive flex-1 tet-tab"}
@@ -209,20 +192,15 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
           <input
             id="handicap-points"
             type="number"
-            min={0}
-            max={handicapMax}
-            step={1}
-            value={handicapPoints}
-            onChange={(e) => {
-              setHandicapTouched(true);
-              setHandicapPoints(Math.min(parseInt(e.target.value, 10) || 0, handicapMax));
-            }}
-            className="tet-input w-full"
+            value={suggested}
+            disabled
+            readOnly
+            className="tet-input w-full disabled:cursor-not-allowed disabled:opacity-70"
           />
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Gợi ý: {suggested} điểm cho Side {handicapRecipientSide}
+            {suggested} điểm cho Side {handicapRecipientSide}
             {format === "DOUBLES" && " (Elo trung bình thấp hơn)"}
-            {" · "}tối đa {handicapMax}
+            {" · "}hệ thống tự tính từ Elo
           </p>
         </div>
       )}
@@ -257,7 +235,6 @@ export default function ChallengeForm({ members, onCreated }: ChallengeFormProps
           value={pointsToWin}
           onChange={(next) => {
             setPointsToWin(next);
-            setHandicapTouched(false);
           }}
         />
       </div>

@@ -3,6 +3,7 @@ import { isDatabaseConfigured } from "@/lib/dbConfig";
 import { formatDatabaseError, logDatabaseError } from "@/lib/dbHealth";
 import { CHALLENGE_LIST_INCLUDE } from "@/lib/challengeIncludes";
 import { serializeChallengeList } from "@/lib/challengeSerialize";
+import { purgeStalePendingChallenges } from "@/lib/challengeService";
 import ChallengesPageClient from "./ChallengesPageClient";
 import type { ChallengeDTO } from "@/lib/types";
 
@@ -16,6 +17,7 @@ export default async function ChallengesLoader() {
       "POSTGRES_PRISMA_URL is not set. Configure Postgres env vars for kèo and leaderboard features.";
   } else {
     try {
+      await purgeStalePendingChallenges();
       const raw = await db.challenge.findMany({
         include: CHALLENGE_LIST_INCLUDE,
         orderBy: { createdAt: "desc" },

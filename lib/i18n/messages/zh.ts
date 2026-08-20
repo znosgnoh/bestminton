@@ -163,6 +163,7 @@ const zh: Messages = {
     doublesShort: "双打",
     suggestedHandicap: "建议让分",
     handicapPts: "让分",
+    handicapSystemHint: "由系统根据 Elo 自动计算 — 不可修改。",
     handicapRecipient: "{side} 方受让分",
     winProbability: "胜率",
     singlesEloNote: "单打对局结算时更新 Elo——取决于让分、比分和 Elo 差距。",
