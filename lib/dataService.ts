@@ -575,3 +575,19 @@ export function markLedgerPaid(
     body: JSON.stringify(withAdminPin({ debtorId, creditorId, amount })),
   });
 }
+
+export function rollbackLedgerExpense(expenseId: number): Promise<LedgerSnapshotDTO> {
+  return challengeFetch<LedgerSnapshotDTO>(`/api/ledger/expenses/${expenseId}`, {
+    method: "DELETE",
+    headers: jsonHeaders(),
+    body: JSON.stringify(withAdminPin({})),
+  });
+}
+
+export function resetLedgerExpensePaid(expenseId: number): Promise<LedgerSnapshotDTO> {
+  return challengeFetch<LedgerSnapshotDTO>(`/api/ledger/expenses/${expenseId}/reset-paid`, {
+    method: "POST",
+    headers: jsonHeaders(),
+    body: JSON.stringify(withAdminPin({})),
+  });
+}

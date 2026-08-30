@@ -11,6 +11,46 @@ export function parseGroupMemberNet(
   return Number.isFinite(n) ? n : 0;
 }
 
+/** Positive net = owed to this member (Splitwise / creditor position). */
+export function netsFromRemainders(
+  items: Array<{ debtorId: number; creditorId: number; remainder: number }>
+): Array<{ memberId: number; net: number }> {
+  const cents = new Map<number, number>();
+  function add(id: number, delta: number) {
+    cents.set(id, (cents.get(id) ?? 0) + delta);
+  }
+  for (const item of items) {
+    const c = toCents(item.remainder);
+    if (c <= 0) continue;
+    add(item.debtorId, -c);
+    add(item.creditorId, c);
+  }
+  return [...cents.entries()]
+    .filter(([, n]) => n !== 0)
+    .map(([memberId, n]) => ({ memberId, net: fromCents(n) }));
+}
+
+/**
+ * Opening leftover = current Splitwise nets minus MATCH/SHUTTLECOCK already on the ledger,
+ * so re-import during dual-write does not double-count settled sessions.
+ */
+export function subtractLedgerNetsFromSplitwise(
+  splitwiseNets: Array<{ memberId: number; net: number }>,
+  ledgerNets: Array<{ memberId: number; net: number }>
+): Array<{ memberId: number; net: number }> {
+  const cents = new Map<number, number>();
+  for (const n of splitwiseNets) {
+    cents.set(n.memberId, (cents.get(n.memberId) ?? 0) + toCents(n.net));
+  }
+  for (const n of ledgerNets) {
+    cents.set(n.memberId, (cents.get(n.memberId) ?? 0) - toCents(n.net));
+  }
+  return [...cents.entries()].map(([memberId, n]) => ({
+    memberId,
+    net: fromCents(n),
+  }));
+}
+
 export function openingPairsFromNets(
   nets: Array<{ memberId: number; net: number }>
 ): DebtEdge[] {

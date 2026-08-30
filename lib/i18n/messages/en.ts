@@ -316,6 +316,7 @@ const en = {
     shuttlecock: "Shuttlecock",
     bridgeOnHint: "Splitwise is still connected — balances here should match leftover group nets.",
     dbRequired: "Balances require a live database connection.",
+    openMatch: "Open match",
   },
   profile: {
     backToLeaderboard: "Leaderboard",
@@ -358,6 +359,23 @@ const en = {
     cloneTitle: "Clone match",
     cloneHint:
       "Copied title, venue, time, and weekly setting. Pick a new date — players are not copied.",
+    transactions: "Ledger transactions",
+    transactionsHint:
+      "Every court, shuttlecock, and opening row. Rollback removes it from Bestminton only — Splitwise is unchanged. You can record the match again afterwards.",
+    transactionsEmpty: "No ledger transactions yet.",
+    transactionsLoadError: "Could not load ledger transactions.",
+    rollback: "Rollback",
+    rollbackConfirmTitle: "Rollback this transaction?",
+    rollbackConfirm:
+      "This deletes the ledger row and any mark-paid on it. Splitwise is not changed. If Splitwise is still connected, recording the match again will create a new Splitwise expense.",
+    rollbackOk: "Transaction removed from the ledger.",
+    resetPaid: "Reset paid",
+    resetPaidConfirmTitle: "Reset mark-paid?",
+    resetPaidConfirm: "All shares on this row go back to unpaid. The expense stays on the ledger.",
+    resetPaidOk: "Mark-paid cleared.",
+    statusOpen: "Open",
+    statusSettled: "Settled",
+    paidProgress: "{paid}/{total} shares paid",
   },
 } as const;
 

@@ -1,4 +1,4 @@
-import { simplifyDebts, type DebtEdge } from "./drinkDebtUtils";
+import { netBilateralDebts, type DebtEdge } from "./drinkDebtUtils";
 
 export type LedgerRemainder = {
   debtorId: number;
@@ -33,8 +33,16 @@ export function remaindersToEdges(items: LedgerRemainder[]): DebtEdge[] {
     }));
 }
 
+/**
+ * Display + mark-paid edges: net A↔B only.
+ * Do not collapse A→B→C — FIFO mark-paid only writes the direct pair, and
+ * shuttlecock remittance would otherwise invent unpayable “via other players” rows.
+ */
 export function ledgerSimplifiedEdges(items: LedgerRemainder[]): DebtEdge[] {
-  return simplifyDebts(remaindersToEdges(items));
+  return netBilateralDebts(remaindersToEdges(items)).map((edge) => ({
+    ...edge,
+    amount: fromCents(toCents(edge.amount)),
+  }));
 }
 
 export function applyMarkPaidFifo(shares: FifoShare[], amount: number): FifoShare[] {

@@ -1,7 +1,8 @@
 import { PrismaClient } from "@prisma/client";
+import { applyPrismaPoolParams } from "./prismaPoolUrl";
 
 /** Bump when pool URL params or Prisma schema scalar types change so Hot Reload replaces a stale PrismaClient. */
-const POOL_CONFIG_VERSION = "v3-splitwise-expense-id-bigint";
+const POOL_CONFIG_VERSION = "v4-pgbouncer";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -19,15 +20,7 @@ function datasourceUrl(): string | undefined {
   if (!raw) return undefined;
 
   try {
-    const url = new URL(raw);
-    // Always overwrite — env may omit these and an old client may have used defaults.
-    url.searchParams.set(
-      "connection_limit",
-      process.env.NODE_ENV === "production" ? "5" : "2"
-    );
-    url.searchParams.set("pool_timeout", "30");
-    url.searchParams.set("connect_timeout", "30");
-    return url.toString();
+    return applyPrismaPoolParams(raw);
   } catch {
     return raw;
   }

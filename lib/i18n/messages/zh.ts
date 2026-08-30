@@ -304,6 +304,7 @@ const zh: Messages = {
     shuttlecock: "羽毛球",
     bridgeOnHint: "Splitwise 仍已连接 — 此处余额应与群组剩余净额一致。",
     dbRequired: "账本需要实时数据库连接。",
+    openMatch: "打开场次",
   },
   profile: {
     backToLeaderboard: "排行榜",
@@ -345,6 +346,23 @@ const zh: Messages = {
     clone: "复制",
     cloneTitle: "复制比赛",
     cloneHint: "已复制标题、场地、时间和每周设置。请选择新日期 — 不会复制报名。",
+    transactions: "账本流水",
+    transactionsHint:
+      "场地、羽毛球和期初余额。回滚只删除 Bestminton 记录，不会改 Splitwise。之后可从结算页重新入账。",
+    transactionsEmpty: "暂无账本流水。",
+    transactionsLoadError: "无法加载账本流水。",
+    rollback: "回滚",
+    rollbackConfirmTitle: "回滚这笔流水？",
+    rollbackConfirm:
+      "将删除该账本行及其已付标记。不会改 Splitwise。若仍连接 Splitwise，重新入账会再创建一笔 Splitwise 支出。",
+    rollbackOk: "已从账本移除该流水。",
+    resetPaid: "清除已付",
+    resetPaidConfirmTitle: "清除已付标记？",
+    resetPaidConfirm: "该行所有份额恢复为未付，流水仍保留。",
+    resetPaidOk: "已清除已付标记。",
+    statusOpen: "未结清",
+    statusSettled: "已结清",
+    paidProgress: "已付 {paid}/{total} 份额",
   },
 };
 

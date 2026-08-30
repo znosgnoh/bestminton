@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useI18n } from "@/contexts/LocaleContext";
 import { formatCurrency } from "@/lib/currency";
 import { fromCents, toCents } from "@/lib/ledgerMath";
@@ -9,6 +10,7 @@ import type { LedgerExpenseDTO, LedgerExpenseKind } from "@/lib/types";
 export interface PairBreakdownItem {
   expenseId: number;
   kind: LedgerExpenseKind;
+  matchId: number | null;
   title: string;
   createdAt: string;
   remainder: number;
@@ -47,6 +49,7 @@ export function pairBreakdownItems(
       items.push({
         expenseId: expense.id,
         kind: expense.kind,
+        matchId: expense.matchId,
         title: expense.title,
         createdAt: expense.createdAt,
         remainder,
@@ -94,7 +97,17 @@ export default function BalanceBreakdown({ items, currency }: BalanceBreakdownPr
         {items.map((item) => (
           <li key={item.expenseId} className="flex items-start justify-between gap-2 text-xs">
             <div className="min-w-0">
-              <p className="font-medium text-gray-800 dark:text-gray-200 truncate">{item.title}</p>
+              {item.matchId != null ? (
+                <Link
+                  href={`/matches/${item.matchId}`}
+                  className="block truncate font-medium text-gray-800 dark:text-gray-200 hover:underline underline-offset-2"
+                  aria-label={`${t("balances.openMatch")}: ${item.title}`}
+                >
+                  {item.title}
+                </Link>
+              ) : (
+                <p className="truncate font-medium text-gray-800 dark:text-gray-200">{item.title}</p>
+              )}
               <p className="text-gray-500 dark:text-gray-400">
                 {kindLabel(item.kind)} · {formatDate(item.createdAt, locale)}
               </p>

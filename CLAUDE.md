@@ -215,6 +215,8 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/api/ledger/record` | Route | `POST` record match expenses on the ledger (then Splitwise if bridge on) |
 | `/api/ledger/import` | Route | `POST` import Splitwise nets as `OPENING` balances (PIN; bridge on) |
 | `/api/ledger/settle` | Route | `POST` mark a simplified edge paid (PIN, FIFO) |
+| `/api/ledger/expenses/[id]` | Route | `DELETE` rollback (delete) a ledger expense (PIN); resets match `synced` so it can be recorded again |
+| `/api/ledger/expenses/[id]/reset-paid` | Route | `POST` clear mark-paid on an expense (PIN) |
 | `/api/members` | Route | `GET` list, `POST` create |
 | `/api/members/[id]` | Route | `PUT` update, `DELETE` remove |
 | `/api/matches` | Route | `GET` list, `POST` create |

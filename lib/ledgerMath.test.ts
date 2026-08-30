@@ -21,13 +21,17 @@ describe("remaindersToEdges", () => {
 });
 
 describe("ledgerSimplifiedEdges", () => {
-  it("nets A↔B and can collapse A→B→C", () => {
+  it("nets A↔B but keeps A→B and B→C as direct pairs so both can be marked paid", () => {
     const edges = ledgerSimplifiedEdges([
       { debtorId: 1, creditorId: 2, remainder: 10 },
       { debtorId: 2, creditorId: 1, remainder: 4 },
       { debtorId: 2, creditorId: 3, remainder: 6 },
     ]);
-    assert.deepEqual(edges, [{ debtorId: 1, creditorId: 3, amount: 6 }]);
+    const sorted = [...edges].sort((a, b) => a.debtorId - b.debtorId);
+    assert.deepEqual(sorted, [
+      { debtorId: 1, creditorId: 2, amount: 6 },
+      { debtorId: 2, creditorId: 3, amount: 6 },
+    ]);
   });
 
   it("does not invent edges across disconnected people", () => {
@@ -36,6 +40,29 @@ describe("ledgerSimplifiedEdges", () => {
       { debtorId: 3, creditorId: 4, remainder: 5 },
     ]);
     assert.equal(edges.length, 2);
+  });
+
+  it("keeps court shares and shuttlecock remittance as direct pairs", () => {
+    const edges = ledgerSimplifiedEdges([
+      { debtorId: 3, creditorId: 1, remainder: 7.94 },
+      { debtorId: 2, creditorId: 1, remainder: 7.94 },
+      { debtorId: 1, creditorId: 2, remainder: 37.5 },
+    ]);
+    const byPair = new Map(edges.map((e) => [`${e.debtorId}:${e.creditorId}`, e.amount]));
+    assert.equal(byPair.get("3:1"), 7.94);
+    assert.equal(byPair.get("1:2"), 29.56);
+    assert.equal(byPair.has("3:2"), false);
+  });
+
+  it("rounds float remainders to cents", () => {
+    const edges = ledgerSimplifiedEdges([
+      { debtorId: 8, creditorId: 1, remainder: 7.939999999999999 },
+      { debtorId: 1, creditorId: 2, remainder: 37.5 },
+    ]);
+    assert.deepEqual(
+      edges.find((e) => e.debtorId === 8),
+      { debtorId: 8, creditorId: 1, amount: 7.94 }
+    );
   });
 });
 
