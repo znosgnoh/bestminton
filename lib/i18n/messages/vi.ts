@@ -318,6 +318,7 @@ const vi: Messages = {
     shuttlecock: "Cầu",
     bridgeOnHint: "Splitwise vẫn đang kết nối — số dư ở đây nên khớp phần còn lại trên nhóm.",
     dbRequired: "Sổ tiền sân cần kết nối cơ sở dữ liệu.",
+    openMatch: "Mở trận",
   },
   profile: {
     backToLeaderboard: "Bảng xếp hạng",
@@ -360,6 +361,23 @@ const vi: Messages = {
     cloneTitle: "Nhân bản trận",
     cloneHint:
       "Đã copy tên, sân, giờ và lịch tuần. Chọn ngày mới — người chơi không được copy.",
+    transactions: "Giao dịch sổ",
+    transactionsHint:
+      "Mọi dòng sân, cầu và số dư đầu. Rollback chỉ xóa trên Bestminton — Splitwise không đổi. Sau đó có thể ghi lại trận từ settle.",
+    transactionsEmpty: "Chưa có giao dịch trên sổ.",
+    transactionsLoadError: "Không tải được giao dịch sổ.",
+    rollback: "Rollback",
+    rollbackConfirmTitle: "Rollback giao dịch này?",
+    rollbackConfirm:
+      "Xóa dòng sổ và mọi đánh dấu đã trả trên đó. Splitwise không đổi. Nếu Splitwise vẫn kết nối, ghi lại trận sẽ tạo expense mới trên Splitwise.",
+    rollbackOk: "Đã xóa giao dịch khỏi sổ.",
+    resetPaid: "Xóa đã trả",
+    resetPaidConfirmTitle: "Xóa đánh dấu đã trả?",
+    resetPaidConfirm: "Mọi phần trên dòng này trở lại chưa trả. Giao dịch vẫn còn trên sổ.",
+    resetPaidOk: "Đã xóa đánh dấu đã trả.",
+    statusOpen: "Đang mở",
+    statusSettled: "Đã tất toán",
+    paidProgress: "{paid}/{total} phần đã trả",
   },
 };
 

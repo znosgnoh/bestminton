@@ -77,8 +77,8 @@ export function formatDatabaseError(err: unknown): string {
     if (err.code === "P1001") {
       return "Cannot reach the database server. Check POSTGRES_PRISMA_URL and network access.";
     }
-    if (err.code === "P2024") {
-      return "Database is busy or waking up. Wait a moment and refresh — if it persists, restart the dev server.";
+    if (err.code === "P2024" || err.code === "P2028") {
+      return "Database is busy or waking up. Wait a moment and try again.";
     }
   }
 
@@ -108,7 +108,7 @@ export function logDatabaseError(context: string, err: unknown): void {
 
 function isTransientDbError(err: unknown): boolean {
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    return err.code === "P1001" || err.code === "P2024";
+    return err.code === "P1001" || err.code === "P2024" || err.code === "P2028";
   }
   if (err instanceof Error) {
     return /connection pool|can't reach database|timed out/i.test(err.message);
@@ -116,8 +116,12 @@ function isTransientDbError(err: unknown): boolean {
   return false;
 }
 
-/** Retry on Neon cold start / brief pool exhaustion. */
-export async function withDbRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+/** Retry on Neon cold start / brief pool exhaustion / stale PgBouncer transactions. */
+export async function withDbRetry<T>(
+  fn: () => Promise<T>,
+  attempts = 3,
+  delayMs = 2000
+): Promise<T> {
   let lastError: unknown;
   for (let i = 0; i < attempts; i++) {
     try {
@@ -125,7 +129,9 @@ export async function withDbRetry<T>(fn: () => Promise<T>, attempts = 3): Promis
     } catch (err) {
       lastError = err;
       if (i === attempts - 1 || !isTransientDbError(err)) throw err;
-      await new Promise((r) => setTimeout(r, 2000 * (i + 1)));
+      if (delayMs > 0) {
+        await new Promise((r) => setTimeout(r, delayMs * (i + 1)));
+      }
     }
   }
   throw lastError;

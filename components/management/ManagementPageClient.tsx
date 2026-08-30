@@ -3,6 +3,7 @@
 import MembersSection from "@/components/management/MembersSection";
 import MatchesSection from "@/components/management/MatchesSection";
 import ChallengesSection from "@/components/management/ChallengesSection";
+import LedgerTransactionsSection from "@/components/management/LedgerTransactionsSection";
 import ManagementGate from "@/components/management/ManagementGate";
 import type { MemberDTO, MatchDTO, ChallengeDTO } from "@/lib/types";
 
@@ -47,6 +48,7 @@ export default function ManagementPageClient({
           dbAvailable={dbAvailable}
           shuttlecockFeePerHour={shuttlecockFeePerHour}
         />
+        <LedgerTransactionsSection dbAvailable={dbAvailable} />
       </div>
     </ManagementGate>
   );

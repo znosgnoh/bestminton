@@ -376,6 +376,7 @@ export interface LedgerEdgeDTO {
 export interface LedgerBreakdownItemDTO {
   expenseId: number;
   kind: LedgerExpenseKind;
+  matchId: number | null;
   title: string;
   createdAt: string;
   remainder: number;

@@ -2,7 +2,13 @@ import { Prisma } from "@prisma/client";
 import { calculateShares } from "./calculations";
 import { getCurrencyCode } from "./currency";
 import { db } from "./db";
-import { openingPairsFromNets, parseGroupMemberNet } from "./ledgerOpening";
+import { withDbRetry } from "./dbHealth";
+import {
+  netsFromRemainders,
+  openingPairsFromNets,
+  parseGroupMemberNet,
+  subtractLedgerNetsFromSplitwise,
+} from "./ledgerOpening";
 import {
   applyMarkPaidFifo,
   expenseStatus,
@@ -62,6 +68,8 @@ const MATCH_LEDGER_INCLUDE = {
 } as const;
 
 type SplitwiseMemberRef = { id: number; name: string; splitwiseId: number | null };
+
+const NEON_TX_OPTIONS = { maxWait: 10_000, timeout: 20_000 } as const;
 
 type ExpenseWithRelations = Prisma.ExpenseGetPayload<{ include: typeof EXPENSE_INCLUDE }>;
 type LedgerTx = Prisma.TransactionClient;
@@ -657,7 +665,8 @@ export async function recordMatchExpenses(
 
   const { recipientMemberId, recipient } = await resolveShuttlecockRecipient(match, split.shuttlecockFee);
 
-  const { matchExpense, shuttlecockExpense } = await db.$transaction(async (tx) => {
+  const { matchExpense, shuttlecockExpense } = await withDbRetry(() =>
+    db.$transaction(async (tx) => {
     const recordedMatch = await findOrCreateMatchExpense(tx, {
       matchId,
       title: matchTitle,
@@ -678,7 +687,8 @@ export async function recordMatchExpenses(
     });
 
     return { matchExpense: recordedMatch, shuttlecockExpense: recordedShuttlecock };
-  });
+  }, NEON_TX_OPTIONS)
+  );
 
   if (!isSplitwiseConfigured()) {
     return recordResponse(matchExpense, shuttlecockExpense, false, null);
@@ -783,34 +793,63 @@ export async function importOpeningBalances(): Promise<ImportOpeningBalancesResp
       continue;
     }
     if (Math.abs(net) < 0.005) {
-      skippedZero += 1;
       continue;
     }
     nets.push({ memberId, net });
   }
 
-  const pairs = openingPairsFromNets(nets);
-
-  await db.$transaction(async (tx) => {
-    await tx.expense.deleteMany({ where: { kind: "OPENING" } });
-    for (const pair of pairs) {
-      await tx.expense.create({
-        data: {
-          kind: "OPENING",
-          matchId: null,
-          title: "Splitwise opening",
-          amount: pair.amount,
-          currency,
-          paidByMemberId: pair.creditorId,
-          status: expenseStatus([{ owed: pair.amount, paid: 0 }]),
-          shares: {
-            create: [{ memberId: pair.debtorId, owed: pair.amount, paid: 0 }],
-          },
-        },
+  const existingRows = await db.expense.findMany({
+    where: { kind: { not: "OPENING" } },
+    select: {
+      paidByMemberId: true,
+      shares: { select: { memberId: true, owed: true } },
+    },
+  });
+  const ledgerRemainders: Array<{
+    debtorId: number;
+    creditorId: number;
+    remainder: number;
+  }> = [];
+  for (const expense of existingRows) {
+    for (const share of expense.shares) {
+      ledgerRemainders.push({
+        debtorId: share.memberId,
+        creditorId: expense.paidByMemberId,
+        remainder: fromCents(toCents(decimalToNumber(share.owed))),
       });
     }
-  });
+  }
+  const leftoverNets = subtractLedgerNetsFromSplitwise(
+    nets,
+    netsFromRemainders(ledgerRemainders)
+  );
 
+  skippedZero = leftoverNets.filter((n) => Math.abs(n.net) < 0.005).length;
+  const pairs = openingPairsFromNets(leftoverNets);
+
+  await withDbRetry(() =>
+    db.$transaction(async (tx) => {
+      await tx.expense.deleteMany({ where: { kind: "OPENING" } });
+      for (const pair of pairs) {
+        await tx.expense.create({
+          data: {
+            kind: "OPENING",
+            matchId: null,
+            title: "Splitwise opening",
+            amount: pair.amount,
+            currency,
+            paidByMemberId: pair.creditorId,
+            status: expenseStatus([{ owed: pair.amount, paid: 0 }]),
+            shares: {
+              create: [{ memberId: pair.debtorId, owed: pair.amount, paid: 0 }],
+            },
+          },
+        });
+      }
+    }, NEON_TX_OPTIONS)
+  );
+
+  revalidateMatchPages();
   return { created: pairs.length, skippedUnmapped, skippedZero };
 }
 
@@ -869,34 +908,108 @@ export async function markLedgerPaid(
     applyMarkPaidFifo(fifoShares, fromCents(applyCents)).map((s) => [s.id, s] as const)
   );
 
-  await db.$transaction(async (tx) => {
-    const touchedExpenseIds = new Set<number>();
-    for (const share of unpaid) {
-      const next = nextById.get(share.id);
-      if (!next) continue;
-      if (toCents(next.paid) === toCents(decimalToNumber(share.paid))) continue;
-      await tx.expenseShare.update({
-        where: { id: share.id },
-        data: { paid: next.paid },
-      });
-      touchedExpenseIds.add(share.expenseId);
-    }
+  await withDbRetry(() =>
+    db.$transaction(async (tx) => {
+      const touchedExpenseIds = new Set<number>();
+      for (const share of unpaid) {
+        const next = nextById.get(share.id);
+        if (!next) continue;
+        if (toCents(next.paid) === toCents(decimalToNumber(share.paid))) continue;
+        await tx.expenseShare.update({
+          where: { id: share.id },
+          data: { paid: next.paid },
+        });
+        touchedExpenseIds.add(share.expenseId);
+      }
 
-    for (const expenseId of touchedExpenseIds) {
-      const allShares = await tx.expenseShare.findMany({ where: { expenseId } });
+      for (const expenseId of touchedExpenseIds) {
+        const allShares = await tx.expenseShare.findMany({ where: { expenseId } });
+        await tx.expense.update({
+          where: { id: expenseId },
+          data: {
+            status: expenseStatus(
+              allShares.map((s) => ({
+                owed: decimalToNumber(s.owed),
+                paid: decimalToNumber(s.paid),
+              }))
+            ),
+          },
+        });
+      }
+    }, NEON_TX_OPTIONS)
+  );
+
+  return getLedgerSnapshot();
+}
+
+async function clearMatchLedgerFlags(
+  tx: LedgerTx,
+  matchId: number,
+  deletedKind: "MATCH" | "SHUTTLECOCK"
+): Promise<void> {
+  const remaining = await tx.expense.findMany({
+    where: { matchId, kind: { in: ["MATCH", "SHUTTLECOCK"] } },
+    select: { kind: true },
+  });
+  const stillHasShuttle = remaining.some((row) => row.kind === "SHUTTLECOCK");
+  await tx.match.update({
+    where: { id: matchId },
+    data: {
+      synced: false,
+      ...(deletedKind === "SHUTTLECOCK" || !stillHasShuttle
+        ? { shuttlecockRemitted: false }
+        : {}),
+    },
+  });
+}
+
+export async function resetLedgerExpensePaid(expenseId: number): Promise<LedgerSnapshotDTO> {
+  const expense = await db.expense.findUnique({
+    where: { id: expenseId },
+    select: { id: true, matchId: true },
+  });
+  if (!expense) {
+    throw new LedgerServiceError("NOT_FOUND", "Expense not found.");
+  }
+
+  await withDbRetry(() =>
+    db.$transaction(async (tx) => {
+      await tx.expenseShare.updateMany({
+        where: { expenseId },
+        data: { paid: 0 },
+      });
       await tx.expense.update({
         where: { id: expenseId },
-        data: {
-          status: expenseStatus(
-            allShares.map((s) => ({
-              owed: decimalToNumber(s.owed),
-              paid: decimalToNumber(s.paid),
-            }))
-          ),
-        },
+        data: { status: "OPEN" },
       });
-    }
-  });
+    }, NEON_TX_OPTIONS)
+  );
 
+  revalidateMatchPages(expense.matchId ?? undefined);
+  return getLedgerSnapshot();
+}
+
+export async function rollbackLedgerExpense(expenseId: number): Promise<LedgerSnapshotDTO> {
+  const expense = await db.expense.findUnique({
+    where: { id: expenseId },
+    select: { id: true, kind: true, matchId: true },
+  });
+  if (!expense) {
+    throw new LedgerServiceError("NOT_FOUND", "Expense not found.");
+  }
+
+  await withDbRetry(() =>
+    db.$transaction(async (tx) => {
+      await tx.expense.delete({ where: { id: expenseId } });
+      if (
+        expense.matchId != null &&
+        (expense.kind === "MATCH" || expense.kind === "SHUTTLECOCK")
+      ) {
+        await clearMatchLedgerFlags(tx, expense.matchId, expense.kind);
+      }
+    }, NEON_TX_OPTIONS)
+  );
+
+  revalidateMatchPages(expense.matchId ?? undefined);
   return getLedgerSnapshot();
 }

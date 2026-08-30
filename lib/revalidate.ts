@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 export function revalidateMatchPages(matchId?: number) {
   revalidatePath("/");
   revalidatePath("/management");
+  revalidatePath("/balances");
   if (matchId) revalidatePath(`/matches/${matchId}`);
 }
 
