@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdminPin } from "@/lib/adminPin";
-import { requireDatabase } from "@/lib/apiHelpers";
+import { requireDatabase, requireMemberPin } from "@/lib/apiHelpers";
 import { startChallenge } from "@/lib/challengeService";
 import { revalidateChallengePages } from "@/lib/revalidate";
 import type { StartChallengeRequest } from "@/lib/types";
@@ -28,12 +27,8 @@ export async function POST(
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const pinCheck = verifyAdminPin(body.pin);
-  if (!pinCheck.ok) {
-    const status = pinCheck.error === "missing" ? 403 : 401;
-    const message = pinCheck.error === "missing" ? "PIN required." : "Invalid PIN.";
-    return NextResponse.json({ error: message }, { status });
-  }
+  const pinDenied = requireMemberPin(body.pin);
+  if (pinDenied) return pinDenied;
 
   try {
     const result = await startChallenge(challengeId);

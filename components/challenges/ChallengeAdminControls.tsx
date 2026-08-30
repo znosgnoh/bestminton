@@ -6,7 +6,7 @@ import { useI18n } from "@/contexts/LocaleContext";
 import AdminPinModal from "@/components/ui/AdminPinModal";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import ResolveConfirmModal from "@/components/challenges/ResolveConfirmModal";
-import { useAdminPin } from "@/hooks/useAdminPin";
+import { useMemberPin } from "@/hooks/useMemberPin";
 import * as dataService from "@/lib/dataService";
 import type { ChallengeDTO, ChallengeSide } from "@/lib/types";
 
@@ -29,7 +29,7 @@ export default function ChallengeAdminControls({
   onUpdated,
 }: ChallengeAdminControlsProps) {
   const { t } = useI18n();
-  const { unlocked, pinRequired, unlock, getStoredPin } = useAdminPin();
+  const { unlocked, pinRequired, unlock, getStoredPin } = useMemberPin();
   const pendingActionRef = useRef<PendingAction>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 

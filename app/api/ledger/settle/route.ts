@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   databaseErrorResponse,
-  pinFromRequest,
-  requireAdminPin,
+  memberPinFromRequest,
+  requireMemberPin,
   requireDatabase,
 } from "@/lib/apiHelpers";
 import { LedgerServiceError, markLedgerPaid } from "@/lib/ledgerService";
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const pinDenied = requireAdminPin(pinFromRequest(request, body));
+  const pinDenied = requireMemberPin(memberPinFromRequest(request, body));
   if (pinDenied) return pinDenied;
 
   const debtorId = Number(body.debtorId);

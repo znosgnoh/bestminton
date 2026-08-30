@@ -10,7 +10,7 @@ import { useRegisterPullToRefresh } from "@/components/PullToRefresh";
 import AdminPinModal from "@/components/ui/AdminPinModal";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import PageLoader from "@/components/ui/PageLoader";
-import { useAdminPin } from "@/hooks/useAdminPin";
+import { useMemberPin } from "@/hooks/useMemberPin";
 import { useI18n } from "@/contexts/LocaleContext";
 import { formatCurrency } from "@/lib/currency";
 import * as dataService from "@/lib/dataService";
@@ -36,7 +36,7 @@ export default function BalancesPageClient({
 }: BalancesPageClientProps) {
   const { t } = useI18n();
   const router = useRouter();
-  const { unlocked, pinRequired, unlock } = useAdminPin();
+  const { unlocked, pinRequired, unlock } = useMemberPin();
   const [tab, setTab] = useState<Tab>("my");
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [members, setMembers] = useState(initialMembers);
@@ -231,7 +231,7 @@ export default function BalancesPageClient({
 
       <AdminPinModal
         open={showPinModal}
-        title={t("common.enterPin")}
+        title={t("common.enterMemberPin")}
         onSubmit={handlePinSubmit}
         onCancel={() => {
           setShowPinModal(false);

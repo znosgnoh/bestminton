@@ -1,6 +1,7 @@
 // Client-side only. Routes data operations to the real API or local IndexedDB.
 import { allowsIndexedDbFallback } from "./dbConfig";
 import { withAdminPin, adminPinHeaders } from "./adminPinClient";
+import { withMemberPin, memberPinHeaders } from "./memberPinClient";
 import * as localDb from "./localDb";
 import type {
   MemberDTO,
@@ -359,8 +360,8 @@ export function createBulkChallenges(
 ): Promise<CreateBulkChallengesResponse> {
   return challengeFetch<CreateBulkChallengesResponse>("/api/challenges/bulk", {
     method: "POST",
-    headers: jsonHeaders(),
-    body: JSON.stringify(withAdminPin(data)),
+    headers: { ...JSON_HEADERS, ...memberPinHeaders() },
+    body: JSON.stringify(withMemberPin(data)),
   });
 }
 
@@ -478,6 +479,18 @@ export function getPinRequired(): Promise<{ pinRequired: boolean }> {
   return challengeFetch<{ pinRequired: boolean }>("/api/admin/verify-pin");
 }
 
+export function verifyMemberPin(pin: string): Promise<{ ok: boolean }> {
+  return challengeFetch<{ ok: boolean }>("/api/member/verify-pin", {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ pin }),
+  });
+}
+
+export function getMemberPinRequired(): Promise<{ pinRequired: boolean }> {
+  return challengeFetch<{ pinRequired: boolean }>("/api/member/verify-pin");
+}
+
 export function resetAllElo(pin?: string): Promise<ResetEloResult> {
   return challengeFetch<ResetEloResult>("/api/admin/reset-elo", {
     method: "POST",
@@ -537,8 +550,8 @@ export function settleDebt(data: {
 }): Promise<SettleDebtResult> {
   return challengeFetch<SettleDebtResult>("/api/debts/settle", {
     method: "POST",
-    headers: JSON_HEADERS,
-    body: JSON.stringify(data),
+    headers: { ...JSON_HEADERS, ...memberPinHeaders() },
+    body: JSON.stringify(withMemberPin(data)),
   });
 }
 
@@ -571,8 +584,8 @@ export function markLedgerPaid(
 ): Promise<LedgerSnapshotDTO> {
   return challengeFetch<LedgerSnapshotDTO>("/api/ledger/settle", {
     method: "POST",
-    headers: jsonHeaders(),
-    body: JSON.stringify(withAdminPin({ debtorId, creditorId, amount })),
+    headers: { ...JSON_HEADERS, ...memberPinHeaders() },
+    body: JSON.stringify(withMemberPin({ debtorId, creditorId, amount })),
   });
 }
 

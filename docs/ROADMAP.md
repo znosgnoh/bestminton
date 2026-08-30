@@ -8,7 +8,7 @@ Backlog of potential next features, roughly ordered by value. None are committed
 
 ### US-33: Captain PIN for Management Page — **shipped**
 
-`CAPTAIN_PIN` (or legacy `ADMIN_PIN`) gates `/management` via `ManagementGate` and protects captain mutating APIs (members, matches, settlement, Splitwise, avatar upload, challenge admin). PIN is sent from the client via JSON `pin` or `X-Captain-Pin` after unlock. Unset env var = no gate (dev convenience). See `CLAUDE.md` §8–9.
+`CAPTAIN_PIN` (or legacy `ADMIN_PIN`) gates `/management` via `ManagementGate` and protects captain mutating APIs (members, matches, settlement, Splitwise, avatar upload, ledger transactions). `MEMBER_PIN` (default `12345`) gates balances mark-paid, nước cam settle, and kèo start/resolve/bulk. Captain PIN is sent via JSON `pin` or `X-Captain-Pin`; member PIN via `pin` or `X-Member-Pin`. Unset `CAPTAIN_PIN` = no captain gate; empty `MEMBER_PIN` = no member gate. See `CLAUDE.md` §8–9.
 
 ---
 

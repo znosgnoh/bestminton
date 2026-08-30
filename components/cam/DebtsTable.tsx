@@ -6,7 +6,7 @@ import SettleAmountModal from "@/components/cam/SettleAmountModal";
 import AdminPinModal from "@/components/ui/AdminPinModal";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
-import { useAdminPin } from "@/hooks/useAdminPin";
+import { useMemberPin } from "@/hooks/useMemberPin";
 import { useI18n } from "@/contexts/LocaleContext";
 import { DRINK_LABEL, formatDrinkAmount } from "@/lib/constants";
 import {
@@ -255,7 +255,7 @@ export default function DebtsTable({
   onSettled,
 }: DebtsTableProps) {
   const { t } = useI18n();
-  const { unlocked, pinRequired, unlock, getStoredPin } = useAdminPin();
+  const { unlocked, pinRequired, unlock, getStoredPin } = useMemberPin();
   const [pending, setPending] = useState<PendingSettle | null>(null);
   const [amountPrompt, setAmountPrompt] = useState<AmountPrompt | null>(null);
   const [showPinModal, setShowPinModal] = useState(false);

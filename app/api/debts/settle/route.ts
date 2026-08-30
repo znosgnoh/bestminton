@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdminPin } from "@/lib/adminPin";
-import { requireDatabase } from "@/lib/apiHelpers";
+import { requireDatabase, requireMemberPin } from "@/lib/apiHelpers";
 import { db } from "@/lib/db";
 import { settleDebtBetween } from "@/lib/drinkDebt";
 import { revalidateDebtPages } from "@/lib/revalidate";
@@ -35,12 +34,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const pinCheck = verifyAdminPin(body.pin);
-  if (!pinCheck.ok) {
-    const status = pinCheck.error === "missing" ? 403 : 401;
-    const message = pinCheck.error === "missing" ? "PIN required." : "Invalid PIN.";
-    return NextResponse.json({ error: message }, { status });
-  }
+  const pinDenied = requireMemberPin(body.pin);
+  if (pinDenied) return pinDenied;
 
   try {
     const [debtor, creditor] = await Promise.all([

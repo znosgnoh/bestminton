@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdminPin } from "@/lib/adminPin";
-import { databaseErrorResponse, requireDatabase } from "@/lib/apiHelpers";
+import { databaseErrorResponse, requireDatabase, requireMemberPin } from "@/lib/apiHelpers";
 import { db } from "@/lib/db";
 import { CHALLENGE_FULL_INCLUDE } from "@/lib/challengeIncludes";
 import { serializeChallenge } from "@/lib/challengeSerialize";
@@ -225,12 +224,8 @@ export async function PUT(
     return NextResponse.json({ error: "winnerSide must be A or B." }, { status: 400 });
   }
 
-  const pinCheck = verifyAdminPin(body.pin);
-  if (!pinCheck.ok) {
-    const status = pinCheck.error === "missing" ? 403 : 401;
-    const message = pinCheck.error === "missing" ? "PIN required." : "Invalid PIN.";
-    return NextResponse.json({ error: message }, { status });
-  }
+  const pinDenied = requireMemberPin(body.pin);
+  if (pinDenied) return pinDenied;
 
   try {
     const updated = await adminEditChallengeWinner(challengeId, body.winnerSide);
@@ -282,12 +277,8 @@ export async function DELETE(
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const pinCheck = verifyAdminPin(body.pin);
-  if (!pinCheck.ok) {
-    const status = pinCheck.error === "missing" ? 403 : 401;
-    const message = pinCheck.error === "missing" ? "PIN required." : "Invalid PIN.";
-    return NextResponse.json({ error: message }, { status });
-  }
+  const pinDenied = requireMemberPin(body.pin);
+  if (pinDenied) return pinDenied;
 
   try {
     const challenge = await db.challenge.findUnique({
