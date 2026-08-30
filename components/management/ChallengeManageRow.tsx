@@ -7,7 +7,7 @@ import AdminPinModal from "@/components/ui/AdminPinModal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import StatusBadge from "@/components/ui/StatusBadge";
-import { useAdminPin } from "@/hooks/useAdminPin";
+import { useMemberPin } from "@/hooks/useMemberPin";
 import { DRINK_LABEL } from "@/lib/constants";
 import * as dataService from "@/lib/dataService";
 import type { ChallengeDTO, ChallengeSide } from "@/lib/types";
@@ -44,7 +44,7 @@ export default function ChallengeManageRow({
   onUpdated,
   onDeleted,
 }: ChallengeManageRowProps) {
-  const { unlocked, pinRequired, unlock, getStoredPin } = useAdminPin();
+  const { unlocked, pinRequired, unlock, getStoredPin } = useMemberPin();
   const [editing, setEditing] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [showPinModal, setShowPinModal] = useState(false);
@@ -246,8 +246,8 @@ export default function ChallengeManageRow({
         open={showPinModal}
         title={
           pendingAction?.type === "delete"
-            ? "PIN to Delete"
-            : "PIN to Edit Winner"
+            ? "Member PIN to Delete"
+            : "Member PIN to Edit Winner"
         }
         onSubmit={handlePinSubmit}
         onCancel={() => {

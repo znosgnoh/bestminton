@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminPin } from "@/lib/adminPin";
+import { verifyMemberPin } from "@/lib/memberPin";
 import { formatDatabaseError, logDatabaseError } from "@/lib/dbHealth";
 import { isDatabaseConfigured } from "@/lib/dbConfig";
 
@@ -10,14 +11,29 @@ export function pinFromRequest(
   return body?.pin ?? request.headers.get("x-captain-pin") ?? undefined;
 }
 
+export function memberPinFromRequest(
+  request: NextRequest,
+  body?: { pin?: string }
+): string | undefined {
+  return body?.pin ?? request.headers.get("x-member-pin") ?? undefined;
+}
+
+function pinCheckResponse(
+  pinCheck: { ok: true } | { ok: false; error: "missing" | "invalid" }
+) {
+  if (pinCheck.ok) return null;
+  const status = pinCheck.error === "missing" ? 403 : 401;
+  const message = pinCheck.error === "missing" ? "PIN required." : "Invalid PIN.";
+  return NextResponse.json({ error: message }, { status });
+}
+
 export function requireAdminPin(pin?: string) {
-  const pinCheck = verifyAdminPin(pin);
-  if (!pinCheck.ok) {
-    const status = pinCheck.error === "missing" ? 403 : 401;
-    const message = pinCheck.error === "missing" ? "PIN required." : "Invalid PIN.";
-    return NextResponse.json({ error: message }, { status });
-  }
-  return null;
+  return pinCheckResponse(verifyAdminPin(pin));
+}
+
+/** Balances settle, cam settle, and kèo admin actions. */
+export function requireMemberPin(pin?: string) {
+  return pinCheckResponse(verifyMemberPin(pin));
 }
 
 /** Past-match registration edits require captain PIN when CAPTAIN_PIN is set. */

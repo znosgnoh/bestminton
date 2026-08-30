@@ -3,8 +3,8 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import {
   databaseErrorResponse,
-  pinFromRequest,
-  requireAdminPin,
+  memberPinFromRequest,
+  requireMemberPin,
   requireDatabase,
 } from "@/lib/apiHelpers";
 import { buildBulkSinglesRows, parseBulkChallengeInput } from "@/lib/bulkChallenges";
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const pinDenied = requireAdminPin(pinFromRequest(request, body));
+  const pinDenied = requireMemberPin(memberPinFromRequest(request, body));
   if (pinDenied) return pinDenied;
 
   const parsed = parseBulkChallengeInput(body);

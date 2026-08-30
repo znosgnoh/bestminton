@@ -8,7 +8,7 @@ import ErrorBanner from "@/components/ui/ErrorBanner";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
 import PointsToWinToggle from "@/components/challenges/PointsToWinToggle";
 import { useI18n } from "@/contexts/LocaleContext";
-import { useAdminPin } from "@/hooks/useAdminPin";
+import { useMemberPin } from "@/hooks/useMemberPin";
 import {
   BULK_MAX_MEMBERS,
   BULK_MAX_PER_PAIR,
@@ -29,7 +29,7 @@ interface BulkChallengeFormProps {
 
 export default function BulkChallengeForm({ members, onCreated }: BulkChallengeFormProps) {
   const { t } = useI18n();
-  const { unlocked, pinRequired, unlock, getStoredPin } = useAdminPin();
+  const { unlocked, pinRequired, unlock, getStoredPin } = useMemberPin();
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
   const [perPair, setPerPair] = useState(BULK_MIN_PER_PAIR);
   const [pointsToWin, setPointsToWin] = useState<PointsToWin>(DEFAULT_POINTS_TO_WIN);

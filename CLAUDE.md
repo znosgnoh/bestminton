@@ -4,9 +4,9 @@
 
 A full-stack web application that helps a badminton team manage their sessions end-to-end:
 
-- **Captains** access `/management` directly (not linked in the nav) to register members, schedule matches (single or recurring weekly), and manage **kèo** (friendly Elo challenges with optional drink-token betting). When `CAPTAIN_PIN` is set, the management UI and captain-only API mutations require that PIN (see §8–9).
-- **Players** visit the homepage, see upcoming matches, and self-register by tapping their avatar. They can also add guests with an optional name and Full / Half-time playtime flag. From **Kèo** (`/challenges`) they can view active challenges, place bets while a kèo is pending, and check the Elo leaderboard.
-- **After a match**, the captain opens the match from `/management` → past match row → clipboard icon, enters the total court cost, hours played, and who paid. The app calculates each player's weighted share and syncs the expense directly to a Splitwise group (PIN required on those APIs when `CAPTAIN_PIN` is set).
+- **Captains** access `/management` directly (not linked in the nav) to register members, schedule matches (single or recurring weekly), and manage settlement / ledger transactions. When `CAPTAIN_PIN` is set, the management UI and captain-only API mutations require that PIN (see §8–9).
+- **Players** visit the homepage, see upcoming matches, and self-register by tapping their avatar. They can also add guests with an optional name and Full / Half-time playtime flag. From **Kèo** (`/challenges`) they can view active challenges, place bets while a kèo is pending, and check the Elo leaderboard. Mutating kèo actions (start / resolve / bulk), balances mark-paid, and nước cam settle use the shared **member PIN** (`MEMBER_PIN`, default `12345`).
+- **After a match**, the captain opens the match from `/management` → past match row → clipboard icon, enters the total court cost, hours played, and who paid. The app calculates each player's weighted share and syncs the expense directly to a Splitwise group (captain PIN required on those APIs when `CAPTAIN_PIN` is set).
 
 ---
 
@@ -202,7 +202,8 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/leaderboard` | Page | Elo rankings |
 | `/balances` | Page | Court-money ledger — My / Group tabs (Sổ) |
 | `/api/health` | Route | `GET` DB availability check |
-| `/api/admin/verify-pin` | Route | `POST` verify captain PIN (client gate) |
+| `/api/admin/verify-pin` | Route | `GET` captain PIN required?, `POST` verify captain PIN (client gate) |
+| `/api/member/verify-pin` | Route | `GET` member PIN required?, `POST` verify member PIN (balances / cam / kèo) |
 | `/api/challenges` | Route | `GET` list (purges stale pending), `POST` create |
 | `/api/challenges/[id]` | Route | `GET` detail, `PATCH` notes/21-15/drink/YouTube, `PUT` edit winner, `DELETE` |
 | `/api/cron/stale-challenges` | Route | `GET` daily cron (Hobby) — delete `PENDING` kèo older than 3 days |
@@ -228,7 +229,9 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/api/splitwise/expense` | Route | `POST` thin PIN + `matchId` wrapper around ledger record (returns 502 if Splitwise fails); **clients use `/api/ledger/record`** |
 | `/api/upload/avatar` | Route | `POST` upload member avatar (JPG/PNG, max 2MB) to Vercel Blob |
 
-**Captain PIN on APIs:** When `CAPTAIN_PIN` (or legacy `ADMIN_PIN`) is set, mutating captain routes require the PIN in the JSON body (`pin`) or `X-Captain-Pin` header. This includes member/match CRUD, settlement `PUT` on `/api/matches/[id]`, ledger record/import/mark-paid, Splitwise sync/import, avatar upload, and challenge admin actions. `dataService` attaches the stored session PIN via `lib/adminPinClient.ts`. Read-only routes (e.g. `GET /api/members`) stay open.
+**Captain PIN on APIs:** When `CAPTAIN_PIN` (or legacy `ADMIN_PIN`) is set, mutating captain routes require the PIN in the JSON body (`pin`) or `X-Captain-Pin` header. This includes member/match CRUD, settlement `PUT` on `/api/matches/[id]`, ledger record/import/rollback/reset-paid, Splitwise sync/import, avatar upload, and Elo reset. `dataService` attaches the stored session PIN via `lib/adminPinClient.ts`. Read-only routes (e.g. `GET /api/members`) stay open.
+
+**Member PIN on APIs:** `MEMBER_PIN` defaults to `12345` when unset (set explicitly empty to disable). Mutating member routes require it via JSON `pin` or `X-Member-Pin`: ledger mark-paid (`POST /api/ledger/settle`), drink settle (`POST /api/debts/settle`), and kèo start/resolve/edit/delete/bulk. Client unlock lives in separate `sessionStorage` keys via `lib/memberPinClient.ts` / `hooks/useMemberPin.ts`.
 
 ---
 
@@ -300,6 +303,10 @@ BLOB_READ_WRITE_TOKEN=
 CAPTAIN_PIN=
 # ADMIN_PIN=          # legacy alias for CAPTAIN_PIN
 
+# Member PIN (balances mark-paid, nước cam settle, kèo start/resolve/bulk; default 12345 when unset)
+MEMBER_PIN=12345
+# MEMBER_PIN=          # empty = disable member PIN gate (local convenience)
+
 # Optional — Vercel Cron Authorization: Bearer CRON_SECRET for GET /api/cron/stale-challenges
 CRON_SECRET=
 ```
@@ -311,7 +318,8 @@ CRON_SECRET=
 ## 9. Key Implementation Notes
 
 - **Dual storage:** `lib/dataService.ts` calls `/api/health` on first use; if DB is unavailable it falls back to `lib/localDb.ts` (IndexedDB). All mutations go through `dataService.*`.
-- **Management access:** `/management` is intentionally not linked in the nav header. It is accessible by typing the URL directly. `ManagementGate` prompts for `CAPTAIN_PIN` when the env var is set; unlock state and PIN live in `sessionStorage` (`lib/adminPinClient.ts`, `hooks/useAdminPin.ts`). Server routes use `requireAdminPin` in `lib/apiHelpers.ts`. If `CAPTAIN_PIN` is unset, no gate and APIs accept mutations without a PIN (local dev convenience).
+- **Management access:** `/management` is intentionally not linked in the nav header. It is accessible by typing the URL directly. `ManagementGate` prompts for `CAPTAIN_PIN` when the env var is set; unlock state and PIN live in `sessionStorage` (`lib/adminPinClient.ts`, `hooks/useAdminPin.ts`). Server routes use `requireAdminPin` in `lib/apiHelpers.ts`. If `CAPTAIN_PIN` is unset, no captain gate and captain APIs accept mutations without a PIN (local dev convenience).
+- **Member PIN:** Separate from the captain PIN. Defaults to `12345` (`MEMBER_PIN`). Used for balances Paid, cam settle / full ledger, and kèo start/resolve/edit/delete/bulk (`requireMemberPin`, `useMemberPin`). Unlocking captain management does not unlock member actions.
 - **Settlement URL:** The Settle section (`SettleForm`) only renders when `?manage=1` is present in the URL — enforced at the server page level. Saving settlement or recording the ledger (`dataService.recordMatchLedger`) sends the stored captain PIN when configured. Bridge on dual-writes Splitwise; bridge off records the ledger only.
 - **Kèo copy:** Challenge UI uses Vietnamese **kèo** labels in the product; routes remain `/challenges` for URLs.
 - **Recurring matches:** Creating a recurring match auto-generates instances for the next 8 weeks at the same day/time.
