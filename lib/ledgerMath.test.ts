@@ -64,6 +64,25 @@ describe("ledgerSimplifiedEdges", () => {
       { debtorId: 8, creditorId: 1, amount: 7.94 }
     );
   });
+
+  it("drops pairs that cancel exactly (shuttlecock vs match shares)", () => {
+    // Production SonHo ↔ phương: $45 shuttlecock offset by $45 of match remainders.
+    // Float sum left ~1e-15 and used to show SonHo → phương · S$0.00 with a $45 breakdown.
+    const edges = ledgerSimplifiedEdges([
+      { debtorId: 8, creditorId: 1, remainder: 1.58 },
+      { debtorId: 8, creditorId: 1, remainder: 15.88 },
+      { debtorId: 1, creditorId: 8, remainder: 45 },
+      { debtorId: 8, creditorId: 1, remainder: 8.52 },
+      { debtorId: 8, creditorId: 1, remainder: 7.79 },
+      { debtorId: 8, creditorId: 1, remainder: 4.88 },
+      { debtorId: 8, creditorId: 1, remainder: 6.35 },
+    ]);
+    assert.equal(
+      edges.filter((e) => (e.debtorId === 1 && e.creditorId === 8) || (e.debtorId === 8 && e.creditorId === 1))
+        .length,
+      0
+    );
+  });
 });
 
 describe("applyMarkPaidFifo", () => {

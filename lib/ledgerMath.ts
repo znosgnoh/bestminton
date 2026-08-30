@@ -39,10 +39,12 @@ export function remaindersToEdges(items: LedgerRemainder[]): DebtEdge[] {
  * shuttlecock remittance would otherwise invent unpayable “via other players” rows.
  */
 export function ledgerSimplifiedEdges(items: LedgerRemainder[]): DebtEdge[] {
-  return netBilateralDebts(remaindersToEdges(items)).map((edge) => ({
-    ...edge,
-    amount: fromCents(toCents(edge.amount)),
-  }));
+  return netBilateralDebts(remaindersToEdges(items))
+    .map((edge) => ({
+      ...edge,
+      amount: fromCents(toCents(edge.amount)),
+    }))
+    .filter((edge) => edge.amount > 0);
 }
 
 export function applyMarkPaidFifo(shares: FifoShare[], amount: number): FifoShare[] {
