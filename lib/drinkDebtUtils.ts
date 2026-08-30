@@ -2,25 +2,28 @@ export type DebtEdge = { debtorId: number; creditorId: number; amount: number };
 
 /** Net bilateral debts between each pair: if A owes B 5 and B owes A 2, result is A owes B 3. */
 export function netBilateralDebts(debts: Array<DebtEdge>): Array<DebtEdge> {
-  const pairNet = new Map<string, number>();
+  // Accumulate in integer cents so equal opposite money debts cancel cleanly
+  // (e.g. 45.00 vs 1.58+15.88+… must not leave float dust like 1e-15).
+  const pairNetCents = new Map<string, number>();
 
   for (const d of debts) {
-    if (d.amount <= 0 || d.debtorId === d.creditorId) continue;
+    const cents = Math.round(d.amount * 100);
+    if (cents <= 0 || d.debtorId === d.creditorId) continue;
     const low = Math.min(d.debtorId, d.creditorId);
     const high = Math.max(d.debtorId, d.creditorId);
     const key = `${low}:${high}`;
-    const signed = d.debtorId === low ? d.amount : -d.amount;
-    pairNet.set(key, (pairNet.get(key) ?? 0) + signed);
+    const signed = d.debtorId === low ? cents : -cents;
+    pairNetCents.set(key, (pairNetCents.get(key) ?? 0) + signed);
   }
 
   const result: Array<DebtEdge> = [];
-  for (const [key, net] of pairNet) {
-    if (net === 0) continue;
+  for (const [key, netCents] of pairNetCents) {
+    if (netCents === 0) continue;
     const [low, high] = key.split(":").map(Number);
-    if (net > 0) {
-      result.push({ debtorId: low, creditorId: high, amount: net });
+    if (netCents > 0) {
+      result.push({ debtorId: low, creditorId: high, amount: netCents / 100 });
     } else {
-      result.push({ debtorId: high, creditorId: low, amount: -net });
+      result.push({ debtorId: high, creditorId: low, amount: -netCents / 100 });
     }
   }
 

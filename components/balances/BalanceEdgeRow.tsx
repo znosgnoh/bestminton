@@ -27,7 +27,7 @@ export default function BalanceEdgeRow({
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const items = pairBreakdownItems(expenses, edge.debtorId, edge.creditorId);
-  const canPay = items.length > 0;
+  const canPay = edge.amount > 0 && items.length > 0;
   const money = formatCurrency(edge.amount, currency);
 
   return (
