@@ -346,6 +346,9 @@ const en = {
     courtFee: "Court {amount}",
     shuttlecockFee: "Shuttlecock {amount}",
     remittance: "{from} → {to} shuttlecock {amount}",
+    emailNotifications: "Email notifications",
+    emailPrefError: "Could not update email preference.",
+    emailPrefPinTitle: "Enter member PIN",
   },
   management: {
     title: "Management",

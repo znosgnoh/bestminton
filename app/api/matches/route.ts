@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
+import { deferNotification } from "@/lib/email/defer";
+import { notifyMatchCreated } from "@/lib/email/events";
 import { MATCH_FULL_INCLUDE, MATCH_LIST_INCLUDE } from "@/lib/prismaIncludes";
 import { revalidateMatchPages } from "@/lib/revalidate";
 import { toDTO } from "@/lib/serialize";
@@ -15,6 +17,12 @@ function addDays(date: Date, days: number): Date {
   const d = new Date(date);
   d.setDate(d.getDate() + days);
   return d;
+}
+
+function nearestMatch<T extends { id: number; scheduledAt: Date }>(matches: T[]): T {
+  return matches.reduce((a, b) =>
+    a.scheduledAt.getTime() <= b.scheduledAt.getTime() ? a : b
+  );
 }
 
 export async function GET() {
@@ -63,6 +71,7 @@ export async function POST(request: NextRequest) {
       include: MATCH_FULL_INCLUDE,
     });
     revalidateMatchPages(match.id);
+    deferNotification(() => notifyMatchCreated(match.id));
     return NextResponse.json(toDTO([match]), { status: 201 });
   }
 
@@ -76,5 +85,6 @@ export async function POST(request: NextRequest) {
     )
   );
   revalidateMatchPages();
+  deferNotification(() => notifyMatchCreated(nearestMatch(created).id));
   return NextResponse.json(toDTO(created), { status: 201 });
 }

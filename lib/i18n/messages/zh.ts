@@ -334,6 +334,9 @@ const zh: Messages = {
     courtFee: "场地 {amount}",
     shuttlecockFee: "羽毛球 {amount}",
     remittance: "{from} → {to} 羽毛球 {amount}",
+    emailNotifications: "邮件通知",
+    emailPrefError: "无法更新邮件偏好。",
+    emailPrefPinTitle: "输入成员 PIN",
   },
   management: {
     title: "管理",

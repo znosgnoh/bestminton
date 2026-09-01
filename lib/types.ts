@@ -57,7 +57,19 @@ export interface MemberDTO {
   totalWins: number;
   singlesWinStreak: number;
   singlesLoseStreak: number;
+  emailNotificationsEnabled: boolean;
   debtSummary: MemberDebtSummary;
+}
+
+export interface UpdateMemberEmailPreferencesRequest {
+  emailNotificationsEnabled: boolean;
+  pin?: string;
+}
+
+export interface MarkLedgerPaidResult {
+  snapshot: LedgerSnapshotDTO;
+  appliedShareIds: number[];
+  appliedCents: number;
 }
 
 export interface SyncMemberEmailsResponse {

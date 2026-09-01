@@ -49,6 +49,7 @@ import type {
   LedgerExpenseDTO,
   LedgerExpenseShareDTO,
   LedgerSnapshotDTO,
+  MarkLedgerPaidResult,
   RecordMatchLedgerResponse,
   RegistrationDTO,
 } from "./types";
@@ -868,7 +869,7 @@ export async function markLedgerPaid(
   debtorId: number,
   creditorId: number,
   amount: number
-): Promise<LedgerSnapshotDTO> {
+): Promise<MarkLedgerPaidResult> {
   const snapshot = await getLedgerSnapshot();
   const shares = await db.expenseShare.findMany({
     where: {
@@ -890,11 +891,11 @@ export async function markLedgerPaid(
   const amountCents = toCents(amount);
 
   if (amountCents > pairRemainderCents && simplifiedEdgeCents(snapshot, debtorId, creditorId) === 0) {
-    return snapshot;
+    return { snapshot, appliedShareIds: [], appliedCents: 0 };
   }
 
   const applyCents = Math.min(amountCents, pairRemainderCents);
-  if (applyCents <= 0) return snapshot;
+  if (applyCents <= 0) return { snapshot, appliedShareIds: [], appliedCents: 0 };
 
   const fifoShares: FifoShare[] = unpaid.map((s) => ({
     id: s.id,
@@ -907,6 +908,13 @@ export async function markLedgerPaid(
   const nextById = new Map(
     applyMarkPaidFifo(fifoShares, fromCents(applyCents)).map((s) => [s.id, s] as const)
   );
+  const appliedShareIds: number[] = [];
+  for (const share of unpaid) {
+    const next = nextById.get(share.id);
+    if (!next) continue;
+    if (toCents(next.paid) === toCents(decimalToNumber(share.paid))) continue;
+    appliedShareIds.push(share.id);
+  }
 
   await withDbRetry(() =>
     db.$transaction(async (tx) => {
@@ -939,7 +947,11 @@ export async function markLedgerPaid(
     }, NEON_TX_OPTIONS)
   );
 
-  return getLedgerSnapshot();
+  return {
+    snapshot: await getLedgerSnapshot(),
+    appliedShareIds,
+    appliedCents: applyCents,
+  };
 }
 
 async function clearMatchLedgerFlags(

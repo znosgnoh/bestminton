@@ -24,6 +24,7 @@ interface RawMember {
   totalWins?: number;
   singlesWinStreak?: number;
   singlesLoseStreak?: number;
+  emailNotificationsEnabled?: boolean;
   debtSummary?: { totalOwed: number; totalOwing: number; netCam: number };
   createdAt: string;
 }
@@ -40,6 +41,7 @@ function toMemberDTO(m: RawMember): MemberDTO {
     totalWins: m.totalWins ?? 0,
     singlesWinStreak: m.singlesWinStreak ?? 0,
     singlesLoseStreak: m.singlesLoseStreak ?? 0,
+    emailNotificationsEnabled: m.emailNotificationsEnabled ?? true,
     debtSummary: m.debtSummary ?? { totalOwed: 0, totalOwing: 0, netCam: 0 },
   };
 }
@@ -161,6 +163,7 @@ export async function updateMember(
     eloRating?: number;
     totalMatches?: number;
     totalWins?: number;
+    emailNotificationsEnabled?: boolean;
     pin?: string;
   }
 ): Promise<MemberDTO> {
@@ -175,6 +178,9 @@ export async function updateMember(
     ...(data.eloRating !== undefined && { eloRating: data.eloRating }),
     ...(data.totalMatches !== undefined && { totalMatches: data.totalMatches }),
     ...(data.totalWins !== undefined && { totalWins: data.totalWins }),
+    ...(data.emailNotificationsEnabled !== undefined && {
+      emailNotificationsEnabled: data.emailNotificationsEnabled,
+    }),
   });
   return toMemberDTO({
     id,
@@ -187,8 +193,20 @@ export async function updateMember(
     totalWins: data.totalWins ?? existing.totalWins,
     singlesWinStreak: existing.singlesWinStreak,
     singlesLoseStreak: existing.singlesLoseStreak,
+    emailNotificationsEnabled:
+      data.emailNotificationsEnabled ?? existing.emailNotificationsEnabled ?? true,
     createdAt: existing.createdAt ?? new Date().toISOString(),
   });
+}
+
+export async function updateMemberEmailPreferences(
+  id: number,
+  emailNotificationsEnabled: boolean
+): Promise<MemberDTO> {
+  const existing = await idbGetById<RawMember>("members", id);
+  if (!existing) throw new Error("Member not found.");
+  await idbPut("members", { ...existing, emailNotificationsEnabled });
+  return toMemberDTO({ ...existing, emailNotificationsEnabled });
 }
 
 export async function deleteMember(id: number): Promise<void> {

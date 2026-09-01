@@ -58,6 +58,7 @@ export async function PUT(
     eloRating?: number;
     totalMatches?: number;
     totalWins?: number;
+    emailNotificationsEnabled?: boolean;
     pin?: string;
   };
   try {
@@ -172,6 +173,11 @@ export async function PUT(
     }
   }
 
+  const emailNotificationsEnabled =
+    body.emailNotificationsEnabled !== undefined
+      ? Boolean(body.emailNotificationsEnabled)
+      : undefined;
+
   try {
     const member = await db.member.update({
       where: { id },
@@ -183,6 +189,7 @@ export async function PUT(
         ...(eloRating !== undefined && { eloRating }),
         ...(totalMatches !== undefined && { totalMatches }),
         ...(totalWins !== undefined && { totalWins }),
+        ...(emailNotificationsEnabled !== undefined && { emailNotificationsEnabled }),
       },
     });
     revalidateMemberPages(id);

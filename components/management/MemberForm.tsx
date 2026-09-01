@@ -34,6 +34,9 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(initial?.name ?? "");
   const [email, setEmail] = useState(initial?.email ?? "");
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(
+    initial?.emailNotificationsEnabled ?? true
+  );
   const [avatarUrl, setAvatarUrl] = useState(initial?.avatarUrl ?? "");
   const [splitwiseIdStr, setSplitiwseIdStr] = useState(
     initial?.splitwiseId?.toString() ?? ""
@@ -163,6 +166,7 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
       email: trimmedEmail ? trimmedEmail.toLowerCase() : null,
       avatarUrl: avatarUrl.trim() || null,
       splitwiseId: splitwiseId ?? null,
+      emailNotificationsEnabled,
     };
 
     if (initial && (showStats || statsChanged())) {
@@ -249,6 +253,21 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
           className={inputCls}
         />
       </div>
+
+      <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+        <input
+          type="checkbox"
+          checked={emailNotificationsEnabled}
+          onChange={(e) => setEmailNotificationsEnabled(e.target.checked)}
+          className="mt-0.5"
+        />
+        <span>
+          Email notifications
+          <span className="block text-xs text-gray-500 dark:text-gray-400">
+            Receive match and settlement emails when an address is set
+          </span>
+        </span>
+      </label>
 
       <div>
         <label className="tet-label">

@@ -32,6 +32,7 @@ Registered players in the team.
 | `id` | Int (PK) | Auto-increment |
 | `name` | String | Display name |
 | `email` | String? | Optional email (synced from Splitwise or edited in management) |
+| `emailNotificationsEnabled` | Boolean | Default `true`; global opt-out for notification emails |
 | `avatarUrl` | String? | Optional profile image URL |
 | `splitwiseId` | Int? | Splitwise user ID (unique) |
 | `eloRating` | Int | Default 1000; updated when kèo complete |
@@ -208,6 +209,7 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/api/challenges` | Route | `GET` list (purges stale pending), `POST` create |
 | `/api/challenges/[id]` | Route | `GET` detail, `PATCH` notes/21-15/drink/YouTube, `PUT` edit winner, `DELETE` |
 | `/api/cron/stale-challenges` | Route | `GET` daily cron (Hobby) — delete `PENDING` kèo older than 3 days |
+| `/api/cron/match-reminders` | Route | `GET` hourly cron — 96h/48h match registration reminder emails |
 | `/api/challenges/[id]/bets` | Route | `POST` upsert bet, `DELETE` remove |
 | `/api/challenges/[id]/start` | Route | `POST` lock bets and start kèo |
 | `/api/challenges/[id]/resolve` | Route | `POST` record winner, confirmed handicap/score, Elo, payouts |
@@ -221,6 +223,7 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/api/ledger/expenses/[id]/reset-paid` | Route | `POST` clear mark-paid on an expense (PIN) |
 | `/api/members` | Route | `GET` list, `POST` create |
 | `/api/members/[id]` | Route | `PUT` update, `DELETE` remove |
+| `/api/members/[id]/email-preferences` | Route | `PATCH` toggle email notifications (member PIN) |
 | `/api/matches` | Route | `GET` list, `POST` create |
 | `/api/matches/[id]` | Route | `GET` detail, `PUT` update, `DELETE` remove |
 | `/api/matches/[id]/register` | Route | `POST` self-register, `DELETE` unregister |
@@ -233,7 +236,7 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 
 **Captain PIN on APIs:** When `CAPTAIN_PIN` (or legacy `ADMIN_PIN`) is set, mutating captain routes require the PIN in the JSON body (`pin`) or `X-Captain-Pin` header. This includes member/match CRUD, settlement `PUT` on `/api/matches/[id]`, ledger record/import/rollback/reset-paid, Splitwise sync/import, avatar upload, and Elo reset. `dataService` attaches the stored session PIN via `lib/adminPinClient.ts`. Read-only routes (e.g. `GET /api/members`) stay open.
 
-**Member PIN on APIs:** `MEMBER_PIN` defaults to `12345` when unset (set explicitly empty to disable). Mutating member routes require it via JSON `pin` or `X-Member-Pin`: ledger mark-paid (`POST /api/ledger/settle`), drink settle (`POST /api/debts/settle`), and kèo start/resolve/edit/delete/bulk. Client unlock lives in separate `sessionStorage` keys via `lib/memberPinClient.ts` / `hooks/useMemberPin.ts`.
+**Member PIN on APIs:** `MEMBER_PIN` defaults to `12345` when unset (set explicitly empty to disable). Mutating member routes require it via JSON `pin` or `X-Member-Pin`: ledger mark-paid (`POST /api/ledger/settle`), drink settle (`POST /api/debts/settle`), kèo start/resolve/edit/delete/bulk, and email preference toggle (`PATCH /api/members/[id]/email-preferences`). Client unlock lives in separate `sessionStorage` keys via `lib/memberPinClient.ts` / `hooks/useMemberPin.ts`.
 
 ---
 
@@ -279,6 +282,7 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 - **Expense creation:** Settle records the in-app ledger first (`POST /api/ledger/record`). When the Splitwise bridge is on, the same action dual-writes to Splitwise. `POST /api/splitwise/expense` is a thin server wrapper (PIN + `matchId`); clients must not call it.
 - **Bridge:** `SPLITWISE_API_KEY` and `SPLITWISE_GROUP_ID` both set = bridge **on**. Unset = bridge **off**; ledger and `/balances` still work, Import Splitwise balances is hidden, and settle does not require `splitwiseId`.
 - **Avatar uploads:** Stored in Vercel Blob via `POST /api/upload/avatar`. Requires `BLOB_READ_WRITE_TOKEN` (auto-set when a Blob store is linked in Vercel). Without it, captains can still paste avatar URLs.
+- **Email notifications:** When `RESEND_API_KEY` is set, the app sends bilingual (VI+EN) emails for new matches, 96h/48h registration reminders, kèo resolve, drink settle, and ledger record/mark-paid. Unset = email bridge **off** (no errors). Members can opt out via `emailNotificationsEnabled` (management or profile).
 
 ---
 
@@ -309,8 +313,13 @@ CAPTAIN_PIN=
 MEMBER_PIN=12345
 # MEMBER_PIN=          # empty = disable member PIN gate (local convenience)
 
-# Optional — Vercel Cron Authorization: Bearer CRON_SECRET for GET /api/cron/stale-challenges
+# Optional — Vercel Cron Authorization: Bearer CRON_SECRET for cron routes
 CRON_SECRET=
+
+# Email notifications (optional — unset = no emails; app works normally)
+RESEND_API_KEY=
+EMAIL_FROM=Bestminton <notifications@yourdomain.com>
+APP_BASE_URL=https://your-app.vercel.app
 ```
 
 **Splitwise cutover:** Unset `SPLITWISE_API_KEY` and `SPLITWISE_GROUP_ID` to turn the bridge **off**. Settle still records the in-app ledger (`POST /api/ledger/record` via `dataService.recordMatchLedger`); the settle button is **Record expense** and does not require `splitwiseId`. “Import Splitwise balances” is hidden. Drink debts (`DrinkDebt`) are unchanged.

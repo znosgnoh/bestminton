@@ -20,6 +20,7 @@ import type {
   SettleDebtResult,
   ResetEloResult,
   LedgerSnapshotDTO,
+  MarkLedgerPaidResult,
   RecordMatchLedgerResponse,
   ImportOpeningBalancesResponse,
   SyncMemberEmailsResponse,
@@ -114,6 +115,7 @@ export function updateMember(
     eloRating?: number;
     totalMatches?: number;
     totalWins?: number;
+    emailNotificationsEnabled?: boolean;
     pin?: string;
   }
 ): Promise<MemberDTO> {
@@ -593,11 +595,26 @@ export function markLedgerPaid(
   creditorId: number,
   amount: number
 ): Promise<LedgerSnapshotDTO> {
-  return challengeFetch<LedgerSnapshotDTO>("/api/ledger/settle", {
+  return challengeFetch<MarkLedgerPaidResult>("/api/ledger/settle", {
     method: "POST",
     headers: { ...JSON_HEADERS, ...memberPinHeaders() },
     body: JSON.stringify(withMemberPin({ debtorId, creditorId, amount })),
-  });
+  }).then((result) => result.snapshot);
+}
+
+export function updateMemberEmailPreferences(
+  id: number,
+  emailNotificationsEnabled: boolean
+): Promise<MemberDTO> {
+  return via(
+    () =>
+      apiFetch<MemberDTO>(`/api/members/${id}/email-preferences`, {
+        method: "PATCH",
+        headers: { ...JSON_HEADERS, ...memberPinHeaders() },
+        body: JSON.stringify(withMemberPin({ emailNotificationsEnabled })),
+      }),
+    () => localDb.updateMemberEmailPreferences(id, emailNotificationsEnabled)
+  );
 }
 
 export function rollbackLedgerExpense(expenseId: number): Promise<LedgerSnapshotDTO> {

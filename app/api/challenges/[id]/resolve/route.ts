@@ -5,6 +5,8 @@ import {
   requireMemberPin,
 } from "@/lib/apiHelpers";
 import { resolveChallenge } from "@/lib/challengeService";
+import { deferNotification } from "@/lib/email/defer";
+import { notifyChallengeResolved } from "@/lib/email/events";
 import { revalidateChallengePages, revalidateMemberPages } from "@/lib/revalidate";
 import type { ResolveChallengeRequest } from "@/lib/types";
 
@@ -86,6 +88,7 @@ export async function POST(
     );
     revalidateChallengePages(challengeId);
     revalidateMemberPages();
+    deferNotification(() => notifyChallengeResolved(challengeId));
     return NextResponse.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : "";

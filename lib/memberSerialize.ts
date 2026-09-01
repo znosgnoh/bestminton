@@ -18,6 +18,7 @@ type MemberRow = {
   totalWins: number;
   singlesWinStreak: number;
   singlesLoseStreak: number;
+  emailNotificationsEnabled: boolean;
 };
 
 export function toMemberDTO(

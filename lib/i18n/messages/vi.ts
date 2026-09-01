@@ -348,6 +348,9 @@ const vi: Messages = {
     courtFee: "Sân {amount}",
     shuttlecockFee: "Cầu {amount}",
     remittance: "{from} → {to} cầu {amount}",
+    emailNotifications: "Nhận email thông báo",
+    emailPrefError: "Không cập nhật được tùy chọn email.",
+    emailPrefPinTitle: "Nhập PIN thành viên",
   },
   management: {
     title: "Quản lý",

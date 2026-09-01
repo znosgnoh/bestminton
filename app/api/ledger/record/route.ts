@@ -6,6 +6,8 @@ import {
   requireDatabase,
 } from "@/lib/apiHelpers";
 import { LedgerServiceError, recordMatchExpenses } from "@/lib/ledgerService";
+import { deferNotification } from "@/lib/email/defer";
+import { notifyLedgerRecorded } from "@/lib/email/events";
 import type { RecordMatchLedgerRequest } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +33,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await recordMatchExpenses(matchId);
+    deferNotification(async () => {
+      if (result.matchExpense) await notifyLedgerRecorded(result.matchExpense.id);
+      if (result.shuttlecockExpense) await notifyLedgerRecorded(result.shuttlecockExpense.id);
+    });
     return NextResponse.json(result);
   } catch (err) {
     if (err instanceof LedgerServiceError) {

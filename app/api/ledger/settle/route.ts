@@ -6,6 +6,9 @@ import {
   requireDatabase,
 } from "@/lib/apiHelpers";
 import { LedgerServiceError, markLedgerPaid } from "@/lib/ledgerService";
+import { getCurrencyCode } from "@/lib/currency";
+import { deferNotification } from "@/lib/email/defer";
+import { notifyLedgerMarkPaid } from "@/lib/email/events";
 import { toCents } from "@/lib/ledgerMath";
 import type { MarkLedgerPaidRequest } from "@/lib/types";
 
@@ -59,8 +62,17 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const snapshot = await markLedgerPaid(debtorId, creditorId, Number(body.amount));
-    return NextResponse.json(snapshot);
+    const result = await markLedgerPaid(debtorId, creditorId, Number(body.amount));
+    deferNotification(() =>
+      notifyLedgerMarkPaid({
+        debtorId,
+        creditorId,
+        appliedCents: result.appliedCents,
+        appliedShareIds: result.appliedShareIds,
+        currency: getCurrencyCode(),
+      })
+    );
+    return NextResponse.json(result);
   } catch (err) {
     if (err instanceof LedgerServiceError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

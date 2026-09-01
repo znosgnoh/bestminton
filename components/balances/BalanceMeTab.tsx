@@ -20,6 +20,7 @@ function stubMember(id: number, name: string): MemberDTO {
     totalWins: 0,
     singlesWinStreak: 0,
     singlesLoseStreak: 0,
+    emailNotificationsEnabled: true,
     debtSummary: EMPTY_DEBT,
   };
 }

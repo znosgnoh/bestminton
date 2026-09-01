@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireDatabase, requireMemberPin } from "@/lib/apiHelpers";
 import { db } from "@/lib/db";
 import { settleDebtBetween } from "@/lib/drinkDebt";
+import { deferNotification } from "@/lib/email/defer";
+import { notifyDrinkDebtSettled } from "@/lib/email/events";
 import { revalidateDebtPages } from "@/lib/revalidate";
 import type { SettleDebtRequest } from "@/lib/types";
 
@@ -68,6 +70,13 @@ export async function POST(request: NextRequest) {
     }
 
     revalidateDebtPages();
+    deferNotification(() =>
+      notifyDrinkDebtSettled({
+        debtorId,
+        creditorId,
+        settledAmount: result.settled,
+      })
+    );
     return NextResponse.json(result);
   } catch {
     return NextResponse.json({ error: "Database unavailable." }, { status: 503 });

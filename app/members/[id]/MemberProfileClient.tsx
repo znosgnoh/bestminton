@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
+import AdminPinModal from "@/components/ui/AdminPinModal";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
 import StreakBadge from "@/components/ui/StreakBadge";
@@ -13,6 +14,7 @@ import ProfileCollapsibleSection from "@/components/profile/ProfileCollapsibleSe
 import ProfileMatchHistory from "@/components/profile/ProfileMatchHistory";
 import { useRegisterPullToRefresh } from "@/components/PullToRefresh";
 import { useI18n } from "@/contexts/LocaleContext";
+import { useMemberPin } from "@/hooks/useMemberPin";
 import * as dataService from "@/lib/dataService";
 import type { MemberProfileDTO } from "@/lib/types";
 
@@ -50,7 +52,12 @@ export default function MemberProfileClient({
   dbError,
 }: MemberProfileClientProps) {
   const { t } = useI18n();
+  const { unlocked, pinRequired, unlock } = useMemberPin();
   const [profile, setProfile] = useState(initialProfile);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pendingEmailPref, setPendingEmailPref] = useState<boolean | null>(null);
+  const [emailPrefSaving, setEmailPrefSaving] = useState(false);
+  const [emailPrefError, setEmailPrefError] = useState<string | null>(null);
 
   useEffect(() => {
     setProfile(initialProfile);
@@ -63,6 +70,48 @@ export default function MemberProfileClient({
   }, [initialProfile?.member.id]);
 
   useRegisterPullToRefresh(refreshProfile);
+
+  const applyEmailPref = useCallback(
+    async (enabled: boolean) => {
+      if (!profile?.member.id) return;
+      setEmailPrefSaving(true);
+      setEmailPrefError(null);
+      try {
+        const updated = await dataService.updateMemberEmailPreferences(
+          profile.member.id,
+          enabled
+        );
+        setProfile((current) =>
+          current
+            ? {
+                ...current,
+                member: {
+                  ...current.member,
+                  emailNotificationsEnabled: updated.emailNotificationsEnabled,
+                },
+              }
+            : current
+        );
+      } catch (err) {
+        setEmailPrefError(err instanceof Error ? err.message : t("profile.emailPrefError"));
+      } finally {
+        setEmailPrefSaving(false);
+      }
+    },
+    [profile?.member.id, t]
+  );
+
+  const onToggleEmailPref = useCallback(
+    (checked: boolean) => {
+      if (pinRequired && !unlocked) {
+        setPendingEmailPref(checked);
+        setShowPinModal(true);
+        return;
+      }
+      void applyEmailPref(checked);
+    },
+    [applyEmailPref, pinRequired, unlocked]
+  );
 
   if (!dbAvailable) {
     return (
@@ -117,6 +166,20 @@ export default function MemberProfileClient({
                 {member.email}
               </p>
             )}
+            {member.email && (
+              <label className="mt-2 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={member.emailNotificationsEnabled}
+                  disabled={emailPrefSaving}
+                  onChange={(e) => onToggleEmailPref(e.target.checked)}
+                />
+                <span>{t("profile.emailNotifications")}</span>
+              </label>
+            )}
+            {emailPrefError && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{emailPrefError}</p>
+            )}
             <p className={`mt-1 inline-flex items-center gap-1 text-sm font-medium ${netCamClass(netCam)}`}>
               <OrangeJuiceIcon size={14} />
               {formatNetCam(netCam)}
@@ -146,6 +209,26 @@ export default function MemberProfileClient({
           </p>
         </div>
       </section>
+
+      <AdminPinModal
+        open={showPinModal}
+        title={t("profile.emailPrefPinTitle")}
+        onCancel={() => {
+          setShowPinModal(false);
+          setPendingEmailPref(null);
+        }}
+        onSubmit={async (pin) => {
+          const err = await unlock(pin);
+          if (err) return err;
+          setShowPinModal(false);
+          if (pendingEmailPref != null) {
+            const next = pendingEmailPref;
+            setPendingEmailPref(null);
+            void applyEmailPref(next);
+          }
+          return null;
+        }}
+      />
 
       {/* Ability / Elo chart */}
       <ProfileCollapsibleSection
