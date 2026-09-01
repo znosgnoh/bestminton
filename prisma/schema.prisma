@@ -21,9 +21,11 @@ model Member {
   singlesWinStreak  Int      @default(0)
   /// Consecutive singles losses (reset on a singles win). Amplifies Elo when ≥ 3.
   singlesLoseStreak Int      @default(0)
+  emailNotificationsEnabled Boolean @default(true)
   createdAt         DateTime @default(now())
 
   registrations      MatchRegistration[]
+  emailDeliveries    EmailDelivery[]
   paidMatches        Match[]             @relation("MatchPayer")
   shuttlecockMatches Match[]             @relation("MatchShuttlecockRecipient")
   betsPlaced         Bet[]               @relation("BetBettor")
@@ -157,6 +159,30 @@ model DrinkDebt {
   creditor Member @relation("DebtCreditor", fields: [creditorId], references: [id])
 
   @@id([debtorId, creditorId])
+}
+
+enum EmailEventType {
+  MATCH_CREATED
+  MATCH_REMINDER_96H
+  MATCH_REMINDER_48H
+  CHALLENGE_RESOLVED
+  DRINK_DEBT_SETTLED
+  LEDGER_RECORDED
+  LEDGER_MARK_PAID
+}
+
+model EmailDelivery {
+  id        Int            @id @default(autoincrement())
+  memberId  Int
+  eventType EmailEventType
+  entityKey String
+  resendId  String?
+  sentAt    DateTime       @default(now())
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, eventType, entityKey])
+  @@index([eventType, entityKey])
 }
 
 enum LedgerExpenseKind {
