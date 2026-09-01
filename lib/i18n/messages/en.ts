@@ -356,6 +356,11 @@ const en = {
     importBalancesCreated: "Imported {created} opening balance(s).",
     importBalancesSkipped: "Skipped unmapped: {names}.",
     importBalancesSkippedZero: "{count} with zero net skipped.",
+    syncEmails: "Sync emails from Splitwise",
+    syncingEmails: "Syncing emails…",
+    syncEmailsUpdated: "Updated {updated} email(s); {unchanged} already up to date.",
+    syncEmailsSkippedNoEmail: "{count} linked member(s) have no email on Splitwise.",
+    syncEmailsSkippedUnmapped: "Splitwise users not linked in app: {names}.",
     clone: "Clone",
     cloneTitle: "Clone match",
     cloneHint:

@@ -33,6 +33,7 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
   const { unlocked, pinRequired, unlock, getStoredPin } = useAdminPin();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(initial?.name ?? "");
+  const [email, setEmail] = useState(initial?.email ?? "");
   const [avatarUrl, setAvatarUrl] = useState(initial?.avatarUrl ?? "");
   const [splitwiseIdStr, setSplitiwseIdStr] = useState(
     initial?.splitwiseId?.toString() ?? ""
@@ -147,6 +148,11 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
       setError("Splitwise ID must be a positive integer.");
       return;
     }
+    const trimmedEmail = email.trim();
+    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail.toLowerCase())) {
+      setError("Email must be a valid address.");
+      return;
+    }
     if (uploading) {
       setError("Please wait for the avatar upload to finish.");
       return;
@@ -154,6 +160,7 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
 
     const payload: Parameters<typeof dataService.updateMember>[1] = {
       name: name.trim(),
+      email: trimmedEmail ? trimmedEmail.toLowerCase() : null,
       avatarUrl: avatarUrl.trim() || null,
       splitwiseId: splitwiseId ?? null,
     };
@@ -225,6 +232,20 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Alice"
+          className={inputCls}
+        />
+      </div>
+
+      <div>
+        <label className="tet-label">
+          Email (optional)
+        </label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="e.g. alice@example.com"
+          autoComplete="email"
           className={inputCls}
         />
       </div>

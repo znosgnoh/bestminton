@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
+import { normalizeMemberEmail } from "@/lib/memberEmail";
 import { buildMemberProfile } from "@/lib/memberProfile";
 import { revalidateMemberPages } from "@/lib/revalidate";
 import { memberToDTO } from "@/lib/memberSerialize";
@@ -51,6 +52,7 @@ export async function PUT(
 
   let body: {
     name?: string;
+    email?: string | null;
     avatarUrl?: string;
     splitwiseId?: number | null;
     eloRating?: number;
@@ -87,6 +89,14 @@ export async function PUT(
       { error: "splitwiseId must be a positive integer." },
       { status: 400 }
     );
+  }
+
+  const email =
+    body.email === undefined
+      ? undefined
+      : normalizeMemberEmail(body.email ?? "");
+  if (body.email !== undefined && body.email !== null && email === null) {
+    return NextResponse.json({ error: "email must be a valid address." }, { status: 400 });
   }
 
   let eloRating: number | undefined;
@@ -167,6 +177,7 @@ export async function PUT(
       where: { id },
       data: {
         ...(name !== undefined && { name }),
+        ...(email !== undefined && { email }),
         ...(body.avatarUrl !== undefined && { avatarUrl: body.avatarUrl?.trim() || null }),
         ...(splitwiseId !== undefined && { splitwiseId }),
         ...(eloRating !== undefined && { eloRating }),

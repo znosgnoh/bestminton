@@ -112,6 +112,11 @@ export default function MemberProfileClient({
               )}
               Elo {member.eloRating}
             </p>
+            {member.email && (
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 truncate">
+                {member.email}
+              </p>
+            )}
             <p className={`mt-1 inline-flex items-center gap-1 text-sm font-medium ${netCamClass(netCam)}`}>
               <OrangeJuiceIcon size={14} />
               {formatNetCam(netCam)}

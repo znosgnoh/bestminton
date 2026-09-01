@@ -11,6 +11,7 @@ datasource db {
 model Member {
   id                Int      @id @default(autoincrement())
   name              String
+  email             String?
   avatarUrl         String?
   splitwiseId       Int?     @unique
   eloRating         Int      @default(1000)

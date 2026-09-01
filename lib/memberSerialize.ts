@@ -10,6 +10,7 @@ const EMPTY_DEBT_SUMMARY: MemberDebtSummary = {
 type MemberRow = {
   id: number;
   name: string;
+  email: string | null;
   avatarUrl: string | null;
   splitwiseId: number | null;
   eloRating: number;

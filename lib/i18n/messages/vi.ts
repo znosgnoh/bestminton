@@ -358,6 +358,11 @@ const vi: Messages = {
     importBalancesCreated: "Đã nhập {created} số dư đầu kỳ.",
     importBalancesSkipped: "Bỏ qua chưa map: {names}.",
     importBalancesSkippedZero: "Bỏ qua {count} số dư bằng 0.",
+    syncEmails: "Đồng bộ email từ Splitwise",
+    syncingEmails: "Đang đồng bộ email…",
+    syncEmailsUpdated: "Đã cập nhật {updated} email; {unchanged} đã đúng.",
+    syncEmailsSkippedNoEmail: "{count} thành viên đã link nhưng Splitwise không có email.",
+    syncEmailsSkippedUnmapped: "User Splitwise chưa link trong app: {names}.",
     clone: "Nhân bản",
     cloneTitle: "Nhân bản trận",
     cloneHint:
