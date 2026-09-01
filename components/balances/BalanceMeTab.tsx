@@ -12,6 +12,7 @@ function stubMember(id: number, name: string): MemberDTO {
   return {
     id,
     name,
+    email: null,
     avatarUrl: null,
     splitwiseId: null,
     eloRating: 1000,

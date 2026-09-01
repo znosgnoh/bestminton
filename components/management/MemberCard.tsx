@@ -58,6 +58,9 @@ export default function MemberCard({ member, onUpdated, onDeleted }: MemberCardP
         <Avatar name={member.name} avatarUrl={member.avatarUrl} size="md" />
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{member.name}</p>
+          {member.email && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{member.email}</p>
+          )}
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             {member.splitwiseId ? (
               <span className="text-emerald-600 dark:text-amber-400">SW: {member.splitwiseId}</span>

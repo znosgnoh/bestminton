@@ -22,6 +22,7 @@ import type {
   LedgerSnapshotDTO,
   RecordMatchLedgerResponse,
   ImportOpeningBalancesResponse,
+  SyncMemberEmailsResponse,
 } from "./types";
 
 type StorageMode = "api" | "local";
@@ -88,6 +89,7 @@ export function getMembers(): Promise<MemberDTO[]> {
 
 export function createMember(data: {
   name: string;
+  email?: string | null;
   avatarUrl?: string | null;
   splitwiseId?: number | null;
 }): Promise<MemberDTO> {
@@ -106,6 +108,7 @@ export function updateMember(
   id: number,
   data: {
     name: string;
+    email?: string | null;
     avatarUrl?: string | null;
     splitwiseId?: number | null;
     eloRating?: number;
@@ -571,6 +574,14 @@ export function recordMatchLedger(matchId: number): Promise<RecordMatchLedgerRes
 
 export function importOpeningBalances(): Promise<ImportOpeningBalancesResponse> {
   return challengeFetch<ImportOpeningBalancesResponse>("/api/ledger/import", {
+    method: "POST",
+    headers: jsonHeaders(),
+    body: JSON.stringify(withAdminPin({})),
+  });
+}
+
+export function syncMemberEmailsFromSplitwise(): Promise<SyncMemberEmailsResponse> {
+  return challengeFetch<SyncMemberEmailsResponse>("/api/splitwise/sync-emails", {
     method: "POST",
     headers: jsonHeaders(),
     body: JSON.stringify(withAdminPin({})),

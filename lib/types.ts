@@ -49,6 +49,7 @@ export interface MemberDebtSummary {
 export interface MemberDTO {
   id: number;
   name: string;
+  email: string | null;
   avatarUrl: string | null;
   splitwiseId: number | null;
   eloRating: number;
@@ -57,6 +58,13 @@ export interface MemberDTO {
   singlesWinStreak: number;
   singlesLoseStreak: number;
   debtSummary: MemberDebtSummary;
+}
+
+export interface SyncMemberEmailsResponse {
+  updated: number;
+  unchanged: number;
+  skippedNoEmail: number;
+  skippedUnmapped: Array<{ splitwiseId: number; name: string; email: string }>;
 }
 
 export interface LeaderboardEntryDTO extends MemberDTO {

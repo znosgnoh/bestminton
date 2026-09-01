@@ -16,6 +16,7 @@ import type { MemberDTO, MatchDTO, RegistrationDTO, GuestDTO } from "./types";
 interface RawMember {
   id: number;
   name: string;
+  email?: string | null;
   avatarUrl: string | null;
   splitwiseId: number | null;
   eloRating?: number;
@@ -31,6 +32,7 @@ function toMemberDTO(m: RawMember): MemberDTO {
   return {
     id: m.id,
     name: m.name,
+    email: m.email ?? null,
     avatarUrl: m.avatarUrl,
     splitwiseId: m.splitwiseId,
     eloRating: m.eloRating ?? DEFAULT_ELO,
@@ -88,6 +90,7 @@ async function buildRegistrationDTO(reg: RawRegistration): Promise<RegistrationD
     member: member ? toMemberDTO(member) : toMemberDTO({
       id: reg.memberId,
       name: "Unknown",
+      email: null,
       avatarUrl: null,
       splitwiseId: null,
       createdAt: new Date().toISOString(),
@@ -127,11 +130,13 @@ export async function getMembers(): Promise<MemberDTO[]> {
 
 export async function createMember(data: {
   name: string;
+  email?: string | null;
   avatarUrl?: string | null;
   splitwiseId?: number | null;
 }): Promise<MemberDTO> {
   const id = await idbAdd("members", {
     name: data.name,
+    email: data.email ?? null,
     avatarUrl: data.avatarUrl ?? null,
     splitwiseId: data.splitwiseId ?? null,
     createdAt: new Date().toISOString(),
@@ -139,6 +144,7 @@ export async function createMember(data: {
   return toMemberDTO({
     id,
     name: data.name,
+    email: data.email ?? null,
     avatarUrl: data.avatarUrl ?? null,
     splitwiseId: data.splitwiseId ?? null,
     createdAt: new Date().toISOString(),
@@ -149,6 +155,7 @@ export async function updateMember(
   id: number,
   data: {
     name: string;
+    email?: string | null;
     avatarUrl?: string | null;
     splitwiseId?: number | null;
     eloRating?: number;
@@ -162,6 +169,7 @@ export async function updateMember(
   await idbPut("members", {
     ...existing,
     name: data.name,
+    ...(data.email !== undefined && { email: data.email }),
     avatarUrl: data.avatarUrl ?? null,
     splitwiseId: data.splitwiseId ?? null,
     ...(data.eloRating !== undefined && { eloRating: data.eloRating }),
@@ -171,6 +179,7 @@ export async function updateMember(
   return toMemberDTO({
     id,
     name: data.name,
+    email: data.email !== undefined ? data.email : (existing.email ?? null),
     avatarUrl: data.avatarUrl ?? null,
     splitwiseId: data.splitwiseId ?? null,
     eloRating: data.eloRating ?? existing.eloRating,

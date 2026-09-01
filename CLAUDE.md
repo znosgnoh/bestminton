@@ -31,6 +31,7 @@ Registered players in the team.
 | --- | --- | --- |
 | `id` | Int (PK) | Auto-increment |
 | `name` | String | Display name |
+| `email` | String? | Optional email (synced from Splitwise or edited in management) |
 | `avatarUrl` | String? | Optional profile image URL |
 | `splitwiseId` | Int? | Splitwise user ID (unique) |
 | `eloRating` | Int | Default 1000; updated when kèo complete |
@@ -226,6 +227,7 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/api/matches/[id]/guests` | Route | `POST` add guest |
 | `/api/matches/[id]/guests/[guestId]` | Route | `PUT` update guest (playtime), `DELETE` remove |
 | `/api/splitwise/members` | Route | `GET` fetch Splitwise group members |
+| `/api/splitwise/sync-emails` | Route | `POST` sync Splitwise emails onto linked member profiles (captain PIN) |
 | `/api/splitwise/expense` | Route | `POST` thin PIN + `matchId` wrapper around ledger record (returns 502 if Splitwise fails); **clients use `/api/ledger/record`** |
 | `/api/upload/avatar` | Route | `POST` upload member avatar (JPG/PNG, max 2MB) to Vercel Blob |
 
@@ -273,7 +275,7 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 ## 7. Splitwise API Integration
 
 - **CORS constraint:** All Splitwise calls go through Next.js route handlers — never from the browser directly.
-- **Member import:** `/management` can import members from Splitwise via `GET /api/splitwise/members` to pre-fill Splitwise IDs.
+- **Member import:** `/management` can import members from Splitwise via `GET /api/splitwise/members` to pre-fill Splitwise IDs, avatars, and emails. **Sync emails** (`POST /api/splitwise/sync-emails`) refreshes emails for members already linked by `splitwiseId`.
 - **Expense creation:** Settle records the in-app ledger first (`POST /api/ledger/record`). When the Splitwise bridge is on, the same action dual-writes to Splitwise. `POST /api/splitwise/expense` is a thin server wrapper (PIN + `matchId`); clients must not call it.
 - **Bridge:** `SPLITWISE_API_KEY` and `SPLITWISE_GROUP_ID` both set = bridge **on**. Unset = bridge **off**; ledger and `/balances` still work, Import Splitwise balances is hidden, and settle does not require `splitwiseId`.
 - **Avatar uploads:** Stored in Vercel Blob via `POST /api/upload/avatar`. Requires `BLOB_READ_WRITE_TOKEN` (auto-set when a Blob store is linked in Vercel). Without it, captains can still paste avatar URLs.

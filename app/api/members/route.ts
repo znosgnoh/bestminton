@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
+import { normalizeMemberEmail } from "@/lib/memberEmail";
 import { revalidateMemberPages } from "@/lib/revalidate";
 import { memberToDTO, membersToDTOs } from "@/lib/memberSerialize";
 import { Prisma } from "@prisma/client";
@@ -18,7 +19,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  let body: { name?: string; avatarUrl?: string; splitwiseId?: number; pin?: string };
+  let body: { name?: string; email?: string | null; avatarUrl?: string; splitwiseId?: number; pin?: string };
   try {
     body = await request.json();
   } catch {
@@ -44,10 +45,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const email =
+    body.email === undefined
+      ? undefined
+      : normalizeMemberEmail(body.email ?? "");
+  if (body.email !== undefined && body.email !== null && email === null) {
+    return NextResponse.json({ error: "email must be a valid address." }, { status: 400 });
+  }
+
   try {
     const member = await db.member.create({
       data: {
         name,
+        ...(email !== undefined && { email }),
         avatarUrl: body.avatarUrl?.trim() || null,
         splitwiseId,
       },
