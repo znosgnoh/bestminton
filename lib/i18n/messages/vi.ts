@@ -288,6 +288,7 @@ const vi: Messages = {
     rollbackSuccess: "Đã hoàn tác lần tất toán.",
     rollbackFailed: "Hoàn tác thất bại.",
     pinRollbackTitle: "PIN đội trưởng để hoàn tác",
+    captainUnlock: "Mở khóa đội trưởng",
     ly: "{amount} ly",
   },
   balances: {

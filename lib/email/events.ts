@@ -106,6 +106,7 @@ export async function notifyDrinkDebtSettled(input: {
   debtorId: number;
   creditorId: number;
   settledAmount: number;
+  transactionId: number;
 }): Promise<void> {
   const [debtor, creditor] = await Promise.all([
     db.member.findUnique({ where: { id: input.debtorId }, select: { name: true } }),
@@ -114,7 +115,7 @@ export async function notifyDrinkDebtSettled(input: {
   if (!debtor || !creditor) return;
 
   const recipients = await eligibleMembersByIds([input.debtorId, input.creditorId]);
-  const entityKey = `drink:${input.debtorId}:${input.creditorId}:${input.settledAmount}`;
+  const entityKey = `drink-settle:${input.transactionId}`;
   await sendToMany("DRINK_DEBT_SETTLED", entityKey, recipients, (r) =>
     renderDrinkSettledEmail({
       recipientName: r.name,

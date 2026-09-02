@@ -99,14 +99,20 @@ export async function settleOjPool(
       });
     }
 
-    await client.member.update({
-      where: { id: fromMemberId },
+    const debited = await client.member.updateMany({
+      where: { id: fromMemberId, ojBalance: { gte: requested } },
       data: { ojBalance: { decrement: requested } },
     });
-    await client.member.update({
-      where: { id: toMemberId },
+    if (debited.count === 0) {
+      throw Object.assign(new Error("Insufficient balance."), { code: "INSUFFICIENT" });
+    }
+    const credited = await client.member.updateMany({
+      where: { id: toMemberId, ojBalance: { lte: -requested } },
       data: { ojBalance: { increment: requested } },
     });
+    if (credited.count === 0) {
+      throw Object.assign(new Error("Insufficient balance."), { code: "INSUFFICIENT" });
+    }
 
     const row = await client.drinkSettleTransaction.create({
       data: {
@@ -138,19 +144,27 @@ export async function rollbackOjSettle(
   tx?: Tx
 ): Promise<DrinkSettleTransactionDTO> {
   const run = async (client: Tx) => {
-    const row = await client.drinkSettleTransaction.findUnique({
+    const claimed = await client.drinkSettleTransaction.updateMany({
+      where: { id: transactionId, rolledBackAt: null },
+      data: { rolledBackAt: new Date() },
+    });
+    if (claimed.count === 0) {
+      const existing = await client.drinkSettleTransaction.findUnique({
+        where: { id: transactionId },
+      });
+      if (!existing) {
+        throw Object.assign(new Error("Transaction not found."), { code: "NOT_FOUND" });
+      }
+      throw Object.assign(new Error("Already rolled back."), { code: "ALREADY_ROLLED_BACK" });
+    }
+
+    const row = await client.drinkSettleTransaction.findUniqueOrThrow({
       where: { id: transactionId },
       include: {
         fromMember: { select: { name: true } },
         toMember: { select: { name: true } },
       },
     });
-    if (!row) {
-      throw Object.assign(new Error("Transaction not found."), { code: "NOT_FOUND" });
-    }
-    if (row.rolledBackAt) {
-      throw Object.assign(new Error("Already rolled back."), { code: "ALREADY_ROLLED_BACK" });
-    }
 
     await client.member.update({
       where: { id: row.fromMemberId },
@@ -161,17 +175,8 @@ export async function rollbackOjSettle(
       data: { ojBalance: { decrement: row.amount } },
     });
 
-    const updated = await client.drinkSettleTransaction.update({
-      where: { id: transactionId },
-      data: { rolledBackAt: new Date() },
-      include: {
-        fromMember: { select: { name: true } },
-        toMember: { select: { name: true } },
-      },
-    });
-
     await assertOjChecksum(client);
-    return toTxDto(updated);
+    return toTxDto(row);
   };
 
   if (tx) return run(tx);

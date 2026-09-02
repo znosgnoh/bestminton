@@ -286,6 +286,7 @@ const en = {
     rollbackSuccess: "Settle rolled back.",
     rollbackFailed: "Rollback failed.",
     pinRollbackTitle: "Captain PIN to rollback",
+    captainUnlock: "Captain unlock",
     ly: "{amount} ly",
   },
   balances: {

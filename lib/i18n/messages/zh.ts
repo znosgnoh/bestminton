@@ -277,6 +277,7 @@ const zh: Messages = {
     rollbackSuccess: "结算已回滚。",
     rollbackFailed: "回滚失败。",
     pinRollbackTitle: "输入队长 PIN 以回滚",
+    captainUnlock: "队长解锁",
     ly: "{amount} 杯",
   },
   balances: {

@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
         debtorId: toMemberId,
         creditorId: fromMemberId,
         settledAmount: result.settled,
+        transactionId: result.transaction.id,
       })
     );
     return NextResponse.json(result);

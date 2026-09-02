@@ -80,8 +80,6 @@ export default function DebtsTable({
   const [amountPrompt, setAmountPrompt] = useState(false);
   const [pendingSettle, setPendingSettle] = useState<PendingSettle | null>(null);
   const [showMemberPin, setShowMemberPin] = useState(false);
-  const [pendingRollback, setPendingRollback] =
-    useState<DrinkSettleTransactionDTO | null>(null);
   const [showAdminPin, setShowAdminPin] = useState(false);
   const [settling, setSettling] = useState(false);
   const [rollingBackId, setRollingBackId] = useState<number | null>(null);
@@ -166,23 +164,18 @@ export default function DebtsTable({
         setError(err instanceof Error ? err.message : t("cam.rollbackFailed"));
       } finally {
         setRollingBackId(null);
-        setPendingRollback(null);
       }
     },
     [onChanged, t]
   );
 
   function requestRollback(transaction: DrinkSettleTransactionDTO) {
+    if (!adminPin.unlocked) return;
     if (
       !window.confirm(
         t("cam.rollbackConfirm", { amount: transaction.amount })
       )
     ) {
-      return;
-    }
-    setPendingRollback(transaction);
-    if (adminPin.pinRequired && !adminPin.unlocked) {
-      setShowAdminPin(true);
       return;
     }
     void runRollback(
@@ -191,11 +184,19 @@ export default function DebtsTable({
     );
   }
 
+  async function handleCaptainUnlock() {
+    if (adminPin.pinRequired) {
+      setShowAdminPin(true);
+      return;
+    }
+    const pinError = await adminPin.unlock("");
+    if (pinError) setError(pinError);
+  }
+
   async function handleAdminPinSubmit(pin: string): Promise<string | null> {
     const pinError = await adminPin.unlock(pin);
     if (pinError) return pinError;
     setShowAdminPin(false);
-    if (pendingRollback) await runRollback(pendingRollback, pin);
     return null;
   }
 
@@ -306,7 +307,20 @@ export default function DebtsTable({
       )}
 
       <section className="space-y-2">
-        <h2 className="tet-section-title">{t("cam.historyHeading")}</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="tet-section-title">{t("cam.historyHeading")}</h2>
+          {snapshot.transactions.length > 0 &&
+            !adminPin.unlocked &&
+            !adminPin.checking && (
+              <button
+                type="button"
+                onClick={() => void handleCaptainUnlock()}
+                className="tet-btn-ghost min-h-9 shrink-0 px-2.5 text-xs"
+              >
+                {t("cam.captainUnlock")}
+              </button>
+            )}
+        </div>
         {snapshot.transactions.length === 0 ? (
           <div className="tet-empty py-5 text-sm">{t("cam.historyEmpty")}</div>
         ) : (
@@ -341,13 +355,10 @@ export default function DebtsTable({
                       )}
                     </p>
                   </div>
-                  {!rolledBack && (
+                  {!rolledBack && adminPin.unlocked && (
                     <button
                       type="button"
-                      disabled={
-                        rollingBackId !== null ||
-                        adminPin.checking
-                      }
+                      disabled={rollingBackId !== null}
                       onClick={() => requestRollback(transaction)}
                       className="tet-btn-ghost min-h-9 shrink-0 px-2.5 text-xs inline-flex items-center gap-1 disabled:opacity-50"
                     >
@@ -393,10 +404,7 @@ export default function DebtsTable({
         open={showAdminPin}
         title={t("cam.pinRollbackTitle")}
         onSubmit={handleAdminPinSubmit}
-        onCancel={() => {
-          setShowAdminPin(false);
-          setPendingRollback(null);
-        }}
+        onCancel={() => setShowAdminPin(false)}
       />
     </div>
   );
