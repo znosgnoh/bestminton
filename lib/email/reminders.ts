@@ -5,7 +5,8 @@ export const REMINDER_OFFSET_MS: Record<ReminderKind, number> = {
   "48h": 48 * 60 * 60 * 1000,
 };
 
-export const REMINDER_WINDOW_MS = 30 * 60 * 1000;
+// Vercel Hobby allows daily crons only; 12h window catches 96h/48h targets once per day.
+export const REMINDER_WINDOW_MS = 12 * 60 * 60 * 1000;
 
 export function reminderKindsDue(now: Date, scheduledAt: Date): ReminderKind[] {
   if (scheduledAt.getTime() <= now.getTime()) return [];

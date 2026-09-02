@@ -7,12 +7,12 @@ const H = 60 * 60 * 1000;
 describe("reminderKindsDue", () => {
   const scheduledAt = new Date("2026-09-10T18:00:00.000Z");
 
-  it("returns 96h inside ±30m window", () => {
+  it("returns 96h inside ±12h window", () => {
     const now = new Date(scheduledAt.getTime() - 96 * H);
     assert.deepEqual(reminderKindsDue(now, scheduledAt), ["96h"]);
   });
 
-  it("returns 48h inside ±30m window", () => {
+  it("returns 48h inside ±12h window", () => {
     const now = new Date(scheduledAt.getTime() - 48 * H);
     assert.deepEqual(reminderKindsDue(now, scheduledAt), ["48h"]);
   });

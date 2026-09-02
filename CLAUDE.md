@@ -209,7 +209,7 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/api/challenges` | Route | `GET` list (purges stale pending), `POST` create |
 | `/api/challenges/[id]` | Route | `GET` detail, `PATCH` notes/21-15/drink/YouTube, `PUT` edit winner, `DELETE` |
 | `/api/cron/stale-challenges` | Route | `GET` daily cron (Hobby) — delete `PENDING` kèo older than 3 days |
-| `/api/cron/match-reminders` | Route | `GET` hourly cron — 96h/48h match registration reminder emails |
+| `/api/cron/match-reminders` | Route | `GET` daily cron (16:00 UTC) — 96h/48h match registration reminder emails (±12h window on Hobby) |
 | `/api/challenges/[id]/bets` | Route | `POST` upsert bet, `DELETE` remove |
 | `/api/challenges/[id]/start` | Route | `POST` lock bets and start kèo |
 | `/api/challenges/[id]/resolve` | Route | `POST` record winner, confirmed handicap/score, Elo, payouts |
