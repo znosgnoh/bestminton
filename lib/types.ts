@@ -106,15 +106,6 @@ export interface ChallengeSideDTO {
   poolBets: number;
 }
 
-export interface DrinkDebtDTO {
-  debtorId: number;
-  creditorId: number;
-  amount: number;
-  debtorName: string;
-  creditorName: string;
-  updatedAt: string;
-}
-
 export interface BetDTO {
   id: number;
   challengeId: number;
@@ -273,8 +264,12 @@ export interface OjPoolSnapshotDTO {
 }
 
 export interface SettleOjRequest {
-  fromMemberId: number;
-  toMemberId: number;
+  fromMemberId?: number;
+  toMemberId?: number;
+  /** @deprecated Prefer fromMemberId — kept for clients still sending creditorId */
+  creditorId?: number;
+  /** @deprecated Prefer toMemberId — kept for clients still sending debtorId */
+  debtorId?: number;
   amount?: number;
   pin?: string;
 }
@@ -286,28 +281,9 @@ export interface SettleOjResult {
   reason?: string;
 }
 
-/** @deprecated Prefer SettleOjRequest — keep briefly if any client still sends debtor/creditor */
-export interface SettleDebtRequest {
-  fromMemberId?: number;
-  toMemberId?: number;
-  debtorId?: number;
-  creditorId?: number;
-  amount?: number;
-  pin?: string;
-}
-
-export interface SettleDebtResult {
-  settled: number;
-  /** Unfulfilled portion of this settle request (not pairwise-row leftover). */
-  remaining: number;
-  reason?: string;
-}
-
 export interface MemberDebtsResponse {
   member: MemberDTO;
   ojBalance: number;
-  owes: DrinkDebtDTO[];
-  owedBy: DrinkDebtDTO[];
   summary: MemberDebtSummary;
 }
 

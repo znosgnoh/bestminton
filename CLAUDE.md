@@ -38,6 +38,7 @@ Registered players in the team.
 | `eloRating` | Int | Default 1000; updated when kèo complete |
 | `totalMatches` | Int | Challenge match count |
 | `totalWins` | Int | Challenge wins |
+| `ojBalance` | Int | Default `0`; signed nước cam pool balance (`+` owns, `−` owes); global Σ = 0 |
 | `createdAt` | DateTime | |
 
 ### Match
@@ -111,9 +112,27 @@ Friendly singles/doubles match with optional drink-token betting. **Singles** up
 | `side` | Enum | `A` or `B` |
 | `amount` | Int | Stake (default 1 token) |
 
-### DrinkDebt
+### Nước cam pool (`ojBalance`)
 
-Pairwise drink-token balances between members (`debtorId`, `creditorId`, `amount`).
+Shared drink-token pool per member. Positive = owns (is owed); negative = owes. Global sum is always 0.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `ojBalance` | Int | On `Member`; default `0` |
+
+Kèo resolve adjusts balances directly (no settle row). Member settle moves tokens from a positive holder to a negative holder and logs a `DrinkSettleTransaction`.
+
+### DrinkSettleTransaction
+
+Audit log for member-initiated nước cam settlements (`fromMemberId` = positive owner, `toMemberId` = negative ower).
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | Int (PK) | Auto-increment |
+| `fromMemberId`, `toMemberId` | Int (FK) | → Member |
+| `amount` | Int | Tokens settled |
+| `createdAt` | DateTime | |
+| `rolledBackAt` | DateTime? | Set when captain rolls back |
 
 ### Expense
 
@@ -162,7 +181,9 @@ Total court fee is split weighted by playtime and headcount per player.
 
 **Rounding:** Shares are rounded to 2 decimal places. Any cent discrepancy is added to / subtracted from the first participant's share so `Σ Owed_i = TotalCost` exactly (required by Splitwise).
 
-**Court-money ledger:** Per-share remainders (`owed − paid`) are summed pairwise (debtor = share member, creditor = `paidByMemberId`), then collapsed with `simplifyDebts` for the `/balances` display. Mark-paid is FIFO on the **direct** pair only (same debtor share + `paidByMemberId === creditor`). Nước cam stays on `DrinkDebt`.
+**Court-money ledger:** Per-share remainders (`owed − paid`) are summed pairwise (debtor = share member, creditor = `paidByMemberId`), then collapsed with `simplifyDebts` (from `lib/drinkDebtUtils.ts`) for the `/balances` display. Mark-paid is FIFO on the **direct** pair only (same debtor share + `paidByMemberId === creditor`). Nước cam uses the shared `ojBalance` pool (see below); court ledger never writes drink tokens.
+
+**Nước cam pool:** Each member has signed `ojBalance` (`+` owns, `−` owes); Σ across all members = 0. Kèo resolve adjusts balances via `transferOj(debtor, creditor, amount)` without creating settle rows. Member settle (`POST /api/debts/settle`, member PIN) moves `min(positive, |negative|)` (or a requested amount) from owner → ower and logs `DrinkSettleTransaction`. Captain rollback (`POST /api/debts/transactions/[id]/rollback`, captain PIN) reverses one active settle row. `/cam` shows pool groups (Owns / Owes) plus settle history. Member delete blocked when `ojBalance !== 0`.
 
 **Shuttlecock display (settle UI):** Total entered is still one amount. For display only:
 
@@ -202,6 +223,7 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/challenges/new` | Page | Create a new kèo |
 | `/challenges/[id]` | Page | Kèo detail — betting board, start/resolve (captain) |
 | `/leaderboard` | Page | Elo rankings |
+| `/cam` | Page | Nước cam pool — Owns / Owes groups, settle, history, captain rollback |
 | `/balances` | Page | Court-money ledger — My / Group tabs (Sổ) |
 | `/api/health` | Route | `GET` DB availability check |
 | `/api/admin/verify-pin` | Route | `GET` captain PIN required?, `POST` verify captain PIN (client gate) |
@@ -214,7 +236,9 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/api/challenges/[id]/start` | Route | `POST` lock bets and start kèo |
 | `/api/challenges/[id]/resolve` | Route | `POST` record winner, confirmed handicap/score, Elo, payouts |
 | `/api/leaderboard` | Route | `GET` Elo leaderboard |
-| `/api/debts` | Route | `GET` drink debt ledger |
+| `/api/debts` | Route | `GET` nước cam pool snapshot (balances + settle history) |
+| `/api/debts/settle` | Route | `POST` settle positive → negative (member PIN) |
+| `/api/debts/transactions/[id]/rollback` | Route | `POST` captain rollback of one settle row (captain PIN) |
 | `/api/ledger` | Route | `GET` court-money ledger snapshot |
 | `/api/ledger/record` | Route | `POST` record match expenses on the ledger (then Splitwise if bridge on) |
 | `/api/ledger/import` | Route | `POST` import Splitwise nets as `OPENING` balances (PIN; bridge on) |
@@ -234,7 +258,7 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/api/splitwise/expense` | Route | `POST` thin PIN + `matchId` wrapper around ledger record (returns 502 if Splitwise fails); **clients use `/api/ledger/record`** |
 | `/api/upload/avatar` | Route | `POST` upload member avatar (JPG/PNG, max 2MB) to Vercel Blob |
 
-**Captain PIN on APIs:** When `CAPTAIN_PIN` (or legacy `ADMIN_PIN`) is set, mutating captain routes require the PIN in the JSON body (`pin`) or `X-Captain-Pin` header. This includes member/match CRUD, settlement `PUT` on `/api/matches/[id]`, ledger record/import/rollback/reset-paid, Splitwise sync/import, avatar upload, and Elo reset. `dataService` attaches the stored session PIN via `lib/adminPinClient.ts`. Read-only routes (e.g. `GET /api/members`) stay open.
+**Captain PIN on APIs:** When `CAPTAIN_PIN` (or legacy `ADMIN_PIN`) is set, mutating captain routes require the PIN in the JSON body (`pin`) or `X-Captain-Pin` header. This includes member/match CRUD, settlement `PUT` on `/api/matches/[id]`, ledger record/import/rollback/reset-paid, nước cam settle rollback, Splitwise sync/import, avatar upload, and Elo reset. `dataService` attaches the stored session PIN via `lib/adminPinClient.ts`. Read-only routes (e.g. `GET /api/members`) stay open.
 
 **Member PIN on APIs:** `MEMBER_PIN` defaults to `12345` when unset (set explicitly empty to disable). Mutating member routes require it via JSON `pin` or `X-Member-Pin`: ledger mark-paid (`POST /api/ledger/settle`), drink settle (`POST /api/debts/settle`), kèo start/resolve/edit/delete/bulk, and email preference toggle (`PATCH /api/members/[id]/email-preferences`). Client unlock lives in separate `sessionStorage` keys via `lib/memberPinClient.ts` / `hooks/useMemberPin.ts`.
 
@@ -322,7 +346,7 @@ EMAIL_FROM=Bestminton <notifications@yourdomain.com>
 APP_BASE_URL=https://your-app.vercel.app
 ```
 
-**Splitwise cutover:** Unset `SPLITWISE_API_KEY` and `SPLITWISE_GROUP_ID` to turn the bridge **off**. Settle still records the in-app ledger (`POST /api/ledger/record` via `dataService.recordMatchLedger`); the settle button is **Record expense** and does not require `splitwiseId`. “Import Splitwise balances” is hidden. Drink debts (`DrinkDebt`) are unchanged.
+**Splitwise cutover:** Unset `SPLITWISE_API_KEY` and `SPLITWISE_GROUP_ID` to turn the bridge **off**. Settle still records the in-app ledger (`POST /api/ledger/record` via `dataService.recordMatchLedger`); the settle button is **Record expense** and does not require `splitwiseId`. “Import Splitwise balances” is hidden. Nước cam pool (`ojBalance`) is independent of Splitwise.
 
 ---
 

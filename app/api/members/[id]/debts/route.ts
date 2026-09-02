@@ -31,8 +31,6 @@ export async function GET(
       member: memberDto,
       ojBalance: member.ojBalance,
       summary: summaryFromOjBalance(member.ojBalance),
-      owes: [],
-      owedBy: [],
     });
   } catch {
     return NextResponse.json({ error: "Database unavailable." }, { status: 503 });

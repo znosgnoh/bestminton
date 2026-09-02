@@ -9,7 +9,7 @@ import { deferNotification } from "@/lib/email/defer";
 import { notifyDrinkDebtSettled } from "@/lib/email/events";
 import { settleOjPool } from "@/lib/ojBalance";
 import { revalidateDebtPages } from "@/lib/revalidate";
-import type { SettleDebtRequest } from "@/lib/types";
+import type { SettleOjRequest } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   const unavailable = requireDatabase();
   if (unavailable) return unavailable;
 
-  let body: SettleDebtRequest;
+  let body: SettleOjRequest;
   try {
     body = await request.json();
   } catch {
