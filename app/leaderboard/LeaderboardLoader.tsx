@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { isDatabaseConfigured } from "@/lib/dbConfig";
-import { debtSummaryFor, getAllDebtSummaries } from "@/lib/drinkDebt";
+import { debtSummaryFor, getAllDebtSummaries } from "@/lib/ojBalance";
 import { toMemberDTO } from "@/lib/memberSerialize";
 import LeaderboardClient from "./LeaderboardClient";
 import type { LeaderboardEntryDTO } from "@/lib/types";

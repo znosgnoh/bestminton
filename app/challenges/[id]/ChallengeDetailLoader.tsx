@@ -4,7 +4,7 @@ import { formatDatabaseError, logDatabaseError } from "@/lib/dbHealth";
 import { CHALLENGE_FULL_INCLUDE } from "@/lib/challengeIncludes";
 import { serializeChallenge } from "@/lib/challengeSerialize";
 import { purgeStalePendingChallenges } from "@/lib/challengeService";
-import { debtSummaryFor, getAllDebtSummaries } from "@/lib/drinkDebt";
+import { debtSummaryFor, getAllDebtSummaries } from "@/lib/ojBalance";
 import { toMemberDTO } from "@/lib/memberSerialize";
 import ChallengeDetailClient from "./ChallengeDetailClient";
 import type { ChallengeDTO, MemberDTO } from "@/lib/types";

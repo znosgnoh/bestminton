@@ -1,6 +1,6 @@
-import { addDebt } from "./drinkDebt";
 import { db } from "./db";
 import { computeSinglesEloChanges, nextSinglesStreaks } from "./elo";
+import { assertOjChecksum, transferOj } from "./ojBalance";
 import { CHALLENGE_FULL_INCLUDE } from "./challengeIncludes";
 import { serializeChallenge } from "./challengeSerialize";
 import { stalePendingCutoff } from "./staleChallenges";
@@ -98,7 +98,7 @@ async function recordSinglesMatchDebts(
 
   for (const loser of losers) {
     for (const winner of winners) {
-      await addDebt(loser.id, winner.id, 1, tx);
+      await transferOj(loser.id, winner.id, 1, tx);
       debts.push({
         debtorId: loser.id,
         debtorName: loser.name,
@@ -131,7 +131,7 @@ async function recordDoublesMatchDebts(
   for (let i = 0; i < winners.length; i++) {
     const winner = winners[i];
     const loser = losers[i % losers.length];
-    await addDebt(loser.id, winner.id, 1, tx);
+    await transferOj(loser.id, winner.id, 1, tx);
     debts.push({
       debtorId: loser.id,
       debtorName: loser.name,
@@ -174,7 +174,7 @@ async function recordBetDebts(
     const debtorName = betWon ? bet.counterparty.name : bet.bettor.name;
     const creditorName = betWon ? bet.bettor.name : bet.counterparty.name;
 
-    await addDebt(debtorId, creditorId, bet.amount, tx);
+    await transferOj(debtorId, creditorId, bet.amount, tx);
     debts.push({
       debtorId,
       debtorName,
@@ -370,6 +370,7 @@ export async function resolveChallenge(
         : [];
     const betDebts = await recordBetDebts(challenge.bets, winnerSide, tx);
     const debts = [...matchDebts, ...betDebts];
+    await assertOjChecksum(tx);
 
     if (!isDoubles) {
       for (const change of eloChanges) {

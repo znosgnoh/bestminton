@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
 import { CHALLENGE_LIST_INCLUDE } from "@/lib/challengeIncludes";
 import { serializeChallengeList } from "@/lib/challengeSerialize";
-import { getMemberDebts } from "@/lib/drinkDebt";
 import { DEFAULT_ELO } from "@/lib/elo";
 import { toMemberDTO } from "@/lib/memberSerialize";
+import { summaryFromOjBalance } from "@/lib/ojBalance";
 import {
   getShuttlecockFeePerHour,
   shouldCreateShuttlecockRemittance,
@@ -89,7 +89,7 @@ export async function buildMemberProfile(memberId: number): Promise<MemberProfil
   };
 
   const [debtSummary, higherRatedCount, registrations, challenges] = await Promise.all([
-    getMemberDebts(memberId).then((d) => d.summary),
+    Promise.resolve(summaryFromOjBalance(member.ojBalance)),
     db.member.count({
       where: {
         OR: [

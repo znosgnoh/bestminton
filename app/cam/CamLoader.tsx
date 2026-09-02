@@ -1,6 +1,6 @@
 import { isDatabaseConfigured } from "@/lib/dbConfig";
 import { formatDatabaseError, logDatabaseError, withDbRetry } from "@/lib/dbHealth";
-import { getAllDebts } from "@/lib/drinkDebt";
+import { getAllDebts } from "@/lib/ojBalance";
 import CamPageClient from "./CamPageClient";
 import type { DrinkDebtDTO } from "@/lib/types";
 

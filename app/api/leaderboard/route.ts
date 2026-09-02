@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireDatabase } from "@/lib/apiHelpers";
-import { debtSummaryFor, getAllDebtSummaries } from "@/lib/drinkDebt";
+import { debtSummaryFor, getAllDebtSummaries } from "@/lib/ojBalance";
 import { toMemberDTO } from "@/lib/memberSerialize";
 import type { LeaderboardEntryDTO } from "@/lib/types";
 

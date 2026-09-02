@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireDatabase } from "@/lib/apiHelpers";
-import { getAllDebts } from "@/lib/drinkDebt";
+import { getAllDebts } from "@/lib/ojBalance";
 
 export const dynamic = "force-dynamic";
 

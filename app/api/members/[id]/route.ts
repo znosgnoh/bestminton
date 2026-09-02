@@ -280,9 +280,6 @@ export async function DELETE(
       await tx.bet.deleteMany({
         where: { OR: [{ bettorId: id }, { counterpartyId: id }] },
       });
-      await tx.drinkDebt.deleteMany({
-        where: { OR: [{ debtorId: id }, { creditorId: id }] },
-      });
       await tx.match.updateMany({
         where: { paidByMemberId: id },
         data: { paidByMemberId: null },

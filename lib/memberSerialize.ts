@@ -1,4 +1,4 @@
-import { debtSummaryFor, getAllDebtSummaries } from "./drinkDebt";
+import { debtSummaryFor, getAllDebtSummaries } from "./ojBalance";
 import type { MemberDebtSummary, MemberDTO } from "./types";
 
 const EMPTY_DEBT_SUMMARY: MemberDebtSummary = {
