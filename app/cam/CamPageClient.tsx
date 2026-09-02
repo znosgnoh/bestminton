@@ -33,7 +33,12 @@ export default function CamPageClient({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(dbError ?? null);
 
-  const unsettledCount = snapshot.balances.length;
+  const ownersCount = snapshot.balances.filter(
+    (balance) => balance.ojBalance > 0
+  ).length;
+  const owersCount = snapshot.balances.filter(
+    (balance) => balance.ojBalance < 0
+  ).length;
   const totalLy = useMemo(
     () =>
       snapshot.balances
@@ -94,11 +99,14 @@ export default function CamPageClient({
             {t("cam.title")}
           </h1>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            {unsettledCount === 0
+            {t("cam.subtitle")}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            {ownersCount === 0 && owersCount === 0
               ? t("cam.allSettled")
-              : t("cam.netSummary", {
-                  count: unsettledCount,
-                  suffix: unsettledCount === 1 ? "" : "s",
+              : t("cam.poolSummary", {
+                  owns: ownersCount,
+                  owes: owersCount,
                   total: totalLy,
                 })}
           </p>
@@ -108,18 +116,13 @@ export default function CamPageClient({
       {loading && <PageLoader />}
       {error && <ErrorBanner message={error} onRetry={refreshDebts} />}
 
-      {unsettledCount === 0 ? (
-        <DebtsTable
-          debts={[]}
-          highlightMemberId={Number.isFinite(highlightMemberId) ? highlightMemberId : undefined}
-          onSettled={refreshDebts}
-        />
-      ) : (
-        <div className="tet-empty">
-          <OrangeJuiceIcon size={32} className="mx-auto mb-2 text-orange-400" />
-          <p className="font-medium">{unsettledCount} pool balances loaded.</p>
-        </div>
-      )}
+      <DebtsTable
+        snapshot={snapshot}
+        highlightMemberId={
+          Number.isFinite(highlightMemberId) ? highlightMemberId : undefined
+        }
+        onChanged={refreshDebts}
+      />
     </div>
   );
 }
