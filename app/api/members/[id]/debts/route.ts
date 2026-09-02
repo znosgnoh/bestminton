@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireDatabase } from "@/lib/apiHelpers";
 import { memberToDTO } from "@/lib/memberSerialize";
-import { getMemberDebts } from "@/lib/ojBalance";
+import { summaryFromOjBalance } from "@/lib/ojBalance";
 
 export const dynamic = "force-dynamic";
 
@@ -25,10 +25,15 @@ export async function GET(
       return NextResponse.json({ error: "Member not found." }, { status: 404 });
     }
 
-    const debts = await getMemberDebts(memberId);
     const memberDto = await memberToDTO(member);
 
-    return NextResponse.json({ member: memberDto, ...debts });
+    return NextResponse.json({
+      member: memberDto,
+      ojBalance: member.ojBalance,
+      summary: summaryFromOjBalance(member.ojBalance),
+      owes: [],
+      owedBy: [],
+    });
   } catch {
     return NextResponse.json({ error: "Database unavailable." }, { status: 503 });
   }

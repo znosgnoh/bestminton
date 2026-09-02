@@ -8,18 +8,17 @@ import ErrorBanner from "@/components/ui/ErrorBanner";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
 import PageLoader from "@/components/ui/PageLoader";
 import { useI18n } from "@/contexts/LocaleContext";
-import { simplifyDebts } from "@/lib/drinkDebtUtils";
 import * as dataService from "@/lib/dataService";
-import type { DrinkDebtDTO } from "@/lib/types";
+import type { OjPoolSnapshotDTO } from "@/lib/types";
 
 interface CamPageClientProps {
-  initialDebts: DrinkDebtDTO[];
+  initialSnapshot: OjPoolSnapshotDTO;
   dbAvailable: boolean;
   dbError?: string;
 }
 
 export default function CamPageClient({
-  initialDebts,
+  initialSnapshot,
   dbAvailable,
   dbError,
 }: CamPageClientProps) {
@@ -29,20 +28,26 @@ export default function CamPageClient({
   const highlightMemberId = searchParams.get("member")
     ? parseInt(searchParams.get("member")!, 10)
     : undefined;
-  const [debts, setDebts] = useState(initialDebts);
+  const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [available, setAvailable] = useState(dbAvailable);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(dbError ?? null);
 
-  const simplifiedDebts = useMemo(() => simplifyDebts(debts), [debts]);
-  const netTotalLy = simplifiedDebts.reduce((sum, d) => sum + d.amount, 0);
+  const unsettledCount = snapshot.balances.length;
+  const totalLy = useMemo(
+    () =>
+      snapshot.balances
+        .filter((balance) => balance.ojBalance > 0)
+        .reduce((sum, balance) => sum + balance.ojBalance, 0),
+    [snapshot.balances]
+  );
 
   const fetchDebts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const fresh = await dataService.getDebts();
-      setDebts(fresh);
+      setSnapshot(fresh);
       setAvailable(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load debts.");
@@ -59,10 +64,10 @@ export default function CamPageClient({
   useRegisterPullToRefresh(fetchDebts);
 
   useEffect(() => {
-    setDebts(initialDebts);
+    setSnapshot(initialSnapshot);
     setAvailable(dbAvailable);
     setError(dbError ?? null);
-  }, [initialDebts, dbAvailable, dbError]);
+  }, [initialSnapshot, dbAvailable, dbError]);
 
   if (!available) {
     return (
@@ -89,12 +94,12 @@ export default function CamPageClient({
             {t("cam.title")}
           </h1>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            {simplifiedDebts.length === 0
+            {unsettledCount === 0
               ? t("cam.allSettled")
               : t("cam.netSummary", {
-                  count: simplifiedDebts.length,
-                  suffix: simplifiedDebts.length === 1 ? "" : "s",
-                  total: netTotalLy,
+                  count: unsettledCount,
+                  suffix: unsettledCount === 1 ? "" : "s",
+                  total: totalLy,
                 })}
           </p>
         </div>
@@ -103,11 +108,18 @@ export default function CamPageClient({
       {loading && <PageLoader />}
       {error && <ErrorBanner message={error} onRetry={refreshDebts} />}
 
-      <DebtsTable
-        debts={debts}
-        highlightMemberId={Number.isFinite(highlightMemberId) ? highlightMemberId : undefined}
-        onSettled={refreshDebts}
-      />
+      {unsettledCount === 0 ? (
+        <DebtsTable
+          debts={[]}
+          highlightMemberId={Number.isFinite(highlightMemberId) ? highlightMemberId : undefined}
+          onSettled={refreshDebts}
+        />
+      ) : (
+        <div className="tet-empty">
+          <OrangeJuiceIcon size={32} className="mx-auto mb-2 text-orange-400" />
+          <p className="font-medium">{unsettledCount} pool balances loaded.</p>
+        </div>
+      )}
     </div>
   );
 }

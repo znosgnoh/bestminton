@@ -305,6 +305,7 @@ export interface SettleDebtResult {
 
 export interface MemberDebtsResponse {
   member: MemberDTO;
+  ojBalance: number;
   owes: DrinkDebtDTO[];
   owedBy: DrinkDebtDTO[];
   summary: MemberDebtSummary;

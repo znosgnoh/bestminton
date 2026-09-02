@@ -336,8 +336,8 @@ export default function DebtsTable({
 
       try {
         const result = await dataService.settleDebt({
-          debtorId: item.debtorId,
-          creditorId: item.creditorId,
+          fromMemberId: item.creditorId,
+          toMemberId: item.debtorId,
           amount: item.amount,
           pin,
         });

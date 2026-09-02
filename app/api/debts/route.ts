@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
 import { requireDatabase } from "@/lib/apiHelpers";
-import { getAllDebts } from "@/lib/ojBalance";
+import { getOjPoolSnapshot } from "@/lib/ojBalance";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +9,7 @@ export async function GET() {
   if (unavailable) return unavailable;
 
   try {
-    const debts = await getAllDebts();
-    return NextResponse.json(debts);
+    return NextResponse.json(await getOjPoolSnapshot());
   } catch {
     return NextResponse.json({ error: "Database unavailable." }, { status: 503 });
   }

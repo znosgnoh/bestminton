@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireDatabase, requireMemberPin } from "@/lib/apiHelpers";
+import {
+  memberPinFromRequest,
+  requireDatabase,
+  requireMemberPin,
+} from "@/lib/apiHelpers";
 import { db } from "@/lib/db";
 import { deferNotification } from "@/lib/email/defer";
 import { notifyDrinkDebtSettled } from "@/lib/email/events";
@@ -20,45 +24,49 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const debtorId = Number(body.debtorId);
-  const creditorId = Number(body.creditorId);
-  if (!Number.isInteger(debtorId) || !Number.isInteger(creditorId)) {
-    return NextResponse.json({ error: "debtorId and creditorId are required." }, { status: 400 });
+  const fromMemberId = Number(body.fromMemberId ?? body.creditorId);
+  const toMemberId = Number(body.toMemberId ?? body.debtorId);
+  if (!Number.isInteger(fromMemberId) || !Number.isInteger(toMemberId)) {
+    return NextResponse.json(
+      { error: "fromMemberId and toMemberId are required." },
+      { status: 400 }
+    );
   }
-  if (debtorId === creditorId) {
-    return NextResponse.json({ error: "Debtor and creditor must differ." }, { status: 400 });
+  if (fromMemberId === toMemberId) {
+    return NextResponse.json({ error: "Pool members must differ." }, { status: 400 });
   }
 
+  let amount: number | undefined;
   if (body.amount !== undefined) {
-    const amount = Number(body.amount);
+    amount = Number(body.amount);
     if (!Number.isInteger(amount) || amount <= 0) {
       return NextResponse.json({ error: "amount must be a positive integer." }, { status: 400 });
     }
   }
 
-  const pinDenied = requireMemberPin(body.pin);
+  const pinDenied = requireMemberPin(memberPinFromRequest(request, body));
   if (pinDenied) return pinDenied;
 
   try {
-    const [debtor, creditor] = await Promise.all([
-      db.member.findUnique({ where: { id: debtorId } }),
-      db.member.findUnique({ where: { id: creditorId } }),
+    const [fromMember, toMember] = await Promise.all([
+      db.member.findUnique({ where: { id: fromMemberId }, select: { id: true } }),
+      db.member.findUnique({ where: { id: toMemberId }, select: { id: true } }),
     ]);
-    if (!debtor || !creditor) {
+    if (!fromMember || !toMember) {
       return NextResponse.json({ error: "Member not found." }, { status: 404 });
     }
 
     const result = await settleOjPool({
-      fromMemberId: creditorId,
-      toMemberId: debtorId,
-      amount: body.amount,
+      fromMemberId,
+      toMemberId,
+      amount,
     });
 
     revalidateDebtPages();
     deferNotification(() =>
       notifyDrinkDebtSettled({
-        debtorId,
-        creditorId,
+        debtorId: toMemberId,
+        creditorId: fromMemberId,
         settledAmount: result.settled,
       })
     );
@@ -70,7 +78,7 @@ export async function POST(request: NextRequest) {
         : undefined;
 
     if (code === "SAME_MEMBER") {
-      return NextResponse.json({ error: "Debtor and creditor must differ." }, { status: 400 });
+      return NextResponse.json({ error: "Pool members must differ." }, { status: 400 });
     }
     if (code === "NO_BALANCE") {
       return NextResponse.json(

@@ -1,11 +1,11 @@
 import { isDatabaseConfigured } from "@/lib/dbConfig";
 import { formatDatabaseError, logDatabaseError, withDbRetry } from "@/lib/dbHealth";
-import { getAllDebts } from "@/lib/ojBalance";
+import { getOjPoolSnapshot } from "@/lib/ojBalance";
 import CamPageClient from "./CamPageClient";
-import type { DrinkDebtDTO } from "@/lib/types";
+import type { OjPoolSnapshotDTO } from "@/lib/types";
 
 export default async function CamLoader() {
-  let debts: DrinkDebtDTO[] = [];
+  let snapshot: OjPoolSnapshotDTO = { balances: [], transactions: [] };
   let dbAvailable = false;
   let dbError: string | undefined;
 
@@ -14,7 +14,7 @@ export default async function CamLoader() {
       "POSTGRES_PRISMA_URL is not set. Configure Postgres env vars for kèo and leaderboard features.";
   } else {
     try {
-      debts = await withDbRetry(() => getAllDebts());
+      snapshot = await withDbRetry(() => getOjPoolSnapshot());
       dbAvailable = true;
     } catch (err) {
       dbError = formatDatabaseError(err);
@@ -23,6 +23,10 @@ export default async function CamLoader() {
   }
 
   return (
-    <CamPageClient initialDebts={debts} dbAvailable={dbAvailable} dbError={dbError} />
+    <CamPageClient
+      initialSnapshot={snapshot}
+      dbAvailable={dbAvailable}
+      dbError={dbError}
+    />
   );
 }

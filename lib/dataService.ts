@@ -14,10 +14,12 @@ import type {
   CreateBulkChallengesResponse,
   UpdateChallengeRequest,
   ChallengeSide,
-  DrinkDebtDTO,
+  DrinkSettleTransactionDTO,
   MemberDebtsResponse,
   MemberProfileDTO,
-  SettleDebtResult,
+  OjPoolSnapshotDTO,
+  SettleOjRequest,
+  SettleOjResult,
   ResetEloResult,
   LedgerSnapshotDTO,
   MarkLedgerPaidResult,
@@ -535,8 +537,8 @@ export function backfillShuttlecockRemittances(
 
 // ---- Drink debts (API-only — no IndexedDB fallback) ----
 
-export function getDebts(): Promise<DrinkDebtDTO[]> {
-  return challengeFetch<DrinkDebtDTO[]>("/api/debts");
+export function getDebts(): Promise<OjPoolSnapshotDTO> {
+  return challengeFetch<OjPoolSnapshotDTO>("/api/debts");
 }
 
 export function getMemberDebts(memberId: number): Promise<MemberDebtsResponse> {
@@ -547,17 +549,26 @@ export function getMemberProfile(memberId: number): Promise<MemberProfileDTO> {
   return challengeFetch<MemberProfileDTO>(`/api/members/${memberId}`);
 }
 
-export function settleDebt(data: {
-  debtorId: number;
-  creditorId: number;
-  amount?: number;
-  pin?: string;
-}): Promise<SettleDebtResult> {
-  return challengeFetch<SettleDebtResult>("/api/debts/settle", {
+export function settleDebt(data: SettleOjRequest): Promise<SettleOjResult> {
+  return challengeFetch<SettleOjResult>("/api/debts/settle", {
     method: "POST",
     headers: { ...JSON_HEADERS, ...memberPinHeaders() },
     body: JSON.stringify(withMemberPin(data)),
   });
+}
+
+export function rollbackDrinkSettle(
+  id: number,
+  pin?: string
+): Promise<DrinkSettleTransactionDTO> {
+  return challengeFetch<DrinkSettleTransactionDTO>(
+    `/api/debts/transactions/${id}/rollback`,
+    {
+      method: "POST",
+      headers: { ...JSON_HEADERS, ...adminPinHeaders() },
+      body: JSON.stringify(withAdminPin({ pin })),
+    }
+  );
 }
 
 // ---- Court-money ledger (API-only — no IndexedDB fallback) ----

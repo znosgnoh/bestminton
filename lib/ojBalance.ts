@@ -1,7 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { db } from "./db";
 import type {
-  DrinkDebtDTO,
   DrinkSettleTransactionDTO,
   MemberDebtSummary,
   OjBalanceDTO,
@@ -193,65 +192,6 @@ export function debtSummaryFor(
   summaries: Map<number, MemberDebtSummary>
 ): MemberDebtSummary {
   return summaries.get(memberId) ?? { totalOwed: 0, totalOwing: 0, netCam: 0 };
-}
-
-/**
- * Legacy cam API projection. Pool balances have no canonical pairwise edges, so pair
- * debtors and creditors deterministically until Tasks 4/5 consume the pool DTO directly.
- */
-export async function getAllDebts(): Promise<DrinkDebtDTO[]> {
-  const members = await db.member.findMany({
-    where: { ojBalance: { not: 0 } },
-    select: { id: true, name: true, ojBalance: true },
-    orderBy: { id: "asc" },
-  });
-  const debtors = members
-    .filter((member) => member.ojBalance < 0)
-    .map((member) => ({ ...member, remaining: -member.ojBalance }));
-  const creditors = members
-    .filter((member) => member.ojBalance > 0)
-    .map((member) => ({ ...member, remaining: member.ojBalance }));
-  const debts: DrinkDebtDTO[] = [];
-  const projectedAt = new Date().toISOString();
-  let debtorIndex = 0;
-  let creditorIndex = 0;
-
-  while (debtorIndex < debtors.length && creditorIndex < creditors.length) {
-    const debtor = debtors[debtorIndex];
-    const creditor = creditors[creditorIndex];
-    const amount = Math.min(debtor.remaining, creditor.remaining);
-    debts.push({
-      debtorId: debtor.id,
-      creditorId: creditor.id,
-      amount,
-      debtorName: debtor.name,
-      creditorName: creditor.name,
-      updatedAt: projectedAt,
-    });
-    debtor.remaining -= amount;
-    creditor.remaining -= amount;
-    if (debtor.remaining === 0) debtorIndex++;
-    if (creditor.remaining === 0) creditorIndex++;
-  }
-
-  return debts;
-}
-
-/** @deprecated Compatibility for the member debts endpoint until its pool migration. */
-export async function getMemberDebts(memberId: number): Promise<{
-  owes: DrinkDebtDTO[];
-  owedBy: DrinkDebtDTO[];
-  summary: MemberDebtSummary;
-}> {
-  const [debts, member] = await Promise.all([
-    getAllDebts(),
-    db.member.findUnique({ where: { id: memberId }, select: { ojBalance: true } }),
-  ]);
-  return {
-    owes: debts.filter((debt) => debt.debtorId === memberId),
-    owedBy: debts.filter((debt) => debt.creditorId === memberId),
-    summary: summaryFromOjBalance(member?.ojBalance ?? 0),
-  };
 }
 
 export async function getOjPoolSnapshot(): Promise<OjPoolSnapshotDTO> {
