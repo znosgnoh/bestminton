@@ -22,6 +22,7 @@ model Member {
   /// Consecutive singles losses (reset on a singles win). Amplifies Elo when ≥ 3.
   singlesLoseStreak Int      @default(0)
   emailNotificationsEnabled Boolean @default(true)
+  ojBalance                 Int      @default(0)
   createdAt         DateTime @default(now())
 
   registrations      MatchRegistration[]
@@ -30,8 +31,8 @@ model Member {
   shuttlecockMatches Match[]             @relation("MatchShuttlecockRecipient")
   betsPlaced         Bet[]               @relation("BetBettor")
   betsAsCounterparty Bet[]               @relation("BetCounterparty")
-  debtsOwed          DrinkDebt[]         @relation("DebtDebtor")
-  debtsOwing         DrinkDebt[]         @relation("DebtCreditor")
+  settleFrom         DrinkSettleTransaction[] @relation("SettleFrom")
+  settleTo           DrinkSettleTransaction[] @relation("SettleTo")
   challengesWon      Challenge[]         @relation("ChallengeWinner")
   challengesAsA      Challenge[]         @relation("ChallengePlayerA")
   challengesAsA2     Challenge[]         @relation("ChallengePlayerA2")
@@ -149,16 +150,19 @@ model Bet {
   @@unique([challengeId, bettorId])
 }
 
-model DrinkDebt {
-  debtorId   Int
-  creditorId Int
-  amount     Int
-  updatedAt  DateTime @updatedAt
+model DrinkSettleTransaction {
+  id           Int       @id @default(autoincrement())
+  fromMemberId Int
+  toMemberId   Int
+  amount       Int
+  createdAt    DateTime  @default(now())
+  rolledBackAt DateTime?
 
-  debtor   Member @relation("DebtDebtor", fields: [debtorId], references: [id])
-  creditor Member @relation("DebtCreditor", fields: [creditorId], references: [id])
+  fromMember Member @relation("SettleFrom", fields: [fromMemberId], references: [id])
+  toMember   Member @relation("SettleTo", fields: [toMemberId], references: [id])
 
-  @@id([debtorId, creditorId])
+  @@index([createdAt])
+  @@index([rolledBackAt])
 }
 
 enum EmailEventType {
