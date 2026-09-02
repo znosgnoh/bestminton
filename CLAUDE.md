@@ -313,7 +313,7 @@ CAPTAIN_PIN=
 MEMBER_PIN=12345
 # MEMBER_PIN=          # empty = disable member PIN gate (local convenience)
 
-# Optional — Vercel Cron Authorization: Bearer CRON_SECRET for cron routes
+# Optional — Vercel Cron Authorization: Bearer CRON_SECRET for cron routes (set on Vercel; auto-sent on scheduled invocations)
 CRON_SECRET=
 
 # Email notifications (optional — unset = no emails; app works normally)

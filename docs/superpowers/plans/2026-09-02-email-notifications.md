@@ -4,7 +4,7 @@
 
 **Goal:** Send bilingual (VI + EN) Resend emails for match creation, 96h/48h registration reminders, kèo resolve, drink settle, and ledger record/mark-paid — with idempotent delivery and per-member global opt-out.
 
-**Architecture:** Shared `lib/email/` module writes to `EmailDelivery` only after Resend succeeds. API routes and hourly cron call high-level notify helpers via `deferNotification()` (`waitUntil` on Vercel). When `RESEND_API_KEY` is unset, all email code no-ops silently.
+**Architecture:** Shared `lib/email/` module writes to `EmailDelivery` only after Resend succeeds. API routes and daily cron call high-level notify helpers via `deferNotification()` (`waitUntil` on Vercel). When `RESEND_API_KEY` is unset, all email code no-ops silently.
 
 **Tech Stack:** Next.js 16 App Router · React 19 · TypeScript · Prisma · Vercel Postgres · Resend · `@vercel/functions` (`waitUntil`) · `tsx --test`
 
@@ -18,7 +18,7 @@
 - `APP_BASE_URL` defaults to `http://localhost:3000` in dev for deep links.
 - Bilingual VI + EN in every email. No Chinese in v1.
 - Global opt-out only: `Member.emailNotificationsEnabled` (default `true`).
-- Reminder windows: exactly **96h** and **48h** before `scheduledAt`, matched within **±30 minutes** by hourly cron.
+- Reminder windows: exactly **96h** and **48h** before `scheduledAt`, matched within **±12 hours** by daily cron (Vercel Hobby).
 - New match email for recurring batch: **nearest** `scheduledAt` instance only.
 - New match + reminder recipients: members with email + notifications on, **not registered** for that match.
 - Kèo resolve recipients: all 4 players + all bettors (deduped by `memberId`).
@@ -35,7 +35,7 @@
 ```
 bestminton/
 ├── package.json                                  [UPDATE] resend, @vercel/functions
-├── vercel.json                                   [UPDATE] hourly match-reminders cron
+├── vercel.json                                   [UPDATE] daily match-reminders cron
 ├── prisma/
 │   ├── schema.prisma                             [UPDATE] emailNotificationsEnabled, EmailDelivery
 │   └── migrations/20260902120000_email_notifications/ [NEW]
@@ -904,7 +904,7 @@ export async function GET(request: NextRequest) {
 {
   "crons": [
     { "path": "/api/cron/stale-challenges", "schedule": "0 16 * * *" },
-    { "path": "/api/cron/match-reminders", "schedule": "0 * * * *" }
+    { "path": "/api/cron/match-reminders", "schedule": "0 16 * * *" }
   ]
 }
 ```
@@ -913,7 +913,7 @@ export async function GET(request: NextRequest) {
 
 ```bash
 git add app/api/cron/match-reminders/route.ts vercel.json
-git commit -m "feat(email): add hourly match reminder cron"
+git commit -m "feat(email): add daily match reminder cron"
 ```
 
 ---
