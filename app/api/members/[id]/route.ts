@@ -231,9 +231,19 @@ export async function DELETE(
   const pinDenied = requireAdminPin(pinFromRequest(request, body));
   if (pinDenied) return pinDenied;
 
-  const member = await db.member.findUnique({ where: { id }, select: { id: true } });
+  const member = await db.member.findUnique({
+    where: { id },
+    select: { id: true, ojBalance: true },
+  });
   if (!member) {
     return NextResponse.json({ error: "Member not found." }, { status: 404 });
+  }
+
+  if (member.ojBalance !== 0) {
+    return NextResponse.json(
+      { error: "Member has outstanding orange juice — settle to zero first." },
+      { status: 409 }
+    );
   }
 
   const regCount = await db.matchRegistration.count({ where: { memberId: id } });
@@ -299,6 +309,9 @@ export async function DELETE(
       await tx.challenge.updateMany({
         where: { playerB2Id: id },
         data: { playerB2Id: null },
+      });
+      await tx.drinkSettleTransaction.deleteMany({
+        where: { OR: [{ fromMemberId: id }, { toMemberId: id }] },
       });
       await tx.member.delete({ where: { id } });
     });

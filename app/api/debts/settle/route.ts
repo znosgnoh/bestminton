@@ -53,25 +53,6 @@ export async function POST(request: NextRequest) {
       toMemberId: debtorId,
       amount: body.amount,
     });
-    if (result.settled === 0) {
-      const reason = result.reason ?? "unknown";
-      const message =
-        reason === "no_path"
-          ? "No recorded debt path between these members. Settle the pairwise rows in the recorded ledger instead."
-          : reason === "same_member"
-            ? "Debtor and creditor must differ."
-            : "No debt found to settle.";
-      return NextResponse.json(
-        {
-          error: message,
-          reason,
-          debtorId,
-          creditorId,
-          requestedAmount: body.amount ?? null,
-        },
-        { status: 404 }
-      );
-    }
 
     revalidateDebtPages();
     deferNotification(() =>
@@ -82,7 +63,36 @@ export async function POST(request: NextRequest) {
       })
     );
     return NextResponse.json(result);
-  } catch {
+  } catch (err) {
+    const code =
+      err && typeof err === "object" && "code" in err
+        ? String((err as { code: unknown }).code)
+        : undefined;
+
+    if (code === "SAME_MEMBER") {
+      return NextResponse.json({ error: "Debtor and creditor must differ." }, { status: 400 });
+    }
+    if (code === "NO_BALANCE") {
+      return NextResponse.json(
+        { error: "No settleable orange juice balance between these members." },
+        { status: 400 }
+      );
+    }
+    if (code === "INSUFFICIENT") {
+      const max =
+        err && typeof err === "object" && "max" in err
+          ? Number((err as { max: unknown }).max)
+          : undefined;
+      return NextResponse.json(
+        {
+          error: "amount exceeds maximum settleable balance.",
+          ...(Number.isFinite(max) ? { max } : {}),
+        },
+        { status: 409 }
+      );
+    }
+
+    console.error("[POST /api/debts/settle]", err);
     return NextResponse.json({ error: "Database unavailable." }, { status: 503 });
   }
 }
