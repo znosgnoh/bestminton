@@ -249,9 +249,49 @@ export interface ResetEloResult {
   count: number;
 }
 
+export interface OjBalanceDTO {
+  memberId: number;
+  name: string;
+  avatarUrl: string | null;
+  ojBalance: number;
+}
+
+export interface DrinkSettleTransactionDTO {
+  id: number;
+  fromMemberId: number;
+  toMemberId: number;
+  fromName: string;
+  toName: string;
+  amount: number;
+  createdAt: string;
+  rolledBackAt: string | null;
+}
+
+export interface OjPoolSnapshotDTO {
+  balances: OjBalanceDTO[];
+  transactions: DrinkSettleTransactionDTO[];
+}
+
+export interface SettleOjRequest {
+  fromMemberId: number;
+  toMemberId: number;
+  amount?: number;
+  pin?: string;
+}
+
+export interface SettleOjResult {
+  settled: number;
+  remaining: number;
+  transaction: DrinkSettleTransactionDTO;
+  reason?: string;
+}
+
+/** @deprecated Prefer SettleOjRequest — keep briefly if any client still sends debtor/creditor */
 export interface SettleDebtRequest {
-  debtorId: number;
-  creditorId: number;
+  fromMemberId?: number;
+  toMemberId?: number;
+  debtorId?: number;
+  creditorId?: number;
   amount?: number;
   pin?: string;
 }
