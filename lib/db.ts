@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { applyPrismaPoolParams } from "./prismaPoolUrl";
 
 /** Bump when pool URL params or Prisma schema scalar types change so Hot Reload replaces a stale PrismaClient. */
-const POOL_CONFIG_VERSION = "v4-pgbouncer";
+const POOL_CONFIG_VERSION = "v5-serverless-pool";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;

@@ -11,6 +11,8 @@ import { revalidateChallengePages, revalidateMemberPages } from "@/lib/revalidat
 import type { ResolveChallengeRequest } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+/** Allow Neon cold-start + transaction retry room (capped by plan). */
+export const maxDuration = 30;
 
 function parseConfirmedHandicap(value: unknown): number | { error: string } {
   if (value === undefined || value === null) {

@@ -10,7 +10,7 @@ describe("applyPrismaPoolParams", () => {
     );
     const parsed = new URL(url);
     assert.equal(parsed.searchParams.get("pgbouncer"), "true");
-    assert.equal(parsed.searchParams.get("connection_limit"), "5");
+    assert.equal(parsed.searchParams.get("connection_limit"), "1");
   });
 
   it("does not force pgbouncer on a direct Neon host", () => {

@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { calculateShares } from "./calculations";
 import { getCurrencyCode } from "./currency";
 import { db } from "./db";
-import { withDbRetry } from "./dbHealth";
+import { withDbRetry, NEON_TX_OPTIONS } from "./dbHealth";
 import {
   netsFromRemainders,
   openingPairsFromNets,
@@ -69,8 +69,6 @@ const MATCH_LEDGER_INCLUDE = {
 } as const;
 
 type SplitwiseMemberRef = { id: number; name: string; splitwiseId: number | null };
-
-const NEON_TX_OPTIONS = { maxWait: 10_000, timeout: 20_000 } as const;
 
 type ExpenseWithRelations = Prisma.ExpenseGetPayload<{ include: typeof EXPENSE_INCLUDE }>;
 type LedgerTx = Prisma.TransactionClient;

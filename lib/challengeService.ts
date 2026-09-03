@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { NEON_TX_OPTIONS, withDbRetry } from "./dbHealth";
 import { computeSinglesEloChanges, nextSinglesStreaks } from "./elo";
 import { assertOjChecksum, transferOj } from "./ojBalance";
 import { CHALLENGE_FULL_INCLUDE } from "./challengeIncludes";
@@ -313,142 +314,124 @@ export async function resolveChallenge(
   confirmedHandicapPoints: number,
   confirmedScore: string
 ) {
-  return db.$transaction(async (tx) => {
-    const challenge = await tx.challenge.findUnique({
-      where: { id: challengeId },
-      include: {
-        ...CHALLENGE_FULL_INCLUDE,
-        playerA: { select: RESOLVE_PLAYER_SELECT },
-        playerA2: { select: RESOLVE_PLAYER_SELECT },
-        playerB: { select: RESOLVE_PLAYER_SELECT },
-        playerB2: { select: RESOLVE_PLAYER_SELECT },
-        bets: {
-          include: {
-            bettor: {
-              select: { id: true, name: true, avatarUrl: true },
-            },
-            counterparty: {
-              select: { id: true, name: true, avatarUrl: true },
+  // Neon pooler: default 5s interactive-tx timeout + no retry → P2028/P2024 in prod.
+  return withDbRetry(() =>
+    db.$transaction(async (tx) => {
+      const challenge = await tx.challenge.findUnique({
+        where: { id: challengeId },
+        include: {
+          ...CHALLENGE_FULL_INCLUDE,
+          playerA: { select: RESOLVE_PLAYER_SELECT },
+          playerA2: { select: RESOLVE_PLAYER_SELECT },
+          playerB: { select: RESOLVE_PLAYER_SELECT },
+          playerB2: { select: RESOLVE_PLAYER_SELECT },
+          bets: {
+            include: {
+              bettor: {
+                select: { id: true, name: true, avatarUrl: true },
+              },
+              counterparty: {
+                select: { id: true, name: true, avatarUrl: true },
+              },
             },
           },
         },
-      },
-    });
+      });
 
-    if (!challenge) {
-      throw new Error("NOT_FOUND");
-    }
-    if (challenge.status !== "ACTIVE") {
-      throw new Error("INVALID_STATUS");
-    }
-    if (
-      !Number.isInteger(confirmedHandicapPoints) ||
-      confirmedHandicapPoints < 0 ||
-      confirmedHandicapPoints > challenge.pointsToWin
-    ) {
-      throw new Error("INVALID_HANDICAP");
-    }
+      if (!challenge) {
+        throw new Error("NOT_FOUND");
+      }
+      if (challenge.status !== "ACTIVE") {
+        throw new Error("INVALID_STATUS");
+      }
+      if (
+        !Number.isInteger(confirmedHandicapPoints) ||
+        confirmedHandicapPoints < 0 ||
+        confirmedHandicapPoints > challenge.pointsToWin
+      ) {
+        throw new Error("INVALID_HANDICAP");
+      }
 
-    const competitors = buildCompetitors(challenge);
+      const competitors = buildCompetitors(challenge);
 
-    const isDoubles = challenge.format === "DOUBLES";
-    const eloChanges = isDoubles
-      ? []
-      : computeEloChanges(
-          competitors,
+      const isDoubles = challenge.format === "DOUBLES";
+      const eloChanges = isDoubles
+        ? []
+        : computeEloChanges(
+            competitors,
+            winnerSide,
+            confirmedHandicapPoints,
+            confirmedScore,
+            challenge.pointsToWin
+          );
+      const streakChanges = isDoubles ? [] : buildStreakChanges(competitors, winnerSide);
+      const matchDebts =
+        challenge.isDrinkChallenge && challenge.bets.length === 0
+          ? isDoubles
+            ? await recordDoublesMatchDebts(competitors, winnerSide, tx)
+            : await recordSinglesMatchDebts(competitors, winnerSide, tx)
+          : [];
+      const betDebts = await recordBetDebts(challenge.bets, winnerSide, tx);
+      const debts = [...matchDebts, ...betDebts];
+      await assertOjChecksum(tx);
+
+      if (!isDoubles) {
+        for (const change of eloChanges) {
+          const competitor = competitors.find((c) => c.id === change.memberId)!;
+          const won = competitor.side === winnerSide;
+          const streaks = streakChanges.find((s) => s.memberId === change.memberId)!;
+          await tx.member.update({
+            where: { id: change.memberId },
+            data: {
+              eloRating: change.after,
+              totalMatches: competitor.totalMatches + 1,
+              totalWins: competitor.totalWins + (won ? 1 : 0),
+              singlesWinStreak: streaks.afterWinStreak,
+              singlesLoseStreak: streaks.afterLoseStreak,
+            },
+          });
+        }
+      }
+
+      const resolutionSnapshot: ChallengeResolutionDTO = {
+        eloChanges,
+        debts,
+        ...(streakChanges.length > 0 ? { streakChanges } : {}),
+      };
+      const winnerId = resolveWinnerId(
+        winnerSide,
+        challenge.playerAId,
+        challenge.playerBId
+      );
+
+      // confirmedHandicapPoints + confirmedScore feed handicap-adjusted Elo and margin scaling.
+      const updated = await tx.challenge.update({
+        where: { id: challengeId },
+        data: {
+          status: "COMPLETED",
           winnerSide,
+          winnerId,
+          completedAt: new Date(),
+          handicapPoints: confirmedHandicapPoints,
           confirmedHandicapPoints,
           confirmedScore,
-          challenge.pointsToWin
-        );
-    const streakChanges = isDoubles ? [] : buildStreakChanges(competitors, winnerSide);
-    const matchDebts =
-      challenge.isDrinkChallenge && challenge.bets.length === 0
-        ? isDoubles
-          ? await recordDoublesMatchDebts(competitors, winnerSide, tx)
-          : await recordSinglesMatchDebts(competitors, winnerSide, tx)
-        : [];
-    const betDebts = await recordBetDebts(challenge.bets, winnerSide, tx);
-    const debts = [...matchDebts, ...betDebts];
-    await assertOjChecksum(tx);
+          resolutionSnapshot: resolutionSnapshot as object,
+        },
+        include: CHALLENGE_FULL_INCLUDE,
+      });
 
-    if (!isDoubles) {
-      for (const change of eloChanges) {
-        const competitor = competitors.find((c) => c.id === change.memberId)!;
-        const won = competitor.side === winnerSide;
-        const streaks = streakChanges.find((s) => s.memberId === change.memberId)!;
-        await tx.member.update({
-          where: { id: change.memberId },
-          data: {
-            eloRating: change.after,
-            totalMatches: competitor.totalMatches + 1,
-            totalWins: competitor.totalWins + (won ? 1 : 0),
-            singlesWinStreak: streaks.afterWinStreak,
-            singlesLoseStreak: streaks.afterLoseStreak,
-          },
-        });
-      }
-    }
-
-    const resolutionSnapshot: ChallengeResolutionDTO = {
-      eloChanges,
-      debts,
-      ...(streakChanges.length > 0 ? { streakChanges } : {}),
-    };
-    const winnerId = resolveWinnerId(
-      winnerSide,
-      challenge.playerAId,
-      challenge.playerBId
-    );
-
-    // confirmedHandicapPoints + confirmedScore feed handicap-adjusted Elo and margin scaling.
-    const updated = await tx.challenge.update({
-      where: { id: challengeId },
-      data: {
-        status: "COMPLETED",
-        winnerSide,
-        winnerId,
-        completedAt: new Date(),
-        handicapPoints: confirmedHandicapPoints,
-        confirmedHandicapPoints,
-        confirmedScore,
-        resolutionSnapshot: resolutionSnapshot as object,
-      },
-      include: CHALLENGE_FULL_INCLUDE,
-    });
-
-    return serializeChallenge(updated);
-  });
+      return serializeChallenge(updated);
+    }, NEON_TX_OPTIONS)
+  );
 }
 
 export async function adminEditChallengeWinner(
   challengeId: number,
   winnerSide: ChallengeSide
 ) {
-  return db.$transaction(async (tx) => {
-    const challenge = await tx.challenge.findUnique({
-      where: { id: challengeId },
-      include: {
-        playerA: { select: RESOLVE_PLAYER_SELECT },
-        playerA2: { select: RESOLVE_PLAYER_SELECT },
-        playerB: { select: RESOLVE_PLAYER_SELECT },
-        playerB2: { select: RESOLVE_PLAYER_SELECT },
-      },
-    });
-
-    if (!challenge) throw new Error("NOT_FOUND");
-    if (challenge.status !== "COMPLETED") throw new Error("INVALID_STATUS");
-    if (challenge.winnerSide === winnerSide) throw new Error("SAME_WINNER");
-
-    const snapshot = challenge.resolutionSnapshot as ChallengeResolutionDTO | null;
-    const isDoubles = challenge.format === "DOUBLES";
-
-    if (!isDoubles) {
-      if (!snapshot?.eloChanges?.length) throw new Error("NO_SNAPSHOT");
-
-      await revertEloFromSnapshot(tx, snapshot, challengeId);
-
-      const refreshed = await tx.challenge.findUnique({
+  return withDbRetry(() =>
+    db.$transaction(async (tx) => {
+      const challenge = await tx.challenge.findUnique({
         where: { id: challengeId },
         include: {
           playerA: { select: RESOLVE_PLAYER_SELECT },
@@ -457,38 +440,83 @@ export async function adminEditChallengeWinner(
           playerB2: { select: RESOLVE_PLAYER_SELECT },
         },
       });
-      if (!refreshed) throw new Error("NOT_FOUND");
 
-      const competitors = buildCompetitors(refreshed);
-      const eloChanges = computeEloChanges(
-        competitors,
-        winnerSide,
-        refreshed.confirmedHandicapPoints ?? refreshed.handicapPoints,
-        refreshed.confirmedScore ?? "",
-        refreshed.pointsToWin
-      );
-      const streakChanges = buildStreakChanges(competitors, winnerSide);
+      if (!challenge) throw new Error("NOT_FOUND");
+      if (challenge.status !== "COMPLETED") throw new Error("INVALID_STATUS");
+      if (challenge.winnerSide === winnerSide) throw new Error("SAME_WINNER");
 
-      for (const change of eloChanges) {
-        const competitor = competitors.find((c) => c.id === change.memberId)!;
-        const won = competitor.side === winnerSide;
-        const streaks = streakChanges.find((s) => s.memberId === change.memberId)!;
-        await tx.member.update({
-          where: { id: change.memberId },
-          data: {
-            eloRating: change.after,
-            totalMatches: competitor.totalMatches + 1,
-            totalWins: competitor.totalWins + (won ? 1 : 0),
-            singlesWinStreak: streaks.afterWinStreak,
-            singlesLoseStreak: streaks.afterLoseStreak,
+      const snapshot = challenge.resolutionSnapshot as ChallengeResolutionDTO | null;
+      const isDoubles = challenge.format === "DOUBLES";
+
+      if (!isDoubles) {
+        if (!snapshot?.eloChanges?.length) throw new Error("NO_SNAPSHOT");
+
+        await revertEloFromSnapshot(tx, snapshot, challengeId);
+
+        const refreshed = await tx.challenge.findUnique({
+          where: { id: challengeId },
+          include: {
+            playerA: { select: RESOLVE_PLAYER_SELECT },
+            playerA2: { select: RESOLVE_PLAYER_SELECT },
+            playerB: { select: RESOLVE_PLAYER_SELECT },
+            playerB2: { select: RESOLVE_PLAYER_SELECT },
           },
         });
+        if (!refreshed) throw new Error("NOT_FOUND");
+
+        const competitors = buildCompetitors(refreshed);
+        const eloChanges = computeEloChanges(
+          competitors,
+          winnerSide,
+          refreshed.confirmedHandicapPoints ?? refreshed.handicapPoints,
+          refreshed.confirmedScore ?? "",
+          refreshed.pointsToWin
+        );
+        const streakChanges = buildStreakChanges(competitors, winnerSide);
+
+        for (const change of eloChanges) {
+          const competitor = competitors.find((c) => c.id === change.memberId)!;
+          const won = competitor.side === winnerSide;
+          const streaks = streakChanges.find((s) => s.memberId === change.memberId)!;
+          await tx.member.update({
+            where: { id: change.memberId },
+            data: {
+              eloRating: change.after,
+              totalMatches: competitor.totalMatches + 1,
+              totalWins: competitor.totalWins + (won ? 1 : 0),
+              singlesWinStreak: streaks.afterWinStreak,
+              singlesLoseStreak: streaks.afterLoseStreak,
+            },
+          });
+        }
+
+        const winnerId = resolveWinnerId(
+          winnerSide,
+          refreshed.playerAId,
+          refreshed.playerBId
+        );
+
+        const updated = await tx.challenge.update({
+          where: { id: challengeId },
+          data: {
+            winnerSide,
+            winnerId,
+            resolutionSnapshot: {
+              eloChanges,
+              debts: snapshot.debts,
+              streakChanges,
+            } as object,
+          },
+          include: CHALLENGE_FULL_INCLUDE,
+        });
+
+        return serializeChallenge(updated);
       }
 
       const winnerId = resolveWinnerId(
         winnerSide,
-        refreshed.playerAId,
-        refreshed.playerBId
+        challenge.playerAId,
+        challenge.playerBId
       );
 
       const updated = await tx.challenge.update({
@@ -496,61 +524,41 @@ export async function adminEditChallengeWinner(
         data: {
           winnerSide,
           winnerId,
-          resolutionSnapshot: {
-            eloChanges,
-            debts: snapshot.debts,
-            streakChanges,
-          } as object,
         },
         include: CHALLENGE_FULL_INCLUDE,
       });
 
       return serializeChallenge(updated);
-    }
-
-    const winnerId = resolveWinnerId(
-      winnerSide,
-      challenge.playerAId,
-      challenge.playerBId
-    );
-
-    const updated = await tx.challenge.update({
-      where: { id: challengeId },
-      data: {
-        winnerSide,
-        winnerId,
-      },
-      include: CHALLENGE_FULL_INCLUDE,
-    });
-
-    return serializeChallenge(updated);
-  });
+    }, NEON_TX_OPTIONS)
+  );
 }
 
 export async function adminDeleteChallenge(challengeId: number) {
-  return db.$transaction(async (tx) => {
-    const challenge = await tx.challenge.findUnique({
-      where: { id: challengeId },
-      select: {
-        id: true,
-        status: true,
-        resolutionSnapshot: true,
-      },
-    });
+  return withDbRetry(() =>
+    db.$transaction(async (tx) => {
+      const challenge = await tx.challenge.findUnique({
+        where: { id: challengeId },
+        select: {
+          id: true,
+          status: true,
+          resolutionSnapshot: true,
+        },
+      });
 
-    if (!challenge) throw new Error("NOT_FOUND");
+      if (!challenge) throw new Error("NOT_FOUND");
 
-    const snapshot = challenge.resolutionSnapshot as ChallengeResolutionDTO | null;
-    const debtCount = snapshot?.debts?.length ?? 0;
+      const snapshot = challenge.resolutionSnapshot as ChallengeResolutionDTO | null;
+      const debtCount = snapshot?.debts?.length ?? 0;
 
-    if (challenge.status === "COMPLETED" && snapshot?.eloChanges?.length) {
-      await revertEloFromSnapshot(tx, snapshot, challengeId);
-    }
+      if (challenge.status === "COMPLETED" && snapshot?.eloChanges?.length) {
+        await revertEloFromSnapshot(tx, snapshot, challengeId);
+      }
 
-    await tx.challenge.delete({ where: { id: challengeId } });
+      await tx.challenge.delete({ where: { id: challengeId } });
 
-    return { debtCount };
-  });
+      return { debtCount };
+    }, NEON_TX_OPTIONS)
+  );
 }
 
 /** Removes PENDING kèo that were never started or resolved, after 3 days. */

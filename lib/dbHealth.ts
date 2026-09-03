@@ -100,10 +100,13 @@ export function formatDatabaseError(err: unknown): string {
   return "Database unavailable.";
 }
 
+/** Interactive-tx options tuned for Neon pooler cold starts (Prisma default timeout is 5s). */
+export const NEON_TX_OPTIONS = { maxWait: 10_000, timeout: 20_000 } as const;
+
 export function logDatabaseError(context: string, err: unknown): void {
-  if (process.env.NODE_ENV === "development") {
-    console.error(`[${context}]`, err);
-  }
+  const code =
+    err instanceof Prisma.PrismaClientKnownRequestError ? err.code : undefined;
+  console.error(`[${context}]`, code ? { code, err } : err);
 }
 
 function isTransientDbError(err: unknown): boolean {
@@ -111,7 +114,9 @@ function isTransientDbError(err: unknown): boolean {
     return err.code === "P1001" || err.code === "P2024" || err.code === "P2028";
   }
   if (err instanceof Error) {
-    return /connection pool|can't reach database|timed out/i.test(err.message);
+    return /connection pool|can't reach database|timed out|transaction not found|transaction api error/i.test(
+      err.message
+    );
   }
   return false;
 }
@@ -120,7 +125,7 @@ function isTransientDbError(err: unknown): boolean {
 export async function withDbRetry<T>(
   fn: () => Promise<T>,
   attempts = 3,
-  delayMs = 2000
+  delayMs = 750
 ): Promise<T> {
   let lastError: unknown;
   for (let i = 0; i < attempts; i++) {
@@ -129,6 +134,10 @@ export async function withDbRetry<T>(
     } catch (err) {
       lastError = err;
       if (i === attempts - 1 || !isTransientDbError(err)) throw err;
+      console.warn(
+        `[withDbRetry] transient DB error (attempt ${i + 1}/${attempts}), retrying…`,
+        err instanceof Prisma.PrismaClientKnownRequestError ? err.code : err
+      );
       if (delayMs > 0) {
         await new Promise((r) => setTimeout(r, delayMs * (i + 1)));
       }

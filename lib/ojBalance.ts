@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { db } from "./db";
+import { NEON_TX_OPTIONS, withDbRetry } from "./dbHealth";
 import type {
   DrinkSettleTransactionDTO,
   MemberDebtSummary,
@@ -136,7 +137,7 @@ export async function settleOjPool(
   };
 
   if (tx) return run(tx);
-  return db.$transaction(run);
+  return withDbRetry(() => db.$transaction(run, NEON_TX_OPTIONS));
 }
 
 export async function rollbackOjSettle(
@@ -180,7 +181,7 @@ export async function rollbackOjSettle(
   };
 
   if (tx) return run(tx);
-  return db.$transaction(run);
+  return withDbRetry(() => db.$transaction(run, NEON_TX_OPTIONS));
 }
 
 export async function getAllDebtSummaries(): Promise<Map<number, MemberDebtSummary>> {
