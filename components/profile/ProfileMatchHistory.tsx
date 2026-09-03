@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CheckCircle, MapPin, Users } from "lucide-react";
 import { useI18n } from "@/contexts/LocaleContext";
 import { formatAmount, getCurrencySymbol } from "@/lib/currency";
+import { formatLocal } from "@/lib/datetime";
 import type { Locale } from "@/lib/i18n";
 import type { MemberMatchHistoryItemDTO } from "@/lib/types";
 
@@ -11,20 +12,14 @@ interface ProfileMatchHistoryProps {
   matches: MemberMatchHistoryItemDTO[];
 }
 
-function intlLocale(locale: Locale): string {
-  if (locale === "zh") return "zh-CN";
-  if (locale === "vi") return "vi-VN";
-  return "en-US";
-}
-
 function formatDate(iso: string, locale: Locale): string {
-  return new Intl.DateTimeFormat(intlLocale(locale), {
+  return formatLocal(iso, locale, {
     weekday: "short",
     month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(iso));
+  });
 }
 
 export default function ProfileMatchHistory({ matches }: ProfileMatchHistoryProps) {

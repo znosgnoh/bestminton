@@ -7,17 +7,12 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import DrinkChallengeBadge from "@/components/challenges/DrinkChallengeBadge";
 import { useI18n } from "@/contexts/LocaleContext";
 import { formatDrinkAmount } from "@/lib/constants";
+import { formatLocal } from "@/lib/datetime";
 import type { Locale } from "@/lib/i18n";
 import type { ChallengeDTO } from "@/lib/types";
 
 interface ChallengeCardProps {
   challenge: ChallengeDTO;
-}
-
-function intlLocale(locale: Locale): string {
-  if (locale === "zh") return "zh-CN";
-  if (locale === "vi") return "vi-VN";
-  return "en-US";
 }
 
 function formatPlayers(challenge: ChallengeDTO): string {
@@ -27,12 +22,12 @@ function formatPlayers(challenge: ChallengeDTO): string {
 }
 
 function formatDate(iso: string, locale: Locale): string {
-  return new Intl.DateTimeFormat(intlLocale(locale), {
+  return formatLocal(iso, locale, {
     month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(iso));
+  });
 }
 
 export default function ChallengeCard({ challenge }: ChallengeCardProps) {

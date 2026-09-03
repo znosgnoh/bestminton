@@ -8,6 +8,7 @@ import {
   idbPut,
   idbDelete,
 } from "./idb";
+import { getSingaporeWeekday } from "./datetime";
 import { DEFAULT_ELO } from "./elo";
 import type { MemberDTO, MatchDTO, RegistrationDTO, GuestDTO } from "./types";
 
@@ -234,7 +235,7 @@ export async function createMatches(data: {
   isRecurring: boolean;
 }): Promise<MatchDTO[]> {
   const base = new Date(data.scheduledAt);
-  const dayOfWeek = base.getDay();
+  const dayOfWeek = getSingaporeWeekday(base);
   const offsets = data.isRecurring ? [0, 7, 14, 21] : [0];
   const results: MatchDTO[] = [];
   for (const days of offsets) {

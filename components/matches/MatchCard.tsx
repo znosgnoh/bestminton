@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { MapPin, Users, RefreshCw, CheckCircle, Play } from "lucide-react";
+import { formatLocal } from "@/lib/datetime";
 import type { MatchDTO } from "@/lib/types";
 
 interface MatchCardProps {
@@ -9,13 +10,13 @@ interface MatchCardProps {
 }
 
 function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat("en-US", {
+  return formatLocal(iso, "en", {
     weekday: "short",
     month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(iso));
+  });
 }
 
 function totalHeadcount(match: MatchDTO): number {

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useI18n } from "@/contexts/LocaleContext";
 import { formatCurrency } from "@/lib/currency";
+import { formatLocal } from "@/lib/datetime";
 import { fromCents, toCents } from "@/lib/ledgerMath";
 import type { Locale } from "@/lib/i18n";
 import type { LedgerExpenseDTO, LedgerExpenseKind } from "@/lib/types";
@@ -16,18 +17,12 @@ export interface PairBreakdownItem {
   remainder: number;
 }
 
-function intlLocale(locale: Locale): string {
-  if (locale === "zh") return "zh-CN";
-  if (locale === "vi") return "vi-VN";
-  return "en-US";
-}
-
 function formatDate(iso: string, locale: Locale): string {
-  return new Intl.DateTimeFormat(intlLocale(locale), {
+  return formatLocal(iso, locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
-  }).format(new Date(iso));
+  });
 }
 
 export function shareRemainder(owed: number, paid: number): number {

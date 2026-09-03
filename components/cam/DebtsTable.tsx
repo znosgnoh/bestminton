@@ -11,6 +11,7 @@ import { useI18n } from "@/contexts/LocaleContext";
 import { useAdminPin } from "@/hooks/useAdminPin";
 import { useMemberPin } from "@/hooks/useMemberPin";
 import * as dataService from "@/lib/dataService";
+import { formatLocal } from "@/lib/datetime";
 import type {
   DrinkSettleTransactionDTO,
   OjBalanceDTO,
@@ -347,10 +348,10 @@ export default function DebtsTable({
                       </span>
                     </p>
                     <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                      {new Intl.DateTimeFormat(locale, {
+                      {formatLocal(transaction.createdAt, locale, {
                         dateStyle: "medium",
                         timeStyle: "short",
-                      }).format(new Date(transaction.createdAt))}
+                      })}
                       {rolledBack && (
                         <span className="ml-2 rounded-full bg-gray-200 px-2 py-0.5 font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                           {t("cam.rolledBack")}

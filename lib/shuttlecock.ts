@@ -1,3 +1,5 @@
+import { formatSingapore } from "./datetime";
+
 /** Default shuttlecock fee per hour of play (SGD). Override with SHUTTLECOCK_FEE_PER_HOUR. */
 export const DEFAULT_SHUTTLECOCK_FEE_PER_HOUR = 7.5;
 
@@ -81,11 +83,10 @@ export function formatShuttlecockRemittanceDescription(
   title: string,
   scheduledAt: Date | string
 ): string {
-  const d = typeof scheduledAt === "string" ? new Date(scheduledAt) : scheduledAt;
-  const dateLabel = new Intl.DateTimeFormat("en-GB", {
+  const dateLabel = formatSingapore(scheduledAt, "en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
-  }).format(d);
+  });
   return `${title} · ${dateLabel}`;
 }

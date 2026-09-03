@@ -14,6 +14,7 @@ import { YouTubeUrlEditor } from "@/components/ui/YouTubeVideo";
 import { useI18n } from "@/contexts/LocaleContext";
 import { useAdminPin } from "@/hooks/useAdminPin";
 import * as dataService from "@/lib/dataService";
+import { formatLocal } from "@/lib/datetime";
 import type { MatchDTO, MemberDTO, RegistrationDTO } from "@/lib/types";
 
 interface MatchDetailClientProps {
@@ -28,19 +29,19 @@ interface MatchDetailClientProps {
 }
 
 function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat("en-US", {
+  return formatLocal(iso, "en", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
-  }).format(new Date(iso));
+  });
 }
 
 function formatTime(iso: string): string {
-  return new Intl.DateTimeFormat("en-US", {
+  return formatLocal(iso, "en", {
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(iso));
+  });
 }
 
 function MatchDetailClientInner({

@@ -7,6 +7,7 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import { useI18n } from "@/contexts/LocaleContext";
 import { formatCurrency } from "@/lib/currency";
+import { formatLocal } from "@/lib/datetime";
 import { toCents } from "@/lib/ledgerMath";
 import * as dataService from "@/lib/dataService";
 import type { LedgerExpenseDTO, LedgerExpenseKind, LedgerSnapshotDTO } from "@/lib/types";
@@ -16,20 +17,14 @@ interface LedgerTransactionsSectionProps {
   dbAvailable: boolean;
 }
 
-function intlLocale(locale: Locale): string {
-  if (locale === "zh") return "zh-CN";
-  if (locale === "vi") return "vi-VN";
-  return "en-US";
-}
-
 function formatWhen(iso: string, locale: Locale): string {
-  return new Intl.DateTimeFormat(intlLocale(locale), {
+  return formatLocal(iso, locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(iso));
+  });
 }
 
 function kindLabel(

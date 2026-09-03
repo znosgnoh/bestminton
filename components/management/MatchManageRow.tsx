@@ -14,6 +14,7 @@ import {
   splitSettlementFees,
 } from "@/lib/shuttlecock";
 import { formatAmount, getCurrencySymbol } from "@/lib/currency";
+import { formatLocal } from "@/lib/datetime";
 import type { MatchDTO } from "@/lib/types";
 
 interface MatchManageRowProps {
@@ -25,13 +26,13 @@ interface MatchManageRowProps {
 }
 
 function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat("en-US", {
+  return formatLocal(iso, "en", {
     weekday: "short",
     month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(iso));
+  });
 }
 
 function totalHeadcount(match: MatchDTO): number {

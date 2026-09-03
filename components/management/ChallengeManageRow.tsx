@@ -10,6 +10,7 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import { useMemberPin } from "@/hooks/useMemberPin";
 import { DRINK_LABEL } from "@/lib/constants";
 import * as dataService from "@/lib/dataService";
+import { formatLocal } from "@/lib/datetime";
 import type { ChallengeDTO, ChallengeSide } from "@/lib/types";
 
 interface ChallengeManageRowProps {
@@ -25,13 +26,13 @@ function formatPlayers(challenge: ChallengeDTO): string {
 }
 
 function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat("en-US", {
+  return formatLocal(iso, "en", {
     month: "short",
     day: "numeric",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(iso));
+  });
 }
 
 type PendingAction =

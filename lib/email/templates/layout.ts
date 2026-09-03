@@ -1,4 +1,5 @@
 import type { RenderedEmail } from "../types";
+import { SCHEDULE_TIMEZONE } from "@/lib/datetime";
 
 const FOOTER_VI = "Bạn có thể tắt email trong hồ sơ của mình.";
 const FOOTER_EN = "You can disable emails on your profile.";
@@ -27,7 +28,8 @@ export function renderBilingualEmail(input: {
 }
 
 export function formatMatchDateTime(d: Date): { vi: string; en: string } {
-  const vi = d.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
-  const en = d.toLocaleString("en-SG", { timeZone: "Asia/Ho_Chi_Minh" });
+  const opts: Intl.DateTimeFormatOptions = { timeZone: SCHEDULE_TIMEZONE };
+  const vi = d.toLocaleString("vi-VN", opts);
+  const en = d.toLocaleString("en-SG", opts);
   return { vi, en };
 }

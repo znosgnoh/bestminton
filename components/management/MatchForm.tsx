@@ -4,6 +4,12 @@ import { useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useI18n } from "@/contexts/LocaleContext";
 import * as dataService from "@/lib/dataService";
+import {
+  getSingaporeWeekday,
+  singaporeLocalToIso,
+  toSingaporeInputDate,
+  toSingaporeInputTime,
+} from "@/lib/datetime";
 import type { MatchDTO } from "@/lib/types";
 
 export type MatchFormPrefill = Pick<
@@ -22,32 +28,19 @@ const DAY_NAMES = [
   "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
 ];
 
-function toInputDate(iso: string): string {
-  const d = new Date(iso);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-function toInputTime(iso: string): string {
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
 export default function MatchForm({ initial, prefill, onSaved, onCancel }: MatchFormProps) {
   const { t } = useI18n();
   const source = initial ?? prefill;
   const [title, setTitle] = useState(source?.title ?? "");
   const [venue, setVenue] = useState(source?.venue ?? "");
-  const [date, setDate] = useState(initial ? toInputDate(initial.scheduledAt) : "");
-  const [time, setTime] = useState(source ? toInputTime(source.scheduledAt) : "20:00");
+  const [date, setDate] = useState(initial ? toSingaporeInputDate(initial.scheduledAt) : "");
+  const [time, setTime] = useState(source ? toSingaporeInputTime(source.scheduledAt) : "20:00");
   const [isRecurring, setIsRecurring] = useState(source?.isRecurring ?? false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const dayName =
-    date ? DAY_NAMES[new Date(`${date}T00:00`).getDay()] : "";
+    date ? DAY_NAMES[getSingaporeWeekday(`${date}T12:00:00+08:00`)] : "";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -56,7 +49,7 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
     if (!date) { setError("Date is required."); return; }
     if (!time) { setError("Time is required."); return; }
 
-    const scheduledAt = new Date(`${date}T${time}`).toISOString();
+    const scheduledAt = singaporeLocalToIso(date, time);
 
     setSaving(true);
     setError(null);
@@ -121,6 +114,7 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
         <div>
           <label className="tet-label">
             Date <span className="text-red-500">*</span>
+            <span className="ml-1 font-normal text-gray-400">(SGT)</span>
           </label>
           <input
             type="date"
@@ -132,6 +126,7 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
         <div>
           <label className="tet-label">
             Time <span className="text-red-500">*</span>
+            <span className="ml-1 font-normal text-gray-400">(SGT)</span>
           </label>
           <input
             type="time"

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
+import { getSingaporeWeekday } from "@/lib/datetime";
 import { deferNotification } from "@/lib/email/defer";
 import { notifyMatchCreated } from "@/lib/email/events";
 import { MATCH_FULL_INCLUDE, MATCH_LIST_INCLUDE } from "@/lib/prismaIncludes";
@@ -15,7 +16,7 @@ const CACHE_HEADERS = {
 
 function addDays(date: Date, days: number): Date {
   const d = new Date(date);
-  d.setDate(d.getDate() + days);
+  d.setUTCDate(d.getUTCDate() + days);
   return d;
 }
 
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
   }
 
   const isRecurring = Boolean(body.isRecurring);
-  const recurDayOfWeek = scheduledAt.getDay();
+  const recurDayOfWeek = getSingaporeWeekday(scheduledAt);
 
   if (!isRecurring) {
     const match = await db.match.create({

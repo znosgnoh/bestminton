@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useReducer } from "react";
+import { formatLocal } from "@/lib/datetime";
 function computeWeight(hours: number, guests: number): number {
   return hours * (1 + guests);
 }
@@ -255,7 +256,7 @@ export function useSessionState() {
     const shares = calculateShares(state.attendance, state.totalCost);
     dispatch({ type: "SYNC_START" });
 
-    const today = new Date().toLocaleDateString("en-GB", {
+    const today = formatLocal(new Date(), "en-GB", {
       day: "2-digit",
       month: "short",
       year: "numeric",
