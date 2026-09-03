@@ -7,8 +7,8 @@ import { useI18n } from "@/contexts/LocaleContext";
 interface SettleAmountModalProps {
   open: boolean;
   maxAmount: number;
-  fromName: string;
-  toName: string;
+  oweName: string;
+  ownName: string;
   onSubmit: (amount: number) => void;
   onCancel: () => void;
 }
@@ -16,8 +16,8 @@ interface SettleAmountModalProps {
 export default function SettleAmountModal({
   open,
   maxAmount,
-  fromName,
-  toName,
+  oweName,
+  ownName,
   onSubmit,
   onCancel,
 }: SettleAmountModalProps) {
@@ -55,11 +55,11 @@ export default function SettleAmountModal({
       >
         <h3 className="tet-section-title">{t("cam.settleTitle")}</h3>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          <span className="font-medium text-gray-900 dark:text-gray-100">{fromName}</span>
+          <span className="font-medium text-gray-900 dark:text-gray-100">{oweName}</span>
           <span className="mx-1" aria-hidden>
             →
           </span>
-          <span className="font-medium text-gray-900 dark:text-gray-100">{toName}</span>
+          <span className="font-medium text-gray-900 dark:text-gray-100">{ownName}</span>
           <span className="mx-1 text-gray-400" aria-hidden>
             ·
           </span>

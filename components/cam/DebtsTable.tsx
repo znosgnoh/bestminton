@@ -91,7 +91,10 @@ export default function DebtsTable({
     [snapshot.balances]
   );
   const owers = useMemo(
-    () => snapshot.balances.filter((balance) => balance.ojBalance < 0),
+    () =>
+      snapshot.balances
+        .filter((balance) => balance.ojBalance < 0)
+        .sort((a, b) => a.ojBalance - b.ojBalance),
     [snapshot.balances]
   );
   const selectedFrom = owners.find((balance) => balance.memberId === fromId) ?? null;
@@ -220,23 +223,6 @@ export default function DebtsTable({
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <section>
-            <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
-              {t("cam.ownsHeading")}
-            </h2>
-            <ul className="space-y-2">
-              {owners.map((balance) => (
-                <PoolMemberRow
-                  key={balance.memberId}
-                  balance={balance}
-                  selected={fromId === balance.memberId}
-                  highlighted={highlightMemberId === balance.memberId}
-                  onSelect={() => setFromId(balance.memberId)}
-                />
-              ))}
-            </ul>
-          </section>
-
-          <section>
             <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-orange-700 dark:text-orange-400">
               {t("cam.owesHeading")}
             </h2>
@@ -252,27 +238,29 @@ export default function DebtsTable({
               ))}
             </ul>
           </section>
+
+          <section>
+            <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+              {t("cam.ownsHeading")}
+            </h2>
+            <ul className="space-y-2">
+              {owners.map((balance) => (
+                <PoolMemberRow
+                  key={balance.memberId}
+                  balance={balance}
+                  selected={fromId === balance.memberId}
+                  highlighted={highlightMemberId === balance.memberId}
+                  onSelect={() => setFromId(balance.memberId)}
+                />
+              ))}
+            </ul>
+          </section>
         </div>
       )}
 
       {owners.length > 0 && owers.length > 0 && (
         <div className="tet-card p-4">
           <div className="grid grid-cols-2 gap-3">
-            <label className="tet-label">
-              {t("cam.settlePickFrom")}
-              <select
-                value={fromId ?? ""}
-                onChange={(event) => setFromId(Number(event.target.value) || null)}
-                className="tet-input mt-1 w-full"
-              >
-                <option value="">—</option>
-                {owners.map((balance) => (
-                  <option key={balance.memberId} value={balance.memberId}>
-                    {balance.name}
-                  </option>
-                ))}
-              </select>
-            </label>
             <label className="tet-label">
               {t("cam.settlePickTo")}
               <select
@@ -282,6 +270,21 @@ export default function DebtsTable({
               >
                 <option value="">—</option>
                 {owers.map((balance) => (
+                  <option key={balance.memberId} value={balance.memberId}>
+                    {balance.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="tet-label">
+              {t("cam.settlePickFrom")}
+              <select
+                value={fromId ?? ""}
+                onChange={(event) => setFromId(Number(event.target.value) || null)}
+                className="tet-input mt-1 w-full"
+              >
+                <option value="">—</option>
+                {owners.map((balance) => (
                   <option key={balance.memberId} value={balance.memberId}>
                     {balance.name}
                   </option>
@@ -336,9 +339,9 @@ export default function DebtsTable({
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-gray-900 dark:text-gray-100">
-                      <span className="font-medium">{transaction.fromName}</span>
-                      <span className="mx-1.5 text-gray-400">→</span>
                       <span className="font-medium">{transaction.toName}</span>
+                      <span className="mx-1.5 text-gray-400">→</span>
+                      <span className="font-medium">{transaction.fromName}</span>
                       <span className="ml-2 font-semibold text-orange-600 dark:text-orange-400">
                         {t("cam.ly", { amount: transaction.amount })}
                       </span>
@@ -380,8 +383,8 @@ export default function DebtsTable({
       <SettleAmountModal
         open={amountPrompt && selectedFrom !== null && selectedTo !== null}
         maxAmount={maxAmount}
-        fromName={selectedFrom?.name ?? ""}
-        toName={selectedTo?.name ?? ""}
+        oweName={selectedTo?.name ?? ""}
+        ownName={selectedFrom?.name ?? ""}
         onSubmit={(amount) => {
           setAmountPrompt(false);
           if (selectedFrom && selectedTo) {
