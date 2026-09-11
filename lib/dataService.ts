@@ -345,6 +345,7 @@ async function challengeFetch<T>(url: string, init?: RequestInit): Promise<T> {
   return data;
 }
 
+/** `status` may be one value or comma-separated, e.g. `PENDING,ACTIVE`. */
 export function getChallenges(status?: string): Promise<ChallengeDTO[]> {
   const qs = status ? `?status=${encodeURIComponent(status)}` : "";
   return challengeFetch<ChallengeDTO[]>(`/api/challenges${qs}`);

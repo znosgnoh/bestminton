@@ -133,6 +133,7 @@ const vi: Messages = {
     dbRequired: "Kèo cần kết nối cơ sở dữ liệu trực tiếp.",
     noKeo: "Chưa có kèo.",
     firstKeo: "Gạ kèo đầu tiên",
+    loadHistoryFailed: "Không tải được lịch sử kèo.",
     filterAll: "Tất cả",
     today: "Hôm nay",
     yesterday: "Hôm qua",

@@ -3,7 +3,6 @@ import { isDatabaseConfigured } from "@/lib/dbConfig";
 import { formatDatabaseError, logDatabaseError } from "@/lib/dbHealth";
 import { CHALLENGE_FULL_INCLUDE } from "@/lib/challengeIncludes";
 import { serializeChallenge } from "@/lib/challengeSerialize";
-import { purgeStalePendingChallenges } from "@/lib/challengeService";
 import { debtSummaryFor, getAllDebtSummaries } from "@/lib/ojBalance";
 import { toMemberDTO } from "@/lib/memberSerialize";
 import ChallengeDetailClient from "./ChallengeDetailClient";
@@ -40,7 +39,6 @@ export default async function ChallengeDetailLoader({
       "POSTGRES_PRISMA_URL is not set. Configure Postgres env vars for kèo and leaderboard features.";
   } else {
     try {
-      await purgeStalePendingChallenges();
       const [rawChallenge, rawMembers, summaries] = await Promise.all([
         db.challenge.findUnique({
           where: { id: challengeId },

@@ -3,11 +3,7 @@ import { databaseErrorResponse, requireDatabase, requireMemberPin } from "@/lib/
 import { db } from "@/lib/db";
 import { CHALLENGE_FULL_INCLUDE } from "@/lib/challengeIncludes";
 import { serializeChallenge } from "@/lib/challengeSerialize";
-import {
-  adminDeleteChallenge,
-  adminEditChallengeWinner,
-  purgeStalePendingChallenges,
-} from "@/lib/challengeService";
+import { adminDeleteChallenge, adminEditChallengeWinner } from "@/lib/challengeService";
 import { sideAverageElo, suggestedHandicap } from "@/lib/elo";
 import { revalidateChallengePages, revalidateMemberPages } from "@/lib/revalidate";
 import type { AdminDeleteChallengeRequest, AdminEditChallengeRequest, UpdateChallengeRequest } from "@/lib/types";
@@ -42,7 +38,6 @@ export async function GET(
   }
 
   try {
-    await purgeStalePendingChallenges();
     const challenge = await db.challenge.findUnique({
       where: { id },
       include: CHALLENGE_FULL_INCLUDE,

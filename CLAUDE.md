@@ -17,7 +17,7 @@ A full-stack web application that helps a badminton team manage their sessions e
 - **Language:** TypeScript
 - **Database:** Vercel Postgres via Prisma ORM
 - **Local fallback:** IndexedDB (browser) — detected via `/api/health`
-- **Deployment:** Vercel
+- **Deployment:** Vercel (functions in Singapore `sin1`, next to Neon `ap-southeast-1`)
 
 ---
 
@@ -205,7 +205,7 @@ Total court fee is split weighted by playtime and headcount per player.
 Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts: **Leaderboard** (`/leaderboard#elo-guideline`, `components/leaderboard/EloGuideline.tsx`, data in `lib/eloGuideline.ts`). Kèo pages link via `EloGuidelineLink`.
 
 - **Suggested handicap:** Sub-linear scaling from average side Elo gap — calibrated so a 300-point gap suggests 6 points; doubling the gap yields ~1.5× points (not 2×). The weaker side receives the handicap. **System-only:** create and `PENDING` updates cannot override it (`POST` ignores client `handicapPoints`; `PATCH` rejects it). Changing 21/15 while `PENDING` recalculates the suggestion. Resolve still confirms handicap + score for Elo.
-- **Stale pending kèo:** `PENDING` challenges (never started or resolved) are deleted 3 days after `createdAt`. `ACTIVE` and `COMPLETED` are kept. Cleanup runs on kèo list/detail loads and daily (16:00 UTC / midnight SGT) via `GET /api/cron/stale-challenges`. Bets cascade.
+- **Stale pending kèo:** `PENDING` challenges (never started or resolved) are deleted 3 days after `createdAt`. `ACTIVE` and `COMPLETED` are kept. Cleanup runs daily (16:00 UTC / midnight SGT) via `GET /api/cron/stale-challenges`. Bets cascade.
 - **Displayed win rate:** `sideWinProbabilities` treats each handicap point as a **50 Elo** boost on the recipient (`ELO_PER_HANDICAP_POINT`), then applies the standard Elo expected-score formula. Win percentages follow the system handicap.
 - **Resolve — singles:** `computeSinglesEloChanges` in `lib/elo.ts` — `newRating = old + K × scoreMarginMult × eloGapMult × (actual − expected)`, where **expected** uses `confirmedHandicapPoints` (handicap-adjusted), **scoreMarginMult** parses `confirmedScore` (close 2-1 / 21-19 → smaller swing; straight-set / large margins → up to ~1.5×), **eloGapMult** scales upsets vs expected favorites, **K** is 32 (&lt;10 kèo) or 16 (established). Updates `eloRating`, `totalMatches`, and `totalWins`; optional nước cam debts when `isDrinkChallenge` or bets exist.
 - **Resolve — doubles:** Handicap/win % still use current singles Elo averages; no Elo/`totalMatches`/`totalWins` updates (`resolutionSnapshot.eloChanges` is empty). When `isDrinkChallenge` and no bets: each winner earns exactly 1 ly nước cam, debtor is a loser on the opposing side (round-robin across losers, not fixed pairs). Bet debts unchanged (1:1 bettor vs counterparty).
@@ -220,7 +220,7 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/matches/[id]` | Page | Match detail — registration, guest management |
 | `/matches/[id]?manage=1` | Page | Match detail with Settle section (captain only) |
 | `/management` | Page | Admin — members, matches, kèo; PIN gate when `CAPTAIN_PIN` set |
-| `/challenges` | Page | Kèo list (active / history) |
+| `/challenges` | Page | Kèo list — SSR pending/active; completed history loads on demand |
 | `/challenges/new` | Page | Create a new kèo |
 | `/challenges/[id]` | Page | Kèo detail — betting board, start/resolve (captain) |
 | `/leaderboard` | Page | Elo rankings |
@@ -229,7 +229,7 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/api/health` | Route | `GET` DB availability check |
 | `/api/admin/verify-pin` | Route | `GET` captain PIN required?, `POST` verify captain PIN (client gate) |
 | `/api/member/verify-pin` | Route | `GET` member PIN required?, `POST` verify member PIN (balances / cam / kèo) |
-| `/api/challenges` | Route | `GET` list (purges stale pending), `POST` create |
+| `/api/challenges` | Route | `GET` list (`?status=PENDING,ACTIVE` or `COMPLETED`; omit for all), `POST` create |
 | `/api/challenges/[id]` | Route | `GET` detail, `PATCH` notes/21-15/drink/YouTube, `PUT` edit winner, `DELETE` |
 | `/api/cron/stale-challenges` | Route | `GET` daily cron (Hobby) — delete `PENDING` kèo older than 3 days |
 | `/api/cron/match-reminders` | Route | `GET` daily cron (16:00 UTC) — 96h/48h match registration reminder emails (±12h window on Hobby) |
@@ -294,7 +294,7 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 
 1. Captain or players open **Kèo** in the nav → `/challenges`
 2. **New kèo:** pick singles/doubles competitors; review system handicap (Elo-based, not editable) → `PENDING`
-3. While `PENDING`, others place bets on a side. Unused pending kèo are auto-removed after 3 days.
+3. While `PENDING`, others place bets on a side. Unused pending kèo are auto-removed after 3 days (daily cron).
 4. Captain **starts** the kèo → `ACTIVE` (bets locked; no longer eligible for auto-clean)
 5. After play, captain **resolves** — confirms handicap + final score, then picks winning side → **singles:** Elo + optional drink payouts; **doubles:** optional drink payouts only (no Elo)
 
@@ -357,6 +357,7 @@ APP_BASE_URL=https://your-app.vercel.app
 - **Management access:** `/management` is intentionally not linked in the nav header. It is accessible by typing the URL directly. `ManagementGate` prompts for `CAPTAIN_PIN` when the env var is set; unlock state and PIN live in `sessionStorage` (`lib/adminPinClient.ts`, `hooks/useAdminPin.ts`). Server routes use `requireAdminPin` in `lib/apiHelpers.ts`. If `CAPTAIN_PIN` is unset, no captain gate and captain APIs accept mutations without a PIN (local dev convenience).
 - **Member PIN:** Separate from the captain PIN. Defaults to `12345` (`MEMBER_PIN`). Used for balances Paid, cam settle / full ledger, and kèo start/resolve/edit/delete/bulk (`requireMemberPin`, `useMemberPin`). Unlocking captain management does not unlock member actions.
 - **Settlement URL:** The Settle section (`SettleForm`) only renders when `?manage=1` is present in the URL — enforced at the server page level. Saving settlement or recording the ledger (`dataService.recordMatchLedger`) sends the stored captain PIN when configured. Bridge on dual-writes Splitwise; bridge off records the ledger only.
+- **Function region:** Vercel functions run in Singapore (`sin1`) via `vercel.json` `regions` and `export const preferredRegion = "sin1"` in `app/layout.tsx`. Keep this next to Neon (`ap-southeast-1`); the previous default (`iad1`) added several seconds of US↔SG latency on every page.
 - **Kèo copy:** Challenge UI uses Vietnamese **kèo** labels in the product; routes remain `/challenges` for URLs.
 - **Recurring matches:** Creating a recurring match auto-generates instances for the next 8 weeks at the same day/time.
 - **After Prisma migrations:** Run `npx prisma migrate deploy` (or `migrate dev` locally) so the DB matches `schema.prisma`, then `npx prisma generate` and restart the dev server. Resolve (`POST /api/challenges/[id]/resolve`) requires migration `20260626120000_challenge_resolve_confirmation` (`confirmedHandicapPoints`, `confirmedScore` on `Challenge`); without it the transaction rolls back after Elo updates and the API returns 503. Splitwise sync requires `20260820120000_splitwise_expense_id_bigint` (`Expense.splitwiseExpenseId` as BIGINT).

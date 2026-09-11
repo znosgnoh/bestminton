@@ -11,6 +11,8 @@ import { isTheme, THEME_COOKIE_KEY, THEME_STORAGE_KEY } from "@/lib/theme";
 import { SITE_SHORT, SITE_TITLE } from "./layout.constants";
 import "./globals.css";
 
+export const preferredRegion = "sin1";
+
 const beVietnamPro = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
   weight: ["400", "500", "600", "700"],

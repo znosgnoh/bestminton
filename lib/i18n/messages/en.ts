@@ -131,6 +131,7 @@ const en = {
     dbRequired: "Kèo requires a live database connection.",
     noKeo: "No kèo yet.",
     firstKeo: "Create your first kèo",
+    loadHistoryFailed: "Couldn't load kèo history.",
     filterAll: "All",
     today: "Today",
     yesterday: "Yesterday",

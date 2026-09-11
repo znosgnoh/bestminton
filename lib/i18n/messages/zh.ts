@@ -131,6 +131,7 @@ const zh: Messages = {
     dbRequired: "对局需要实时数据库连接。",
     noKeo: "暂无对局。",
     firstKeo: "创建第一个对局",
+    loadHistoryFailed: "无法加载对局历史。",
     filterAll: "全部",
     today: "今天",
     yesterday: "昨天",

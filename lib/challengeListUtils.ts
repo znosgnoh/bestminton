@@ -1,6 +1,31 @@
-import type { ChallengeDTO } from "@/lib/types";
+import type { ChallengeDTO, ChallengeStatus } from "@/lib/types";
 import type { Locale } from "@/lib/i18n";
 import { formatLocal, localDayKey } from "@/lib/datetime";
+
+export const CHALLENGE_STATUSES: ChallengeStatus[] = ["PENDING", "ACTIVE", "COMPLETED"];
+export const LIVE_CHALLENGE_STATUSES: ChallengeStatus[] = ["PENDING", "ACTIVE"];
+export const LIVE_CHALLENGE_STATUS_QUERY = LIVE_CHALLENGE_STATUSES.join(",");
+
+const CHALLENGE_STATUS_SET = new Set<string>(CHALLENGE_STATUSES);
+
+export function parseChallengeStatusParam(raw: string | null): ChallengeStatus[] | undefined {
+  if (!raw || raw.trim().length === 0) return undefined;
+  const statuses = raw
+    .split(",")
+    .map((part) => part.trim().toUpperCase())
+    .filter((part): part is ChallengeStatus => CHALLENGE_STATUS_SET.has(part));
+  if (statuses.length === 0) return undefined;
+  return [...new Set(statuses)];
+}
+
+export function challengeStatusWhere(statuses: ChallengeStatus[] | undefined):
+  | { status: ChallengeStatus }
+  | { status: { in: ChallengeStatus[] } }
+  | undefined {
+  if (!statuses || statuses.length === 0) return undefined;
+  if (statuses.length === 1) return { status: statuses[0] };
+  return { status: { in: statuses } };
+}
 
 export interface ChallengeDayGroup {
   key: string;

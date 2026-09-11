@@ -4,8 +4,8 @@ import { db } from "@/lib/db";
 import { databaseErrorResponse, requireDatabase } from "@/lib/apiHelpers";
 import { CHALLENGE_LIST_INCLUDE } from "@/lib/challengeIncludes";
 import { serializeChallengeList } from "@/lib/challengeSerialize";
+import { challengeStatusWhere, parseChallengeStatusParam } from "@/lib/challengeListUtils";
 import { sideAverageElo, suggestedHandicap, isPointsToWin, DEFAULT_POINTS_TO_WIN } from "@/lib/elo";
-import { purgeStalePendingChallenges } from "@/lib/challengeService";
 import { revalidateChallengePages } from "@/lib/revalidate";
 import type { CreateChallengeRequest } from "@/lib/types";
 
@@ -37,14 +37,9 @@ export async function GET(request: NextRequest) {
   const unavailable = requireDatabase();
   if (unavailable) return unavailable;
 
-  const status = request.nextUrl.searchParams.get("status");
-  const where =
-    status === "PENDING" || status === "ACTIVE" || status === "COMPLETED"
-      ? { status: status as "PENDING" | "ACTIVE" | "COMPLETED" }
-      : undefined;
+  const where = challengeStatusWhere(parseChallengeStatusParam(request.nextUrl.searchParams.get("status")));
 
   try {
-    await purgeStalePendingChallenges();
     const challenges = await db.challenge.findMany({
       where,
       include: CHALLENGE_LIST_INCLUDE,
