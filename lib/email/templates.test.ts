@@ -17,5 +17,7 @@ describe("renderMatchEmail", () => {
     assert.match(email.text, /Tuesday Night/);
     // 18:00 Asia/Singapore wall time should appear in the email body.
     assert.match(email.html, /18:00/);
+    assert.match(email.html, /text-align:justify/);
+    assert.match(email.html, /Bestminton/);
   });
 });

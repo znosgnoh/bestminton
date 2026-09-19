@@ -184,11 +184,6 @@ export default function BalancesPageClient({
           <Wallet size={24} className="text-emerald-600 dark:text-amber-400" />
           {t("balances.title")}
         </h1>
-        {snapshot.bridgeOn && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            {t("balances.bridgeOnHint")}
-          </p>
-        )}
       </div>
 
       {loading && <PageLoader />}

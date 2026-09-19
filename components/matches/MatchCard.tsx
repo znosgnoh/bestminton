@@ -42,7 +42,7 @@ export default function MatchCard({ match }: MatchCardProps) {
           {match.synced && (
             <span className="tet-badge-synced">
               <CheckCircle size={10} />
-              Synced
+              Recorded
             </span>
           )}
         </div>

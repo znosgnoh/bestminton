@@ -10,7 +10,7 @@ import {
 } from "./idb";
 import { getSingaporeWeekday } from "./datetime";
 import { DEFAULT_ELO } from "./elo";
-import type { MemberDTO, MatchDTO, RegistrationDTO, GuestDTO } from "./types";
+import type { MemberDTO, MatchDTO, RegistrationDTO, GuestDTO, SettlementDetails } from "./types";
 
 // ---- Raw storage shapes (no relations) ----
 
@@ -61,6 +61,7 @@ interface RawMatch {
   synced: boolean;
   shuttlecockRemitted?: boolean;
   youtubeUrl?: string | null;
+  settlementDetails?: SettlementDetails | null;
   createdAt: string;
 }
 
@@ -120,6 +121,7 @@ async function buildMatchDTO(match: RawMatch): Promise<MatchDTO> {
     synced: match.synced,
     shuttlecockRemitted: match.shuttlecockRemitted ?? false,
     youtubeUrl: match.youtubeUrl ?? null,
+    settlementDetails: match.settlementDetails ?? null,
     registrations: regDTOs,
   };
 }
@@ -252,6 +254,7 @@ export async function createMatches(data: {
       recurDayOfWeek: data.isRecurring ? dayOfWeek : null,
       synced: false,
       shuttlecockRemitted: false,
+      settlementDetails: null,
       createdAt: new Date().toISOString(),
     };
     const id = await idbAdd("matches", raw);
@@ -271,6 +274,7 @@ export async function updateMatch(
     paidByMemberId?: number | null;
     shuttlecockRecipientMemberId?: number | null;
     youtubeUrl?: string | null;
+    settlementDetails?: SettlementDetails | null;
   }
 ): Promise<MatchDTO> {
   const existing = await idbGetById<RawMatch>("matches", id);

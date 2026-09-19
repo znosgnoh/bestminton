@@ -20,30 +20,23 @@ import {
 import { MATCH_FULL_INCLUDE } from "./prismaIncludes";
 import { revalidateMatchPages } from "./revalidate";
 import {
-  buildCreateExpensePayload,
-  buildShuttlecockRemittancePayload,
-  fetchGroupMembers,
-  findParticipantsMissingFromGroup,
-  formatShareAmount,
   getGroupId,
   hasSplitwiseErrors,
   isSplitwiseConfigured,
   parseSplitwiseErrors,
-  postSplitwiseExpense,
   splitwiseFetch,
   splitwiseMemberName,
   toJsonSplitwiseId,
-  validateExpenseShares,
   type SplitwiseGroupResponse,
 } from "./splitwise";
+import { resolveFeeSplit } from "./settlement";
 import {
   DEFAULT_SHUTTLECOCK_RECIPIENT_NAME,
   formatShuttlecockRemittanceDescription,
+  getShuttlecockFeePerHour,
   shouldCreateShuttlecockRemittance,
-  splitSettlementFees,
 } from "./shuttlecock";
 import type {
-  CalculatedShare,
   ImportOpeningBalancesResponse,
   LedgerEdgeDTO,
   LedgerExpenseDTO,
@@ -324,15 +317,11 @@ export async function getLedgerSnapshot(): Promise<LedgerSnapshotDTO> {
 
 function recordResponse(
   matchExpense: ExpenseWithRelations | null,
-  shuttlecockExpense: ExpenseWithRelations | null,
-  splitwiseSynced: boolean,
-  splitwiseError: string | null
+  shuttlecockExpense: ExpenseWithRelations | null
 ): RecordMatchLedgerResponse {
   return {
     matchExpense: matchExpense ? toExpenseDTO(matchExpense) : null,
     shuttlecockExpense: shuttlecockExpense ? toExpenseDTO(shuttlecockExpense) : null,
-    splitwiseSynced,
-    splitwiseError,
   };
 }
 
@@ -360,60 +349,7 @@ async function resolveShuttlecockRecipient(
   return { recipientMemberId: tienHoang.id, recipient: tienHoang };
 }
 
-async function attachSplitwiseExpenseId(
-  expense: ExpenseWithRelations | null,
-  splitwiseExpenseId: number
-): Promise<ExpenseWithRelations | null> {
-  if (!expense) return null;
-  if (toJsonSplitwiseId(expense.splitwiseExpenseId) === splitwiseExpenseId) return expense;
-  return db.expense.update({
-    where: { id: expense.id },
-    data: { splitwiseExpenseId },
-    include: EXPENSE_INCLUDE,
-  });
-}
-
-function courtExpenseDetails(input: {
-  venue: string;
-  hours: number;
-  split: ReturnType<typeof splitSettlementFees>;
-  paidByName: string;
-  recipientName: string | null;
-  includeRemittanceNote: boolean;
-}): string | undefined {
-  const parts: string[] = [];
-  if (input.venue) parts.push(`Venue: ${input.venue}`);
-  parts.push(
-    `Court ${formatShareAmount(input.split.courtFee)} + shuttlecock ${formatShareAmount(input.split.shuttlecockFee)} ` +
-      `(${formatShareAmount(input.split.ratePerHour)}/h × ${input.hours}h)`
-  );
-  if (input.includeRemittanceNote && input.recipientName) {
-    parts.push(`${input.paidByName} remits shuttlecock to ${input.recipientName}`);
-  }
-  return parts.length ? parts.join("\n") : undefined;
-}
-
-async function missingSplitwiseGroupLabels(
-  missingIds: number[],
-  groupId: string,
-  groupName?: string
-): Promise<string> {
-  const localMembers = await db.member.findMany({
-    where: { splitwiseId: { in: missingIds } },
-    select: { name: true, splitwiseId: true },
-  });
-  const nameBySwId = new Map(localMembers.map((m) => [m.splitwiseId!, m.name] as const));
-  const labels = missingIds.map(
-    (id) => `${nameBySwId.get(id) ?? `Splitwise user ${id}`} (SW ${id})`
-  );
-  const groupLabel = groupName ? `"${groupName}"` : `group ${groupId}`;
-  return (
-    `These players are not in Splitwise ${groupLabel}: ${labels.join(", ")}. ` +
-    "Add them to that group (or fix their Splitwise ID in Management), then sync again."
-  );
-}
-
-async function markMatchSplitwiseSynced(input: {
+async function markMatchRecorded(input: {
   matchId: number;
   remitted: boolean;
   recipientMemberId: number | null;
@@ -439,180 +375,6 @@ async function markMatchSplitwiseSynced(input: {
   }
 }
 
-async function syncLedgerToSplitwise(input: {
-  matchId: number;
-  title: string;
-  venue: string;
-  scheduledAt: Date;
-  synced: boolean;
-  shuttlecockRemitted: boolean;
-  totalCost: number;
-  hours: number;
-  paidByMemberId: number;
-  paidBy: SplitwiseMemberRef;
-  recipientMemberId: number | null;
-  recipient: SplitwiseMemberRef | null;
-  calculated: CalculatedShare[];
-  split: ReturnType<typeof splitSettlementFees>;
-  memberRefs: Map<number, SplitwiseMemberRef>;
-  matchExpense: ExpenseWithRelations | null;
-  shuttlecockExpense: ExpenseWithRelations | null;
-}): Promise<RecordMatchLedgerResponse> {
-  let { matchExpense, shuttlecockExpense } = input;
-
-  if (input.synced) {
-    return recordResponse(matchExpense, shuttlecockExpense, true, null);
-  }
-
-  const fail = (splitwiseError: string) =>
-    recordResponse(matchExpense, shuttlecockExpense, false, splitwiseError);
-
-  const missingLocal = input.calculated.filter((s) => {
-    const swId = input.memberRefs.get(s.memberId)?.splitwiseId;
-    return swId == null;
-  });
-  if (missingLocal.length > 0) {
-    const names = missingLocal.map((s) => s.name).join(", ");
-    return fail(
-      `Missing Splitwise ID for: ${names}. Update them in Management, then sync again.`
-    );
-  }
-  if (input.paidBy.splitwiseId == null) {
-    return fail(
-      `Missing Splitwise ID for: ${input.paidBy.name}. Update them in Management, then sync again.`
-    );
-  }
-
-  const participants = input.calculated.map((s) => ({
-    userId: input.memberRefs.get(s.memberId)!.splitwiseId!,
-    owedShare: s.owedShare,
-  }));
-
-  const shareError = validateExpenseShares(
-    input.totalCost,
-    input.paidBy.splitwiseId,
-    participants
-  );
-  if (shareError) return fail(shareError);
-
-  let groupId: string;
-  try {
-    groupId = getGroupId();
-  } catch {
-    return fail("Server configuration error: SPLITWISE_GROUP_ID is not set.");
-  }
-
-  const groupLookup = await fetchGroupMembers(groupId);
-  if ("error" in groupLookup) return fail(groupLookup.error);
-
-  const missingIds = findParticipantsMissingFromGroup(participants, groupLookup.members);
-  if (missingIds.length > 0) {
-    return fail(await missingSplitwiseGroupLabels(missingIds, groupId, groupLookup.groupName));
-  }
-
-  const wantsRemittance = shouldCreateShuttlecockRemittance({
-    title: input.title,
-    shuttlecockFee: input.split.shuttlecockFee,
-    paidByMemberId: input.paidByMemberId,
-    shuttlecockRecipientMemberId: input.recipientMemberId,
-  });
-  const remittanceAlreadyPosted =
-    input.shuttlecockRemitted || Boolean(shuttlecockExpense?.splitwiseExpenseId);
-  const needsRemittancePost = wantsRemittance && !remittanceAlreadyPosted;
-
-  if (needsRemittancePost) {
-    if (!input.paidBy.splitwiseId || !input.recipient?.splitwiseId) {
-      return fail(
-        "Shuttlecock remittance requires Splitwise IDs for both Paid By and Shuttlecock recipient. " +
-          "Update them in Management, then sync again."
-      );
-    }
-    const remitMissing = findParticipantsMissingFromGroup(
-      [
-        { userId: input.paidBy.splitwiseId },
-        { userId: input.recipient.splitwiseId },
-      ],
-      groupLookup.members
-    );
-    if (remitMissing.length > 0) {
-      return fail(
-        "Paid By or Shuttlecock recipient is not in the Splitwise group. " +
-          "Add them to the group, then sync again."
-      );
-    }
-  }
-
-  const needsCourtPost =
-    !matchExpense?.splitwiseExpenseId && participants.length > 0 && input.totalCost > 0;
-
-  if (needsCourtPost) {
-    const mainResult = await postSplitwiseExpense(
-      buildCreateExpensePayload({
-        totalCost: input.totalCost,
-        description: input.title,
-        date: input.scheduledAt.toISOString(),
-        details: courtExpenseDetails({
-          venue: input.venue,
-          hours: input.hours,
-          split: input.split,
-          paidByName: input.paidBy.name,
-          recipientName: input.recipient?.name ?? null,
-          includeRemittanceNote: wantsRemittance,
-        }),
-        groupId: Number(groupId),
-        paidById: input.paidBy.splitwiseId,
-        participants,
-      })
-    );
-    if (mainResult.error || !mainResult.expenseId) {
-      return fail(mainResult.error ?? "Failed to create Splitwise expense.");
-    }
-    matchExpense = await attachSplitwiseExpenseId(matchExpense, mainResult.expenseId);
-  }
-
-  let remittancePosted = remittanceAlreadyPosted;
-  if (needsRemittancePost && input.paidBy.splitwiseId && input.recipient?.splitwiseId) {
-    const fee = input.split.shuttlecockFee;
-    const remitResult = await postSplitwiseExpense(
-      buildShuttlecockRemittancePayload({
-        groupId: Number(groupId),
-        fee,
-        description: formatShuttlecockRemittanceDescription(input.title, input.scheduledAt),
-        date: input.scheduledAt.toISOString(),
-        details:
-          `${input.paidBy.name} remits ${formatShareAmount(fee)} shuttlecock to ${input.recipient.name}` +
-          (input.venue ? `\nVenue: ${input.venue}` : ""),
-        paidBySplitwiseId: input.paidBy.splitwiseId,
-        recipientSplitwiseId: input.recipient.splitwiseId,
-      })
-    );
-    if (remitResult.error || !remitResult.expenseId) {
-      const courtId = matchExpense?.splitwiseExpenseId;
-      const prefix = courtId
-        ? `Court expense was created (ID ${courtId}), but shuttlecock remittance failed: `
-        : "Shuttlecock remittance failed: ";
-      return fail(
-        prefix +
-          (remitResult.error ?? "unknown error") +
-          ". Fix the issue and retry — match was not marked synced."
-      );
-    }
-    shuttlecockExpense = await attachSplitwiseExpenseId(
-      shuttlecockExpense,
-      remitResult.expenseId
-    );
-    remittancePosted = true;
-  }
-
-  await markMatchSplitwiseSynced({
-    matchId: input.matchId,
-    remitted: wantsRemittance && remittancePosted,
-    recipientMemberId: input.recipientMemberId,
-  });
-
-  return recordResponse(matchExpense, shuttlecockExpense, true, null);
-}
-
 export async function recordMatchExpenses(
   matchId: number
 ): Promise<RecordMatchLedgerResponse> {
@@ -628,23 +390,18 @@ export async function recordMatchExpenses(
   const totalCost = match.totalCost;
   const hours = match.hours;
   const paidByMemberId = match.paidByMemberId;
-  if (
-    totalCost == null ||
-    !(totalCost > 0) ||
-    hours == null ||
-    !(hours > 0) ||
-    paidByMemberId == null
-  ) {
+  const split = resolveFeeSplit(match, getShuttlecockFeePerHour());
+  if (totalCost == null || !(totalCost > 0) || paidByMemberId == null || !split) {
     throw new LedgerServiceError(
       "INVALID_SETTLEMENT",
-      "Match is missing total cost, hours, or paid-by."
+      "Match is missing total cost or paid-by."
     );
   }
 
   const calculated = calculateShares(
     registrationsForShares(match.registrations),
     totalCost,
-    hours
+    hours ?? 1
   );
   const debtShares = calculated.filter(
     (s) => s.owedShare > 0 && s.memberId !== paidByMemberId
@@ -652,17 +409,16 @@ export async function recordMatchExpenses(
   const matchAmount = fromCents(debtShares.reduce((sum, s) => sum + toCents(s.owedShare), 0));
   const currency = getCurrencyCode();
   const matchTitle = formatShuttlecockRemittanceDescription(match.title, match.scheduledAt);
-  const split = splitSettlementFees(totalCost, hours);
 
   const paidBy: SplitwiseMemberRef | null =
     match.paidBy ??
     match.registrations.find((r) => r.memberId === paidByMemberId)?.member ??
     null;
   if (!paidBy) {
-    throw new LedgerServiceError("INVALID_SETTLEMENT", "Match is missing total cost, hours, or paid-by.");
+    throw new LedgerServiceError("INVALID_SETTLEMENT", "Match is missing total cost or paid-by.");
   }
 
-  const { recipientMemberId, recipient } = await resolveShuttlecockRecipient(match, split.shuttlecockFee);
+  const { recipientMemberId } = await resolveShuttlecockRecipient(match, split.shuttlecockFee);
 
   const { matchExpense, shuttlecockExpense } = await withDbRetry(() =>
     db.$transaction(async (tx) => {
@@ -689,40 +445,12 @@ export async function recordMatchExpenses(
   }, NEON_TX_OPTIONS)
   );
 
-  if (!isSplitwiseConfigured()) {
-    return recordResponse(matchExpense, shuttlecockExpense, false, null);
-  }
-
-  const memberRefs = new Map<number, SplitwiseMemberRef>();
-  for (const r of match.registrations) {
-    memberRefs.set(r.memberId, {
-      id: r.member.id,
-      name: r.member.name,
-      splitwiseId: r.member.splitwiseId,
-    });
-  }
-  memberRefs.set(paidBy.id, paidBy);
-  if (recipient) memberRefs.set(recipient.id, recipient);
-
-  return syncLedgerToSplitwise({
+  await markMatchRecorded({
     matchId,
-    title: match.title,
-    venue: match.venue,
-    scheduledAt: match.scheduledAt,
-    synced: match.synced,
-    shuttlecockRemitted: match.shuttlecockRemitted,
-    totalCost,
-    hours,
-    paidByMemberId,
-    paidBy,
+    remitted: Boolean(shuttlecockExpense),
     recipientMemberId,
-    recipient,
-    calculated,
-    split,
-    memberRefs,
-    matchExpense,
-    shuttlecockExpense,
   });
+  return recordResponse(matchExpense, shuttlecockExpense);
 }
 
 const BRIDGE_OFF_MESSAGE =

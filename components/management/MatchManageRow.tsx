@@ -8,11 +8,8 @@ import ErrorBanner from "@/components/ui/ErrorBanner";
 import MatchForm from "./MatchForm";
 import { useI18n } from "@/contexts/LocaleContext";
 import * as dataService from "@/lib/dataService";
-import {
-  getShuttlecockFeePerHour,
-  shouldCreateShuttlecockRemittance,
-  splitSettlementFees,
-} from "@/lib/shuttlecock";
+import { resolveFeeSplit } from "@/lib/settlement";
+import { shouldCreateShuttlecockRemittance } from "@/lib/shuttlecock";
 import { formatAmount, getCurrencySymbol } from "@/lib/currency";
 import { formatLocal } from "@/lib/datetime";
 import type { MatchDTO } from "@/lib/types";
@@ -59,13 +56,7 @@ export default function MatchManageRow({
     match.registrations.find((r) => r.memberId === match.shuttlecockRecipientMemberId)?.member
       .name ?? null;
 
-  const feeSplit =
-    match.totalCost != null &&
-    match.totalCost > 0 &&
-    match.hours != null &&
-    match.hours > 0
-      ? splitSettlementFees(match.totalCost, match.hours, shuttlecockFeePerHour)
-      : null;
+  const feeSplit = resolveFeeSplit(match, shuttlecockFeePerHour);
 
   const showRemittance =
     feeSplit &&
@@ -124,7 +115,7 @@ export default function MatchManageRow({
               {match.synced && (
                 <span className="tet-badge-synced shrink-0">
                   <CheckCircle size={10} />
-                  Synced
+                  Recorded
                 </span>
               )}
             </div>
@@ -200,7 +191,7 @@ export default function MatchManageRow({
         title="Delete Match"
         message={
           match.synced
-            ? `"${match.title}" has been synced to Splitwise. Deleting it will only remove it locally. Continue?`
+            ? `"${match.title}" has been recorded to the ledger. Deleting it will only remove it locally. Continue?`
             : `Delete "${match.title}"? Registered players will also be removed.`
         }
         confirmLabel="Delete"

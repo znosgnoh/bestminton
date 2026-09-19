@@ -22,7 +22,6 @@ interface MatchDetailClientProps {
   initialMatch: MatchDTO | null;
   initialMembers: MemberDTO[];
   dbAvailable: boolean;
-  splitwiseConfigured: boolean;
   currencyCode: string;
   shuttlecockFeePerHour: number;
   isManage: boolean;
@@ -49,7 +48,6 @@ function MatchDetailClientInner({
   initialMatch,
   initialMembers,
   dbAvailable,
-  splitwiseConfigured,
   currencyCode,
   shuttlecockFeePerHour,
   isManage,
@@ -225,7 +223,6 @@ function MatchDetailClientInner({
           match={match}
           registrations={registrations}
           members={allMembers}
-          splitwiseConfigured={splitwiseConfigured}
           currencyCode={currencyCode}
           shuttlecockFeePerHour={shuttlecockFeePerHour}
         />

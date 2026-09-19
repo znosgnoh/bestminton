@@ -6,6 +6,8 @@ import { MATCH_FULL_INCLUDE } from "@/lib/prismaIncludes";
 import { revalidateMatchPages } from "@/lib/revalidate";
 import { toDTO } from "@/lib/serialize";
 import { parseYoutubeUrlField } from "@/lib/youtube";
+import { computeSettlement, parseSettlementDetails } from "@/lib/settlement";
+import type { SettlementDetails } from "@/lib/settlement";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +51,7 @@ export async function PUT(
     paidByMemberId?: number | null;
     shuttlecockRecipientMemberId?: number | null;
     youtubeUrl?: string | null;
+    settlementDetails?: SettlementDetails | null;
     pin?: string;
   };
   try {
@@ -63,7 +66,13 @@ export async function PUT(
   try {
     const existing = await db.match.findUniqueOrThrow({ where: { id } });
 
-    const settlementFields = ["hours", "totalCost", "paidByMemberId", "shuttlecockRecipientMemberId"] as const;
+    const settlementFields = [
+      "hours",
+      "totalCost",
+      "paidByMemberId",
+      "shuttlecockRecipientMemberId",
+      "settlementDetails",
+    ] as const;
     if (existing.synced && settlementFields.some((f) => f in body)) {
       return NextResponse.json(
         { error: "Cannot modify settlement data for a synced match." },
@@ -99,6 +108,20 @@ export async function PUT(
         return NextResponse.json({ error: parsed.error }, { status: 400 });
       }
       data.youtubeUrl = parsed.url;
+    }
+    if (body.settlementDetails !== undefined) {
+      if (body.settlementDetails === null) {
+        data.settlementDetails = Prisma.DbNull;
+      } else {
+        const details = parseSettlementDetails(body.settlementDetails);
+        if (!details) {
+          return NextResponse.json({ error: "Invalid settlement details." }, { status: 400 });
+        }
+        const computed = computeSettlement(details);
+        data.settlementDetails = details;
+        data.hours = computed.courtHours;
+        data.totalCost = computed.totalCost;
+      }
     }
 
     const match = await db.match.update({ where: { id }, data, include: MATCH_FULL_INCLUDE });
@@ -139,7 +162,7 @@ export async function DELETE(
       return NextResponse.json(
         {
           error:
-            "This match has been synced to Splitwise. Pass confirmSynced: true to delete anyway.",
+            "This match has been recorded to the ledger. Pass confirmSynced: true to delete anyway.",
         },
         { status: 409 }
       );

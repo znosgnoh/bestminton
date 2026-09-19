@@ -4,10 +4,10 @@ import { serializeChallengeList } from "@/lib/challengeSerialize";
 import { DEFAULT_ELO } from "@/lib/elo";
 import { toMemberDTO } from "@/lib/memberSerialize";
 import { summaryFromOjBalance } from "@/lib/ojBalance";
+import { resolveFeeSplit } from "@/lib/settlement";
 import {
   getShuttlecockFeePerHour,
   shouldCreateShuttlecockRemittance,
-  splitSettlementFees,
 } from "@/lib/shuttlecock";
 import type {
   ChallengeResolutionDTO,
@@ -131,11 +131,7 @@ export async function buildMemberProfile(memberId: number): Promise<MemberProfil
 
   const matchHistory: MemberMatchHistoryItemDTO[] = registrations.map((reg) => {
     const m = reg.match;
-    const hasSettlement =
-      m.totalCost != null && m.totalCost > 0 && m.hours != null && m.hours > 0;
-    const split = hasSettlement
-      ? splitSettlementFees(m.totalCost!, m.hours!, getShuttlecockFeePerHour())
-      : null;
+    const split = resolveFeeSplit(m, getShuttlecockFeePerHour());
     const shuttlecockRemittance = Boolean(
       split &&
         shouldCreateShuttlecockRemittance({

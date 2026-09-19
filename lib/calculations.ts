@@ -3,9 +3,10 @@ import type { RegistrationDTO, CalculatedShare } from "./types";
 export function calculateShares(
   registrations: RegistrationDTO[],
   totalCost: number,
-  hours: number
+  hours: number = 1
 ): CalculatedShare[] {
-  if (!registrations.length || totalCost <= 0 || hours <= 0) return [];
+  if (!registrations.length || totalCost <= 0) return [];
+  const h = hours > 0 ? hours : 1;
 
   const weighted = registrations.map((r) => {
     const playerFactor = (r.playedFull ?? true) ? 1 : 0.5;
@@ -19,7 +20,7 @@ export function calculateShares(
       guestCount: r.guests.length,
       guestsFactor,
       playedFull: r.playedFull ?? true,
-      weight: hours * (playerFactor + guestsFactor),
+      weight: h * (playerFactor + guestsFactor),
     };
   });
 

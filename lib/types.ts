@@ -1,3 +1,7 @@
+import type { SettlementDetails } from "./settlement";
+
+export type { CourtBookingInput, SettlementDetails } from "./settlement";
+
 // --- Splitwise API shapes ---
 
 export interface SplitwiseMember {
@@ -301,7 +305,7 @@ export interface MemberMatchHistoryItemDTO {
   paidByName: string | null;
   shuttlecockRecipientMemberId: number | null;
   shuttlecockRecipientName: string | null;
-  /** Derived shuttlecock fee when settlement hours+cost exist; else null. */
+  /** Derived shuttlecock fee when settlement details or hours+cost exist; else null. */
   shuttlecockFee: number | null;
   courtFee: number | null;
   /** True when remittance applies (not a single-title match, fee > 0, payer ≠ recipient). */
@@ -370,6 +374,7 @@ export interface MatchDTO {
   synced: boolean;
   shuttlecockRemitted: boolean;
   youtubeUrl: string | null;
+  settlementDetails: SettlementDetails | null;
   registrations: RegistrationDTO[];
 }
 
@@ -434,8 +439,6 @@ export interface RecordMatchLedgerRequest {
 export interface RecordMatchLedgerResponse {
   matchExpense: LedgerExpenseDTO | null;
   shuttlecockExpense: LedgerExpenseDTO | null;
-  splitwiseSynced: boolean;
-  splitwiseError: string | null;
 }
 
 export interface ImportOpeningBalancesResponse {
@@ -463,7 +466,7 @@ export interface CalculatedShare {
   owedShare: number;
 }
 
-// --- API contract: client → /api/splitwise/expense ---
+// --- Splitwise expense payload (import / leftover Splitwise helpers) ---
 
 export interface CreateExpenseRequest {
   matchId?: number;

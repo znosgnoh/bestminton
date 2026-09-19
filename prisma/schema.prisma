@@ -57,6 +57,8 @@ model Match {
   /// Splitwise shuttlecock remittance (Paid By → recipient) already logged
   shuttlecockRemitted         Boolean  @default(false)
   youtubeUrl                  String?
+  /// Shuttle count/price, court rate, and who booked × hours
+  settlementDetails           Json?
   createdAt                   DateTime @default(now())
 
   paidBy                Member?             @relation("MatchPayer", fields: [paidByMemberId], references: [id])
