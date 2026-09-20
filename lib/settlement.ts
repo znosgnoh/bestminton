@@ -27,6 +27,12 @@ export type ComputedSettlement = {
   totalCost: number;
 };
 
+export type BookingRemittance = {
+  memberId: number;
+  hours: number;
+  amount: number;
+};
+
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100;
 }
@@ -48,6 +54,26 @@ export function computeSettlement(details: SettlementDetails): ComputedSettlemen
     shuttlecockFee,
     totalCost: roundMoney(courtFee + shuttlecockFee),
   };
+}
+
+/** Paid By remits each other booker's court fee (same direction as shuttlecock). */
+export function bookingRemittances(
+  details: SettlementDetails,
+  paidByMemberId: number | null
+): BookingRemittance[] {
+  const hoursByMember = new Map<number, number>();
+  for (const b of details.bookings) {
+    hoursByMember.set(b.memberId, (hoursByMember.get(b.memberId) ?? 0) + Math.max(0, b.hours));
+  }
+  const rate = Math.max(0, details.courtFeePerHour);
+  const rows: BookingRemittance[] = [];
+  for (const [memberId, hours] of hoursByMember) {
+    if (paidByMemberId != null && memberId === paidByMemberId) continue;
+    const amount = roundMoney(rate * hours);
+    if (!(amount > 0)) continue;
+    rows.push({ memberId, hours, amount });
+  }
+  return rows;
 }
 
 export function parseSettlementDetails(raw: unknown): SettlementDetails | null {

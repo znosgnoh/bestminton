@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   DEFAULT_COURT_FEE_PER_HOUR,
   DEFAULT_SHUTTLECOCK_UNIT_PRICE,
+  bookingRemittances,
   computeSettlement,
   parseSettlementDetails,
   resolveFeeSplit,
@@ -35,6 +36,25 @@ describe("computeSettlement", () => {
     assert.equal(computed.courtFee, 0);
     assert.equal(computed.shuttlecockFee, 15);
     assert.equal(computed.totalCost, 15);
+  });
+});
+
+describe("bookingRemittances", () => {
+  it("pays other bookers from the main payer, skips self", () => {
+    const rows = bookingRemittances(
+      {
+        shuttlecockCount: 0,
+        shuttlecockUnitPrice: 3.75,
+        courtFeePerHour: 8.375,
+        bookings: [
+          { memberId: 1, hours: 2 },
+          { memberId: 2, hours: 2 },
+          { memberId: 2, hours: 2 },
+        ],
+      },
+      1
+    );
+    assert.deepEqual(rows, [{ memberId: 2, hours: 4, amount: 33.5 }]);
   });
 });
 

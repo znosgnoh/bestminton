@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
     deferNotification(async () => {
       if (result.matchExpense) await notifyLedgerRecorded(result.matchExpense.id);
       if (result.shuttlecockExpense) await notifyLedgerRecorded(result.shuttlecockExpense.id);
+      for (const expense of result.courtExpenses) await notifyLedgerRecorded(expense.id);
     });
     return NextResponse.json(result);
   } catch (err) {

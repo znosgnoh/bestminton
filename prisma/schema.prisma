@@ -194,6 +194,7 @@ model EmailDelivery {
 enum LedgerExpenseKind {
   MATCH
   SHUTTLECOCK
+  COURT
   OPENING
 }
 
@@ -218,7 +219,7 @@ model Expense {
   paidBy  Member         @relation("ExpenseCreditor", fields: [paidByMemberId], references: [id])
   shares  ExpenseShare[]
 
-  @@unique([matchId, kind])
+  @@unique([matchId, kind, paidByMemberId])
   @@index([kind])
 }
 

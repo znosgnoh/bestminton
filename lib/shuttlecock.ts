@@ -40,14 +40,9 @@ export function splitSettlementFees(
 /** Prefer exact name match for default shuttlecock recipient. */
 export const DEFAULT_SHUTTLECOCK_RECIPIENT_NAME = "Tiến Hoàng";
 
-/** Matches with "single" in the title skip Paid By → recipient shuttlecock remittance logging. */
-export function isSingleMatchTitle(title: string): boolean {
-  return /\bsingles?\b/i.test(title.trim());
-}
-
 /**
- * Whether to create a Splitwise remittance expense (Paid By owes shuttlecock to recipient).
- * Skips single-title matches, zero fees, and when payer is the recipient.
+ * Whether Paid By remits shuttlecock to the recipient (same direction as court bookers).
+ * Skips zero fees and when payer is the recipient.
  */
 export function shouldCreateShuttlecockRemittance(opts: {
   title: string;
@@ -55,7 +50,6 @@ export function shouldCreateShuttlecockRemittance(opts: {
   paidByMemberId: number | null;
   shuttlecockRecipientMemberId: number | null;
 }): boolean {
-  if (isSingleMatchTitle(opts.title)) return false;
   if (!(opts.shuttlecockFee > 0)) return false;
   if (!opts.paidByMemberId || !opts.shuttlecockRecipientMemberId) return false;
   if (opts.paidByMemberId === opts.shuttlecockRecipientMemberId) return false;

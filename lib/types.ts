@@ -380,7 +380,7 @@ export interface MatchDTO {
 
 // --- Internal ledger DTOs ---
 
-export type LedgerExpenseKind = "MATCH" | "SHUTTLECOCK" | "OPENING";
+export type LedgerExpenseKind = "MATCH" | "SHUTTLECOCK" | "COURT" | "OPENING";
 export type LedgerExpenseStatus = "OPEN" | "SETTLED";
 
 export interface LedgerExpenseShareDTO {
@@ -439,6 +439,7 @@ export interface RecordMatchLedgerRequest {
 export interface RecordMatchLedgerResponse {
   matchExpense: LedgerExpenseDTO | null;
   shuttlecockExpense: LedgerExpenseDTO | null;
+  courtExpenses: LedgerExpenseDTO[];
 }
 
 export interface ImportOpeningBalancesResponse {

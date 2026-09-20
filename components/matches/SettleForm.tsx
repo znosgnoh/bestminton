@@ -8,13 +8,13 @@ import { useI18n } from "@/contexts/LocaleContext";
 import {
   findDefaultShuttlecockRecipientId,
   findMemberIdByShuttlecockDefaultName,
-  isSingleMatchTitle,
   shouldCreateShuttlecockRemittance,
 } from "@/lib/shuttlecock";
 import {
   DEFAULT_COURT_BOOKING_HOURS,
   DEFAULT_COURT_FEE_PER_HOUR,
   DEFAULT_SHUTTLECOCK_UNIT_PRICE,
+  bookingRemittances,
   computeSettlement,
   parseSettlementDetails,
   type CourtBookingInput,
@@ -432,20 +432,49 @@ export default function SettleForm({
                 {formatAmount(settlement.totalCost)}
               </span>
             </div>
-            {paidByName && shuttlecockRecipientName && (
-              <p className="pt-1 text-xs text-gray-600 dark:text-gray-400">
-                Everyone pays {paidByName}. {paidByName} remits shuttlecock (
-                {curSym}
-                {formatAmount(settlement.shuttlecockFee)}) to {shuttlecockRecipientName}.
-                {shouldCreateShuttlecockRemittance({
-                  title: match.title,
-                  shuttlecockFee: settlement.shuttlecockFee,
-                  paidByMemberId,
-                  shuttlecockRecipientMemberId,
-                }) ? null : isSingleMatchTitle(match.title) ? (
-                  <> Single sessions skip the shuttlecock remittance.</>
-                ) : null}
-              </p>
+            {paidByName && (
+              <div className="pt-1 space-y-0.5 text-xs text-gray-600 dark:text-gray-400">
+                <p>{t("matches.remitEveryonePays", { payer: paidByName })}</p>
+                {shuttlecockRecipientName &&
+                  shouldCreateShuttlecockRemittance({
+                    title: match.title,
+                    shuttlecockFee: settlement.shuttlecockFee,
+                    paidByMemberId,
+                    shuttlecockRecipientMemberId,
+                  }) && (
+                    <p>
+                      {t("matches.remitShuttle", {
+                        payer: paidByName,
+                        amount: `${curSym}${formatAmount(settlement.shuttlecockFee)}`,
+                        recipient: shuttlecockRecipientName,
+                      })}
+                    </p>
+                  )}
+                {bookingRemittances(
+                  // bookers other than Paid By get a court remittance
+                  {
+                    shuttlecockCount: countNum,
+                    shuttlecockUnitPrice: priceNum,
+                    courtFeePerHour: rateNum,
+                    bookings: completeBookings(bookings),
+                  },
+                  paidByMemberId
+                ).map((row) => {
+                  const bookerName =
+                    members.find((m) => m.id === row.memberId)?.name ??
+                    registrations.find((r) => r.memberId === row.memberId)?.member.name ??
+                    String(row.memberId);
+                  return (
+                    <p key={row.memberId}>
+                      {t("matches.remitCourt", {
+                        payer: paidByName,
+                        amount: `${curSym}${formatAmount(row.amount)}`,
+                        booker: bookerName,
+                      })}
+                    </p>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}

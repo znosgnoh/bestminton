@@ -80,6 +80,7 @@ export default function BalanceBreakdown({ items, currency }: BalanceBreakdownPr
   function kindLabel(kind: LedgerExpenseKind): string {
     if (kind === "OPENING") return t("balances.opening");
     if (kind === "SHUTTLECOCK") return t("balances.shuttlecock");
+    if (kind === "COURT") return t("balances.court");
     return t("balances.match");
   }
 

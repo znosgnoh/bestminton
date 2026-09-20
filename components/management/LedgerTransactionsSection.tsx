@@ -29,10 +29,11 @@ function formatWhen(iso: string, locale: Locale): string {
 
 function kindLabel(
   kind: LedgerExpenseKind,
-  t: (key: "balances.opening" | "balances.match" | "balances.shuttlecock") => string
+  t: (key: "balances.opening" | "balances.match" | "balances.shuttlecock" | "balances.court") => string
 ): string {
   if (kind === "OPENING") return t("balances.opening");
   if (kind === "SHUTTLECOCK") return t("balances.shuttlecock");
+  if (kind === "COURT") return t("balances.court");
   return t("balances.match");
 }
 

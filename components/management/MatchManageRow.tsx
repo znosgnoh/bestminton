@@ -8,7 +8,7 @@ import ErrorBanner from "@/components/ui/ErrorBanner";
 import MatchForm from "./MatchForm";
 import { useI18n } from "@/contexts/LocaleContext";
 import * as dataService from "@/lib/dataService";
-import { resolveFeeSplit } from "@/lib/settlement";
+import { bookingRemittances, parseSettlementDetails, resolveFeeSplit } from "@/lib/settlement";
 import { shouldCreateShuttlecockRemittance } from "@/lib/shuttlecock";
 import { formatAmount, getCurrencySymbol } from "@/lib/currency";
 import { formatLocal } from "@/lib/datetime";
@@ -66,6 +66,8 @@ export default function MatchManageRow({
       paidByMemberId: match.paidByMemberId,
       shuttlecockRecipientMemberId: match.shuttlecockRecipientMemberId,
     });
+  const details = parseSettlementDetails(match.settlementDetails);
+  const courtRemits = details ? bookingRemittances(details, match.paidByMemberId) : [];
 
   async function handleDelete() {
     setDeleting(true);
@@ -143,6 +145,19 @@ export default function MatchManageRow({
                     {curSym}{formatAmount(feeSplit.shuttlecockFee)}
                   </p>
                 )}
+                {courtRemits.map((row) => {
+                  const bookerName =
+                    match.registrations.find((r) => r.memberId === row.memberId)?.member.name ??
+                    `#${row.memberId}`;
+                  return (
+                    <p
+                      key={row.memberId}
+                      className="font-medium text-emerald-700 dark:text-amber-400"
+                    >
+                      {paidByName} → {bookerName} court {curSym}{formatAmount(row.amount)}
+                    </p>
+                  );
+                })}
               </div>
             )}
           </div>

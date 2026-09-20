@@ -29,7 +29,7 @@ import {
   toJsonSplitwiseId,
   type SplitwiseGroupResponse,
 } from "./splitwise";
-import { resolveFeeSplit } from "./settlement";
+import { bookingRemittances, parseSettlementDetails, resolveFeeSplit } from "./settlement";
 import {
   DEFAULT_SHUTTLECOCK_RECIPIENT_NAME,
   formatShuttlecockRemittanceDescription,
@@ -159,10 +159,15 @@ function registrationsForShares(
 function findExpenseByMatchKind(
   client: LedgerTx | typeof db,
   matchId: number,
-  kind: "MATCH" | "SHUTTLECOCK"
+  kind: "MATCH" | "SHUTTLECOCK" | "COURT",
+  paidByMemberId?: number
 ) {
-  return client.expense.findUnique({
-    where: { matchId_kind: { matchId, kind } },
+  return client.expense.findFirst({
+    where: {
+      matchId,
+      kind,
+      ...(paidByMemberId != null ? { paidByMemberId } : {}),
+    },
     include: EXPENSE_INCLUDE,
   });
 }
@@ -174,7 +179,7 @@ function isUniqueConflict(err: unknown): boolean {
 async function createExpenseWithShares(
   client: LedgerTx,
   data: {
-    kind: "MATCH" | "SHUTTLECOCK";
+    kind: "MATCH" | "SHUTTLECOCK" | "COURT";
     matchId: number;
     title: string;
     amount: number;
@@ -206,7 +211,12 @@ async function createExpenseWithShares(
     });
   } catch (err) {
     if (!isUniqueConflict(err)) throw err;
-    const existing = await findExpenseByMatchKind(client, data.matchId, data.kind);
+    const existing = await findExpenseByMatchKind(
+      client,
+      data.matchId,
+      data.kind,
+      data.paidByMemberId
+    );
     if (existing) return existing;
     throw err;
   }
@@ -277,6 +287,45 @@ async function findOrCreateShuttlecockExpense(
   });
 }
 
+async function findOrCreateCourtExpenses(
+  client: LedgerTx,
+  input: {
+    matchId: number;
+    title: string;
+    scheduledAt: Date;
+    currency: string;
+    paidByMemberId: number;
+    remittances: Array<{ memberId: number; amount: number }>;
+  }
+): Promise<ExpenseWithRelations[]> {
+  const title = formatShuttlecockRemittanceDescription(input.title, input.scheduledAt);
+  const recorded: ExpenseWithRelations[] = [];
+  for (const remit of input.remittances) {
+    const existing = await findExpenseByMatchKind(
+      client,
+      input.matchId,
+      "COURT",
+      remit.memberId
+    );
+    if (existing) {
+      recorded.push(existing);
+      continue;
+    }
+    recorded.push(
+      await createExpenseWithShares(client, {
+        kind: "COURT",
+        matchId: input.matchId,
+        title,
+        amount: remit.amount,
+        currency: input.currency,
+        paidByMemberId: remit.memberId,
+        shares: [{ memberId: input.paidByMemberId, owed: remit.amount }],
+      })
+    );
+  }
+  return recorded;
+}
+
 export async function getLedgerSnapshot(): Promise<LedgerSnapshotDTO> {
   const rows = await db.expense.findMany({
     include: EXPENSE_INCLUDE,
@@ -317,11 +366,13 @@ export async function getLedgerSnapshot(): Promise<LedgerSnapshotDTO> {
 
 function recordResponse(
   matchExpense: ExpenseWithRelations | null,
-  shuttlecockExpense: ExpenseWithRelations | null
+  shuttlecockExpense: ExpenseWithRelations | null,
+  courtExpenses: ExpenseWithRelations[]
 ): RecordMatchLedgerResponse {
   return {
     matchExpense: matchExpense ? toExpenseDTO(matchExpense) : null,
     shuttlecockExpense: shuttlecockExpense ? toExpenseDTO(shuttlecockExpense) : null,
+    courtExpenses: courtExpenses.map(toExpenseDTO),
   };
 }
 
@@ -420,7 +471,10 @@ export async function recordMatchExpenses(
 
   const { recipientMemberId } = await resolveShuttlecockRecipient(match, split.shuttlecockFee);
 
-  const { matchExpense, shuttlecockExpense } = await withDbRetry(() =>
+  const details = parseSettlementDetails(match.settlementDetails);
+  const courtRemits = details ? bookingRemittances(details, paidByMemberId) : [];
+
+  const { matchExpense, shuttlecockExpense, courtExpenses } = await withDbRetry(() =>
     db.$transaction(async (tx) => {
     const recordedMatch = await findOrCreateMatchExpense(tx, {
       matchId,
@@ -441,7 +495,20 @@ export async function recordMatchExpenses(
       shuttlecockFee: split.shuttlecockFee,
     });
 
-    return { matchExpense: recordedMatch, shuttlecockExpense: recordedShuttlecock };
+    const recordedCourt = await findOrCreateCourtExpenses(tx, {
+      matchId,
+      title: match.title,
+      scheduledAt: match.scheduledAt,
+      currency,
+      paidByMemberId,
+      remittances: courtRemits,
+    });
+
+    return {
+      matchExpense: recordedMatch,
+      shuttlecockExpense: recordedShuttlecock,
+      courtExpenses: recordedCourt,
+    };
   }, NEON_TX_OPTIONS)
   );
 
@@ -450,7 +517,7 @@ export async function recordMatchExpenses(
     remitted: Boolean(shuttlecockExpense),
     recipientMemberId,
   });
-  return recordResponse(matchExpense, shuttlecockExpense);
+  return recordResponse(matchExpense, shuttlecockExpense, courtExpenses);
 }
 
 const BRIDGE_OFF_MESSAGE =
