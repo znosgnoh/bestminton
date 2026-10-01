@@ -3,12 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import Avatar from "@/components/ui/Avatar";
 import AdminPinModal from "@/components/ui/AdminPinModal";
 import ErrorBanner from "@/components/ui/ErrorBanner";
-import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
-import StreakBadge from "@/components/ui/StreakBadge";
 import EloHistoryChart from "@/components/profile/EloHistoryChart";
+import PlayerHeroBanner from "@/components/profile/PlayerHeroBanner";
 import ProfileChallengeHistory from "@/components/profile/ProfileChallengeHistory";
 import ProfileCollapsibleSection from "@/components/profile/ProfileCollapsibleSection";
 import ProfileMatchHistory from "@/components/profile/ProfileMatchHistory";
@@ -22,12 +20,6 @@ interface MemberProfileClientProps {
   profile: MemberProfileDTO | null;
   dbAvailable: boolean;
   dbError?: string;
-}
-
-function netCamClass(net: number): string {
-  if (net > 0) return "text-green-600 dark:text-green-400";
-  if (net < 0) return "text-red-600 dark:text-red-400";
-  return "text-gray-600 dark:text-gray-400";
 }
 
 function formatNetCam(net: number): string {
@@ -140,34 +132,16 @@ export default function MemberProfileClient({
     <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
       <BackLink />
 
-      {/* Header */}
-      <section className="tet-card p-5">
-        <div className="flex items-center gap-4">
-          <Avatar name={member.name} avatarUrl={member.avatarUrl} size="lg" />
-          <div className="min-w-0 flex-1">
-            <h1 className="flex items-center gap-2 tet-page-title min-w-0">
-              <span className="truncate">{member.name}</span>
-              <StreakBadge
-                winStreak={member.singlesWinStreak}
-                loseStreak={member.singlesLoseStreak}
-                className="shrink-0"
-              />
-            </h1>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              {rank != null && (
-                <span>
-                  {t("profile.rank", { rank })} ·{" "}
-                </span>
-              )}
-              Elo {member.eloRating}
-            </p>
-            {member.email && (
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 truncate">
-                {member.email}
-              </p>
-            )}
-            {member.email && (
-              <label className="mt-2 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+      <PlayerHeroBanner
+        member={member}
+        rank={rank}
+        netCam={netCam}
+        formatNetCam={formatNetCam}
+        emailSlot={
+          member.email ? (
+            <div className="mt-1 space-y-1">
+              <p className="truncate text-sm text-slate-400">{member.email}</p>
+              <label className="flex items-center gap-2 text-sm text-slate-200">
                 <input
                   type="checkbox"
                   checked={member.emailNotificationsEnabled}
@@ -176,18 +150,16 @@ export default function MemberProfileClient({
                 />
                 <span>{t("profile.emailNotifications")}</span>
               </label>
-            )}
-            {emailPrefError && (
-              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{emailPrefError}</p>
-            )}
-            <p className={`mt-1 inline-flex items-center gap-1 text-sm font-medium ${netCamClass(netCam)}`}>
-              <OrangeJuiceIcon size={14} />
-              {formatNetCam(netCam)}
-            </p>
-          </div>
-        </div>
+              {emailPrefError && (
+                <p className="text-xs text-rose-300">{emailPrefError}</p>
+              )}
+            </div>
+          ) : null
+        }
+      />
 
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <section className="tet-card p-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <StatTile label={t("profile.statWL")} value={`${member.totalWins}–${losses}`} />
           <StatTile label={t("profile.statWinRate")} value={`${winPct}%`} />
           <StatTile label={t("profile.statSessions")} value={stats.sessionsPlayed} />

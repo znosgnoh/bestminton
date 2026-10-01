@@ -1,7 +1,8 @@
 import { STREAK_ACTIVE_THRESHOLD } from "@/lib/elo";
+import { STREAK_LONG_THRESHOLD } from "@/lib/streakUi";
 import type { LeaderboardEntryDTO } from "@/lib/types";
 
-export type SpotlightKind = "onFire" | "mostActive" | "camKing" | "sharpest";
+export type SpotlightKind = "inferno" | "onFire" | "mostActive" | "camKing" | "sharpest";
 
 export interface PlayerSpotlight {
   kind: SpotlightKind;
@@ -14,7 +15,7 @@ const MIN_MATCHES_FOR_SHARP = 5;
 
 /**
  * Pick up to one spotlight per kind from players outside the podium (rank > 3).
- * Each player appears at most once (priority: onFire → mostActive → camKing → sharpest).
+ * Each player appears at most once (priority: inferno → onFire → mostActive → camKing → sharpest).
  */
 export function pickPlayerSpotlights(
   entries: LeaderboardEntryDTO[],
@@ -46,10 +47,18 @@ export function pickPlayerSpotlights(
   };
 
   take(
+    "inferno",
+    pool,
+    (e) => e.singlesWinStreak,
+    (e) => e.singlesWinStreak >= STREAK_LONG_THRESHOLD
+  );
+  take(
     "onFire",
     pool,
     (e) => e.singlesWinStreak,
-    (e) => e.singlesWinStreak >= STREAK_ACTIVE_THRESHOLD
+    (e) =>
+      e.singlesWinStreak >= STREAK_ACTIVE_THRESHOLD &&
+      e.singlesWinStreak < STREAK_LONG_THRESHOLD
   );
   take(
     "mostActive",

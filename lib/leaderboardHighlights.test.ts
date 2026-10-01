@@ -45,17 +45,26 @@ describe("pickPlayerSpotlights", () => {
       entry({ id: 3, name: "Bronze", rank: 3, eloRating: 1150 }),
       entry({
         id: 4,
-        name: "Hot",
+        name: "Inferno",
         rank: 4,
-        singlesWinStreak: 5,
+        singlesWinStreak: 7,
         totalMatches: 10,
-        totalWins: 6,
-        winRate: 0.6,
+        totalWins: 7,
+        winRate: 0.7,
+      }),
+      entry({
+        id: 8,
+        name: "Hot",
+        rank: 5,
+        singlesWinStreak: 4,
+        totalMatches: 9,
+        totalWins: 5,
+        winRate: 0.55,
       }),
       entry({
         id: 5,
         name: "Busy",
-        rank: 5,
+        rank: 6,
         totalMatches: 30,
         totalWins: 12,
         winRate: 0.4,
@@ -63,7 +72,7 @@ describe("pickPlayerSpotlights", () => {
       entry({
         id: 6,
         name: "Cam",
-        rank: 6,
+        rank: 7,
         totalMatches: 8,
         totalWins: 3,
         winRate: 0.375,
@@ -72,7 +81,7 @@ describe("pickPlayerSpotlights", () => {
       entry({
         id: 7,
         name: "Sharp",
-        rank: 7,
+        rank: 8,
         totalMatches: 12,
         totalWins: 10,
         winRate: 10 / 12,
@@ -80,11 +89,12 @@ describe("pickPlayerSpotlights", () => {
     ];
 
     const spotlights = pickPlayerSpotlights(entries);
-    assert.equal(spotlights.length, 4);
+    assert.equal(spotlights.length, 5);
     assert.deepEqual(
       spotlights.map((s) => [s.kind, s.entry.id]),
       [
-        ["onFire", 4],
+        ["inferno", 4],
+        ["onFire", 8],
         ["mostActive", 5],
         ["camKing", 6],
         ["sharpest", 7],

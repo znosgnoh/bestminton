@@ -323,7 +323,7 @@
   }
 }
 
-/* Leaderboard arena podium */
+/* Leaderboard / profile arena — badminton + fire motion */
 @keyframes podium-rise {
   from {
     opacity: 0;
@@ -339,13 +339,120 @@
   0%,
   100% {
     box-shadow:
-      0 0 0 3px rgba(34, 211, 238, 0.35),
-      0 0 18px rgba(34, 211, 238, 0.35);
+      0 0 0 3px rgba(251, 146, 60, 0.4),
+      0 0 18px rgba(249, 115, 22, 0.45);
   }
   50% {
     box-shadow:
-      0 0 0 4px rgba(34, 211, 238, 0.5),
-      0 0 28px rgba(56, 189, 248, 0.5);
+      0 0 0 5px rgba(251, 191, 36, 0.55),
+      0 0 32px rgba(249, 115, 22, 0.7);
+  }
+}
+
+@keyframes flame-flicker {
+  0%,
+  100% {
+    transform: scale(1) rotate(-4deg);
+    filter: drop-shadow(0 0 2px rgba(251, 146, 60, 0.5));
+    opacity: 0.95;
+  }
+  40% {
+    transform: scale(1.12) rotate(5deg);
+    filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.85));
+    opacity: 1;
+  }
+  70% {
+    transform: scale(0.96) rotate(-2deg);
+    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.7));
+    opacity: 0.9;
+  }
+}
+
+@keyframes flame-ember {
+  0%,
+  100% {
+    transform: translateY(0) scale(0.9);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translateY(-2px) scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes ice-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fire-glow-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateX(-50%) scale(1.08);
+  }
+}
+
+@keyframes racket-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-8deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(6deg);
+  }
+}
+
+@keyframes shuttle-fly {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(28px, -36px) scale(0.6);
+    opacity: 0;
+  }
+}
+
+@keyframes inferno-aura {
+  0%,
+  100% {
+    box-shadow:
+      0 0 12px rgba(249, 115, 22, 0.35),
+      0 0 28px rgba(239, 68, 68, 0.2);
+    opacity: 0.55;
+  }
+  50% {
+    box-shadow:
+      0 0 20px rgba(251, 191, 36, 0.55),
+      0 0 40px rgba(249, 115, 22, 0.4);
+    opacity: 0.9;
+  }
+}
+
+@keyframes inferno-badge-pulse {
+  0%,
+  100% {
+    background: linear-gradient(135deg, #9a3412, #ea580c 45%, #fbbf24);
+    box-shadow: 0 0 10px rgba(249, 115, 22, 0.45);
+  }
+  50% {
+    background: linear-gradient(135deg, #c2410c, #f97316 40%, #fde047);
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.7);
   }
 }
 
@@ -354,12 +461,73 @@
 }
 
 .leaderboard-champ-ring {
-  animation: champ-pulse 2.4s ease-in-out infinite;
+  animation: champ-pulse 2.2s ease-in-out infinite;
+}
+
+.streak-flame-core {
+  animation: flame-flicker 0.85s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.streak-flame-ember {
+  animation: flame-ember 0.7s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.streak-ice-spin {
+  animation: ice-spin 6s linear infinite;
+}
+
+.streak-badge-fire {
+  background: rgba(251, 146, 60, 0.12);
+}
+
+.streak-badge-inferno {
+  animation: inferno-badge-pulse 1.6s ease-in-out infinite;
+}
+
+.streak-badge-ice {
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.podium-fire-glow {
+  animation: fire-glow-breathe 2.8s ease-in-out infinite;
+}
+
+.podium-racket-float {
+  animation: racket-float 3.2s ease-in-out infinite;
+}
+
+.podium-racket-float-delay {
+  animation: racket-float 3.6s ease-in-out infinite 0.4s;
+}
+
+.podium-shuttle {
+  animation: shuttle-fly 2.4s ease-in-out infinite;
+}
+
+.podium-shuttle-delay {
+  animation: shuttle-fly 2.8s ease-in-out infinite 1.1s;
+}
+
+.podium-inferno-aura {
+  animation: inferno-aura 1.8s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.25), transparent 70%);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .leaderboard-podium-place,
-  .leaderboard-champ-ring {
+  .leaderboard-champ-ring,
+  .streak-flame-core,
+  .streak-flame-ember,
+  .streak-ice-spin,
+  .streak-badge-inferno,
+  .podium-fire-glow,
+  .podium-racket-float,
+  .podium-racket-float-delay,
+  .podium-shuttle,
+  .podium-shuttle-delay,
+  .podium-inferno-aura {
     animation: none;
   }
 }
