@@ -233,6 +233,17 @@ const zh: Messages = {
     colWL: "胜–负",
     eloGuideTitle: "Elo 如何计算",
     eloGuideSubtitle: "仅单打 · 对局结算时更新",
+    podiumTitle: "赛场精英",
+    medalGold: "冠军 — 第 1",
+    medalSilver: "亚军 — 第 2",
+    medalBronze: "季军 — 第 3",
+    rankLabel: "第 {rank} 名",
+    eloValue: "Elo {elo}",
+    spotlightsTitle: "值得关注",
+    spotlightOnFire: "连胜中",
+    spotlightMostActive: "最活跃",
+    spotlightCamKing: "橙汁领先",
+    spotlightSharpest: "胜率最高",
   },
   eloGuide: {
     intro:

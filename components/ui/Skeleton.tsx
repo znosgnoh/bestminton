@@ -148,6 +148,32 @@ export function LeaderboardSkeleton() {
   return (
     <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
       <Skeleton className="h-8 w-36" />
+      <Skeleton className="h-4 w-64" />
+      <div className="overflow-hidden rounded-2xl bg-slate-950 p-4 ring-1 ring-cyan-400/20">
+        <Skeleton className="mx-auto mb-4 h-3 w-28 bg-slate-700/80" />
+        <div className="flex items-end justify-center gap-3">
+          <div className="flex w-1/3 flex-col items-center gap-2">
+            <Skeleton className="h-12 w-12 rounded-full bg-slate-700/80" />
+            <Skeleton className="h-3 w-14 bg-slate-700/70" />
+            <Skeleton className="h-11 w-full rounded-t-md bg-slate-600/70" />
+          </div>
+          <div className="flex w-1/3 flex-col items-center gap-2">
+            <Skeleton className="h-16 w-16 rounded-full bg-slate-700/80" />
+            <Skeleton className="h-3 w-16 bg-slate-700/70" />
+            <Skeleton className="h-16 w-full rounded-t-md bg-cyan-700/50" />
+          </div>
+          <div className="flex w-1/3 flex-col items-center gap-2">
+            <Skeleton className="h-12 w-12 rounded-full bg-slate-700/80" />
+            <Skeleton className="h-3 w-14 bg-slate-700/70" />
+            <Skeleton className="h-8 w-full rounded-t-md bg-slate-600/70" />
+          </div>
+        </div>
+      </div>
+      <div className="flex gap-2 overflow-hidden">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-14 w-36 shrink-0 rounded-xl bg-slate-900" />
+        ))}
+      </div>
       <div className="tet-card divide-y divide-amber-100/60 dark:divide-gray-800">
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="flex items-center gap-3 p-3">

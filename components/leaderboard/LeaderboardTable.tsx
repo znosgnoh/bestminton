@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
+import RankBadge from "@/components/leaderboard/RankBadge";
 import StreakBadge from "@/components/ui/StreakBadge";
 import { useI18n } from "@/contexts/LocaleContext";
 import type { LeaderboardEntryDTO } from "@/lib/types";
@@ -21,6 +22,13 @@ function formatNetCam(net: number): string {
   if (net === 0) return "0";
   const sign = net > 0 ? "+" : "-";
   return `${sign}${Math.abs(net)}`;
+}
+
+function rowHighlight(rank: number): string {
+  if (rank === 1) return "bg-cyan-50/80 dark:bg-cyan-950/30";
+  if (rank === 2) return "bg-slate-50/90 dark:bg-slate-800/40";
+  if (rank === 3) return "bg-fuchsia-50/70 dark:bg-fuchsia-950/25";
+  return "";
 }
 
 export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
@@ -44,14 +52,12 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
             const netCam = entry.debtSummary.netCam;
 
             return (
-              <li key={entry.id}>
+              <li key={entry.id} className={rowHighlight(entry.rank)}>
                 <Link
                   href={`/members/${entry.id}`}
                   className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-amber-50/50 dark:hover:bg-gray-800/50"
                 >
-                  <span className="w-6 shrink-0 text-center text-sm font-bold text-gray-400">
-                    {entry.rank}
-                  </span>
+                  <RankBadge rank={entry.rank} className="w-6 shrink-0" />
                   <Avatar name={entry.name} avatarUrl={entry.avatarUrl} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="flex items-center gap-1.5 truncate font-medium text-gray-900 dark:text-gray-100">
@@ -106,9 +112,11 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
               return (
                 <tr
                   key={entry.id}
-                  className="hover:bg-amber-50/40 dark:hover:bg-gray-800/40"
+                  className={`hover:bg-amber-50/40 dark:hover:bg-gray-800/40 ${rowHighlight(entry.rank)}`}
                 >
-                  <td className="px-4 py-3 font-bold text-gray-400">{entry.rank}</td>
+                  <td className="px-4 py-3">
+                    <RankBadge rank={entry.rank} />
+                  </td>
                   <td className="px-4 py-3">
                     <Link
                       href={`/members/${entry.id}`}

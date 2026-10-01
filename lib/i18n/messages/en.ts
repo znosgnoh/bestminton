@@ -235,6 +235,17 @@ const en = {
     colWL: "W–L",
     eloGuideTitle: "How Elo works",
     eloGuideSubtitle: "Singles kèo only · Updated when kèo is resolved",
+    podiumTitle: "Court elite",
+    medalGold: "Champion — 1st",
+    medalSilver: "Runner-up — 2nd",
+    medalBronze: "Third — 3rd",
+    rankLabel: "Rank {rank}",
+    eloValue: "Elo {elo}",
+    spotlightsTitle: "On the radar",
+    spotlightOnFire: "On fire",
+    spotlightMostActive: "Most kèo",
+    spotlightCamKing: "Cam lead",
+    spotlightSharpest: "Sharpest",
   },
   eloGuide: {
     intro:
