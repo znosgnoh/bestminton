@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Crown } from "lucide-react";
 import LeaderboardPodium from "@/components/leaderboard/LeaderboardPodium";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
 import PlayerSpotlights from "@/components/leaderboard/PlayerSpotlights";
@@ -38,7 +39,10 @@ export default function LeaderboardClient({
     <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
       <div>
         <h1 className="tet-page-title">{t("leaderboard.title")}</h1>
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{t("leaderboard.subtitle")}</p>
+        <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">{t("leaderboard.subtitle")}</p>
+        <p className="tet-script mt-1 text-base text-amber-600 dark:text-amber-300">
+          {t("leaderboard.brandTagline")}
+        </p>
       </div>
       <EloGuideline />
       {!dbAvailable ? (
@@ -48,6 +52,17 @@ export default function LeaderboardClient({
           <LeaderboardPodium entries={entries} />
           <PlayerSpotlights entries={entries} />
           <LeaderboardTable entries={entries} />
+          <footer className="pt-2 pb-4 text-center">
+            <div className="inline-flex items-center gap-2">
+              <Crown size={14} className="text-amber-500 dark:text-amber-300" aria-hidden />
+              <p className="font-heading text-lg font-bold tracking-wide text-amber-700 dark:text-amber-300">
+                {t("leaderboard.footerTitle")}
+              </p>
+            </div>
+            <p className="tet-script mt-0.5 text-base text-amber-600/90 dark:text-amber-200/80">
+              {t("leaderboard.footerTagline")}
+            </p>
+          </footer>
         </>
       )}
     </div>

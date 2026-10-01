@@ -18,20 +18,20 @@ const MEDAL: Record<
   }
 > = {
   1: {
-    ring: "ring-orange-300/90",
-    fill: "bg-gradient-to-br from-yellow-200 via-orange-400 to-red-600 shadow-[0_0_14px_rgba(249,115,22,0.65)]",
+    ring: "ring-amber-300/90",
+    fill: "bg-gradient-to-br from-yellow-200 via-amber-400 to-amber-700 shadow-[0_0_14px_rgba(251,191,36,0.7)]",
     text: "text-slate-950",
     labelKey: "leaderboard.medalGold",
   },
   2: {
-    ring: "ring-slate-200/80",
-    fill: "bg-gradient-to-br from-slate-100 via-slate-300 to-slate-500 shadow-[0_0_8px_rgba(148,163,184,0.45)]",
-    text: "text-slate-900",
+    ring: "ring-cyan-300/90",
+    fill: "bg-gradient-to-br from-cyan-100 via-sky-400 to-blue-700 shadow-[0_0_12px_rgba(34,211,238,0.55)]",
+    text: "text-slate-950",
     labelKey: "leaderboard.medalSilver",
   },
   3: {
-    ring: "ring-fuchsia-300/50",
-    fill: "bg-gradient-to-br from-rose-300 via-fuchsia-500 to-violet-800 shadow-[0_0_8px_rgba(217,70,239,0.35)]",
+    ring: "ring-fuchsia-300/80",
+    fill: "bg-gradient-to-br from-fuchsia-200 via-fuchsia-500 to-violet-800 shadow-[0_0_12px_rgba(232,121,249,0.5)]",
     text: "text-white",
     labelKey: "leaderboard.medalBronze",
   },

@@ -20,7 +20,7 @@ interface PlayerHeroBannerProps {
 }
 
 function heroCamClass(net: number): string {
-  if (net > 0) return "text-emerald-300";
+  if (net > 0) return "text-green-300";
   if (net < 0) return "text-rose-300";
   return "text-slate-400";
 }
@@ -53,22 +53,22 @@ export default function PlayerHeroBanner({
       aria-label={member.name}
     >
       <div
-        className="absolute inset-0 bg-[radial-gradient(ellipse_90%_80%_at_20%_-10%,rgba(251,146,60,0.32),transparent_50%),radial-gradient(circle_at_100%_100%,rgba(56,189,248,0.12),transparent_40%),linear-gradient(145deg,#0a0604_0%,#1a0f0a_50%,#0f172a_100%)]"
+        className="absolute inset-0 bg-[radial-gradient(ellipse_90%_80%_at_20%_-10%,rgba(251,191,36,0.32),transparent_50%),radial-gradient(circle_at_100%_100%,rgba(34,211,238,0.14),transparent_40%),radial-gradient(circle_at_90%_10%,rgba(232,121,249,0.12),transparent_35%),linear-gradient(145deg,#05070f_0%,#0b1220_55%,#111827_100%)]"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(251,146,60,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(251,146,60,0.08)_1px,transparent_1px)] [background-size:18px_18px]"
+        className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(251,191,36,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(251,191,36,0.08)_1px,transparent_1px)] [background-size:18px_18px]"
         aria-hidden
       />
       {(isElite || isInferno) && (
         <div
-          className="pointer-events-none absolute -top-8 right-0 h-32 w-40 rounded-full bg-orange-500/25 blur-3xl podium-fire-glow"
+          className="pointer-events-none absolute -top-8 right-0 h-32 w-40 rounded-full bg-amber-400/25 blur-3xl podium-fire-glow"
           aria-hidden
         />
       )}
       <BadmintonRacketIcon
         size={36}
-        className="podium-racket-float pointer-events-none absolute -right-1 bottom-2 text-orange-300/25"
+        className="podium-racket-float pointer-events-none absolute -right-1 bottom-2 text-amber-300/25"
       />
 
       <div className="relative p-5">
