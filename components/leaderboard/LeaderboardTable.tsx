@@ -25,7 +25,7 @@ function formatNetCam(net: number): string {
 }
 
 function rowHighlight(rank: number): string {
-  if (rank === 1) return "bg-cyan-50/80 dark:bg-cyan-950/30";
+  if (rank === 1) return "bg-orange-50/80 dark:bg-orange-950/30";
   if (rank === 2) return "bg-slate-50/90 dark:bg-slate-800/40";
   if (rank === 3) return "bg-fuchsia-50/70 dark:bg-fuchsia-950/25";
   return "";

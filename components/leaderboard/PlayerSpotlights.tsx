@@ -21,6 +21,7 @@ type SpotlightIcon = ComponentType<{ size?: number; className?: string }>;
 
 type SpotlightMeta = {
   labelKey:
+    | "leaderboard.spotlightInferno"
     | "leaderboard.spotlightOnFire"
     | "leaderboard.spotlightMostActive"
     | "leaderboard.spotlightCamKing"
@@ -31,11 +32,17 @@ type SpotlightMeta = {
 };
 
 const KIND_META: Record<SpotlightKind, SpotlightMeta> = {
+  inferno: {
+    Icon: Flame,
+    labelKey: "leaderboard.spotlightInferno",
+    chip: "bg-slate-950/95 ring-orange-400/55 text-orange-50 shadow-[0_0_24px_rgba(249,115,22,0.25)]",
+    iconClass: "streak-flame-core text-orange-400",
+  },
   onFire: {
     Icon: Flame,
     labelKey: "leaderboard.spotlightOnFire",
     chip: "bg-slate-950/95 ring-orange-400/40 text-orange-100 shadow-[0_0_20px_rgba(251,146,60,0.12)]",
-    iconClass: "text-orange-400",
+    iconClass: "streak-flame-core text-orange-400",
   },
   mostActive: {
     Icon: Swords,
@@ -58,7 +65,9 @@ const KIND_META: Record<SpotlightKind, SpotlightMeta> = {
 };
 
 function formatValue(spotlight: PlayerSpotlight): string {
-  if (spotlight.kind === "onFire") return `×${spotlight.value}`;
+  if (spotlight.kind === "inferno" || spotlight.kind === "onFire") {
+    return `×${spotlight.value}`;
+  }
   if (spotlight.kind === "mostActive") return String(spotlight.value);
   if (spotlight.kind === "camKing") return `+${spotlight.value}`;
   return `${Math.round(spotlight.value * 100)}%`;

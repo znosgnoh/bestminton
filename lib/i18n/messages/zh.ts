@@ -63,6 +63,7 @@ const zh: Messages = {
   streak: {
     fire: "连胜 ×{count}",
     ice: "连败 ×{count}",
+    inferno: "地狱连胜 ×{count}",
   },
   drink: {
     label: "橙汁",
@@ -240,6 +241,7 @@ const zh: Messages = {
     rankLabel: "第 {rank} 名",
     eloValue: "Elo {elo}",
     spotlightsTitle: "值得关注",
+    spotlightInferno: "地狱连胜",
     spotlightOnFire: "连胜中",
     spotlightMostActive: "最活跃",
     spotlightCamKing: "橙汁领先",
@@ -327,6 +329,8 @@ const zh: Messages = {
     backToLeaderboard: "排行榜",
     notFound: "未找到该球员。",
     dbRequired: "球员主页需要实时数据库连接。",
+    eliteTag: "赛场精英",
+    infernoTag: "地狱连胜",
     rank: "#{rank}",
     statWL: "胜–负",
     statWinRate: "胜率",

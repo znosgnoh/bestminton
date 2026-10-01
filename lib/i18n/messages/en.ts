@@ -61,6 +61,7 @@ const en = {
   streak: {
     fire: "Win streak ×{count}",
     ice: "Lose streak ×{count}",
+    inferno: "Inferno streak ×{count}",
   },
   drink: {
     label: "Orange juice",
@@ -242,6 +243,7 @@ const en = {
     rankLabel: "Rank {rank}",
     eloValue: "Elo {elo}",
     spotlightsTitle: "On the radar",
+    spotlightInferno: "Inferno",
     spotlightOnFire: "On fire",
     spotlightMostActive: "Most kèo",
     spotlightCamKing: "Cam lead",
@@ -335,6 +337,8 @@ const en = {
     backToLeaderboard: "Leaderboard",
     notFound: "Player not found.",
     dbRequired: "Player profiles require a live database connection.",
+    eliteTag: "Court elite",
+    infernoTag: "Inferno streak",
     rank: "#{rank}",
     statWL: "W–L",
     statWinRate: "Win rate",

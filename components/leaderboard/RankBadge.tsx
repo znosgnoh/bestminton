@@ -18,8 +18,8 @@ const MEDAL: Record<
   }
 > = {
   1: {
-    ring: "ring-cyan-300/90",
-    fill: "bg-gradient-to-br from-cyan-200 via-sky-400 to-blue-600 shadow-[0_0_12px_rgba(34,211,238,0.55)]",
+    ring: "ring-orange-300/90",
+    fill: "bg-gradient-to-br from-yellow-200 via-orange-400 to-red-600 shadow-[0_0_14px_rgba(249,115,22,0.65)]",
     text: "text-slate-950",
     labelKey: "leaderboard.medalGold",
   },

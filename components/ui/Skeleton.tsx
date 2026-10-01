@@ -149,7 +149,7 @@ export function LeaderboardSkeleton() {
     <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
       <Skeleton className="h-8 w-36" />
       <Skeleton className="h-4 w-64" />
-      <div className="overflow-hidden rounded-2xl bg-slate-950 p-4 ring-1 ring-cyan-400/20">
+      <div className="overflow-hidden rounded-2xl bg-slate-950 p-4 ring-1 ring-orange-400/25">
         <Skeleton className="mx-auto mb-4 h-3 w-28 bg-slate-700/80" />
         <div className="flex items-end justify-center gap-3">
           <div className="flex w-1/3 flex-col items-center gap-2">
@@ -160,7 +160,7 @@ export function LeaderboardSkeleton() {
           <div className="flex w-1/3 flex-col items-center gap-2">
             <Skeleton className="h-16 w-16 rounded-full bg-slate-700/80" />
             <Skeleton className="h-3 w-16 bg-slate-700/70" />
-            <Skeleton className="h-16 w-full rounded-t-md bg-cyan-700/50" />
+            <Skeleton className="h-16 w-full rounded-t-md bg-orange-700/50" />
           </div>
           <div className="flex w-1/3 flex-col items-center gap-2">
             <Skeleton className="h-12 w-12 rounded-full bg-slate-700/80" />

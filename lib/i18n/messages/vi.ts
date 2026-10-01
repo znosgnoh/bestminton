@@ -63,6 +63,7 @@ const vi: Messages = {
   streak: {
     fire: "Chuỗi thắng ×{count}",
     ice: "Chuỗi thua ×{count}",
+    inferno: "Chuỗi địa ngục ×{count}",
   },
   drink: {
     label: "Nước cam",
@@ -243,6 +244,7 @@ const vi: Messages = {
     rankLabel: "Hạng {rank}",
     eloValue: "Elo {elo}",
     spotlightsTitle: "Đáng chú ý",
+    spotlightInferno: "Địa ngục",
     spotlightOnFire: "Đang cháy",
     spotlightMostActive: "Chơi nhiều",
     spotlightCamKing: "Dẫn cam",
@@ -337,6 +339,8 @@ const vi: Messages = {
     backToLeaderboard: "Bảng xếp hạng",
     notFound: "Không tìm thấy người chơi.",
     dbRequired: "Trang hồ sơ cần kết nối cơ sở dữ liệu.",
+    eliteTag: "Elite sân",
+    infernoTag: "Chuỗi địa ngục",
     rank: "#{rank}",
     statWL: "T–B",
     statWinRate: "Tỷ lệ thắng",
