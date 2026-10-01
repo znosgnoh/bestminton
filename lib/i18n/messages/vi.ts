@@ -236,6 +236,17 @@ const vi: Messages = {
     colWL: "T–B",
     eloGuideTitle: "Cách tính Elo",
     eloGuideSubtitle: "Chỉ kèo đơn · Cập nhật khi chốt kèo",
+    podiumTitle: "Elite sân",
+    medalGold: "Quán quân — hạng 1",
+    medalSilver: "Á quân — hạng 2",
+    medalBronze: "Hạng 3",
+    rankLabel: "Hạng {rank}",
+    eloValue: "Elo {elo}",
+    spotlightsTitle: "Đáng chú ý",
+    spotlightOnFire: "Đang cháy",
+    spotlightMostActive: "Chơi nhiều",
+    spotlightCamKing: "Dẫn cam",
+    spotlightSharpest: "Sắc nhất",
   },
   eloGuide: {
     intro:

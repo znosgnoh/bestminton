@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import LeaderboardPodium from "@/components/leaderboard/LeaderboardPodium";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
+import PlayerSpotlights from "@/components/leaderboard/PlayerSpotlights";
 import EloGuideline from "@/components/leaderboard/EloGuideline";
 import { useRegisterPullToRefresh } from "@/components/PullToRefresh";
 import ErrorBanner from "@/components/ui/ErrorBanner";
@@ -42,7 +44,11 @@ export default function LeaderboardClient({
       {!dbAvailable ? (
         <ErrorBanner message={t("leaderboard.dbRequired")} />
       ) : (
-        <LeaderboardTable entries={entries} />
+        <>
+          <LeaderboardPodium entries={entries} />
+          <PlayerSpotlights entries={entries} />
+          <LeaderboardTable entries={entries} />
+        </>
       )}
     </div>
   );
