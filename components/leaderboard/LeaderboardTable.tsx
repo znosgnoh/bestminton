@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, Crown } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
 import RankBadge from "@/components/leaderboard/RankBadge";
@@ -60,16 +60,12 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                   href={`/members/${entry.id}`}
                   className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-amber-50/40 dark:hover:bg-white/5"
                 >
-                  <span className="relative flex w-7 shrink-0 items-center justify-center">
-                    <RankBadge rank={entry.rank} />
-                    {entry.rank <= 3 && (
-                      <Crown
-                        size={10}
-                        className="absolute -top-1.5 text-amber-500 dark:text-amber-300"
-                        aria-hidden
-                      />
-                    )}
-                  </span>
+                  <RankBadge
+                    rank={entry.rank}
+                    size="sm"
+                    showCrown={entry.rank <= 3}
+                    className="mt-1 shrink-0"
+                  />
                   <Avatar name={entry.name} avatarUrl={entry.avatarUrl} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="flex items-center gap-1.5 truncate font-medium text-gray-900 dark:text-slate-50">
@@ -78,6 +74,7 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                         winStreak={entry.singlesWinStreak}
                         loseStreak={entry.singlesLoseStreak}
                         className="shrink-0"
+                        mode="always"
                       />
                     </p>
                     <p className="text-xs text-gray-500 dark:text-slate-400">
@@ -103,7 +100,7 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200/80 dark:border-slate-800 text-left text-xs uppercase tracking-wide text-gray-500 dark:text-slate-400">
-              <th className="px-4 py-3 font-semibold w-10">#</th>
+              <th className="px-4 py-3 font-semibold w-12">#</th>
               <th className="px-4 py-3 font-semibold">{t("leaderboard.colPlayer")}</th>
               <th className="px-4 py-3 font-semibold text-right">{t("leaderboard.colElo")}</th>
               <th className="px-4 py-3 font-semibold text-right">{t("leaderboard.colWL")}</th>
@@ -129,21 +126,12 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                   className={`hover:bg-amber-50/40 dark:hover:bg-white/5 ${rowHighlight(entry.rank)}`}
                 >
                   <td className="px-4 py-3">
-                    <span className="relative inline-flex items-center justify-center">
-                      <RankBadge rank={entry.rank} />
-                      {entry.rank <= 3 && (
-                        <Crown
-                          size={10}
-                          className="absolute -top-1.5 text-amber-500 dark:text-amber-300"
-                          aria-hidden
-                        />
-                      )}
-                    </span>
+                    <RankBadge rank={entry.rank} size="sm" showCrown={entry.rank <= 3} />
                   </td>
                   <td className="px-4 py-3">
                     <Link
                       href={`/members/${entry.id}`}
-                      className="flex items-center gap-2 min-w-0 hover:underline"
+                      className="flex min-w-0 items-center gap-2 hover:underline"
                     >
                       <Avatar name={entry.name} avatarUrl={entry.avatarUrl} size="sm" />
                       <span className="flex min-w-0 items-center gap-1.5 font-medium text-gray-900 dark:text-slate-50">
@@ -152,6 +140,7 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                           winStreak={entry.singlesWinStreak}
                           loseStreak={entry.singlesLoseStreak}
                           className="shrink-0"
+                          mode="always"
                         />
                       </span>
                     </Link>
