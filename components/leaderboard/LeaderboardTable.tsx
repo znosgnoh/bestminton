@@ -60,12 +60,7 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                   href={`/members/${entry.id}`}
                   className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-amber-50/40 dark:hover:bg-white/5"
                 >
-                  <RankBadge
-                    rank={entry.rank}
-                    size="sm"
-                    showCrown={entry.rank <= 3}
-                    className="mt-1 shrink-0"
-                  />
+                  <RankBadge rank={entry.rank} variant="list" className="mt-0.5 shrink-0" />
                   <Avatar name={entry.name} avatarUrl={entry.avatarUrl} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="flex items-center gap-1.5 truncate font-medium text-gray-900 dark:text-slate-50">
@@ -74,7 +69,6 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                         winStreak={entry.singlesWinStreak}
                         loseStreak={entry.singlesLoseStreak}
                         className="shrink-0"
-                        mode="always"
                       />
                     </p>
                     <p className="text-xs text-gray-500 dark:text-slate-400">
@@ -126,7 +120,7 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                   className={`hover:bg-amber-50/40 dark:hover:bg-white/5 ${rowHighlight(entry.rank)}`}
                 >
                   <td className="px-4 py-3">
-                    <RankBadge rank={entry.rank} size="sm" showCrown={entry.rank <= 3} />
+                    <RankBadge rank={entry.rank} variant="list" />
                   </td>
                   <td className="px-4 py-3">
                     <Link
@@ -140,7 +134,6 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                           winStreak={entry.singlesWinStreak}
                           loseStreak={entry.singlesLoseStreak}
                           className="shrink-0"
-                          mode="always"
                         />
                       </span>
                     </Link>

@@ -89,7 +89,11 @@ export default function PlayerHeroBanner({
             </div>
             {rank != null && (
               <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2">
-                <RankBadge rank={rank} size="lg" showCrown={rank <= 3} />
+                <RankBadge
+                  rank={rank}
+                  size="lg"
+                  variant={rank <= 3 ? "podium" : "list"}
+                />
               </div>
             )}
           </div>
@@ -108,7 +112,6 @@ export default function PlayerHeroBanner({
                 loseStreak={member.singlesLoseStreak}
                 className="shrink-0"
                 size="md"
-                mode="always"
               />
             </h1>
             <p className="mt-1 text-sm text-slate-300">

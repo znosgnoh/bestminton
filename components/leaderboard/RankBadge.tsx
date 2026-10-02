@@ -7,115 +7,121 @@ interface RankBadgeProps {
   rank: number;
   className?: string;
   size?: "sm" | "md" | "lg";
-  /** Show a small crown above top-3 medals. */
-  showCrown?: boolean;
+  /**
+   * `podium` — solid circle on avatar (mock: gold / silver / purple).
+   * `list` — vertical metallic column with crown for top 3; plain # otherwise.
+   */
+  variant?: "podium" | "list";
 }
 
-const MEDAL: Record<
+const PODIUM: Record<
   1 | 2 | 3,
-  {
-    labelKey: "leaderboard.medalGold" | "leaderboard.medalSilver" | "leaderboard.medalBronze";
-    outer: string;
-    mid: string;
-    inner: string;
-    text: string;
-    crown: string;
-    glow: string;
-  }
+  { face: string; text: string; ring: string; glow: string; labelKey: "leaderboard.medalGold" | "leaderboard.medalSilver" | "leaderboard.medalBronze" }
 > = {
   1: {
+    face: "bg-gradient-to-b from-yellow-300 to-amber-500",
+    text: "text-slate-950",
+    ring: "ring-2 ring-amber-200/90",
+    glow: "shadow-[0_0_12px_rgba(251,191,36,0.7)]",
     labelKey: "leaderboard.medalGold",
-    outer: "from-yellow-200 via-amber-400 to-amber-800",
-    mid: "from-amber-100 via-yellow-300 to-amber-600",
-    inner: "from-yellow-50 via-amber-300 to-amber-700",
-    text: "text-amber-950",
-    crown: "text-amber-300",
-    glow: "shadow-[0_0_16px_rgba(251,191,36,0.75)]",
   },
   2: {
+    face: "bg-gradient-to-b from-slate-100 to-slate-300",
+    text: "text-slate-900",
+    ring: "ring-2 ring-white/80",
+    glow: "shadow-[0_0_10px_rgba(226,232,240,0.55)]",
     labelKey: "leaderboard.medalSilver",
-    outer: "from-cyan-100 via-sky-400 to-blue-800",
-    mid: "from-white via-cyan-200 to-sky-600",
-    inner: "from-cyan-50 via-sky-300 to-blue-700",
-    text: "text-slate-950",
-    crown: "text-cyan-300",
-    glow: "shadow-[0_0_14px_rgba(34,211,238,0.65)]",
   },
   3: {
-    labelKey: "leaderboard.medalBronze",
-    outer: "from-fuchsia-200 via-fuchsia-500 to-violet-900",
-    mid: "from-fuchsia-100 via-fuchsia-400 to-violet-700",
-    inner: "from-fuchsia-50 via-fuchsia-400 to-violet-800",
+    face: "bg-gradient-to-b from-fuchsia-200 to-violet-500",
     text: "text-white",
-    crown: "text-fuchsia-300",
-    glow: "shadow-[0_0_14px_rgba(232,121,249,0.6)]",
+    ring: "ring-2 ring-fuchsia-200/80",
+    glow: "shadow-[0_0_10px_rgba(232,121,249,0.55)]",
+    labelKey: "leaderboard.medalBronze",
   },
 };
 
-const SIZE = {
-  sm: { box: "h-7 w-7", text: "text-[11px]", crown: 10, inset: "inset-[2px]", mid: "inset-[3.5px]" },
-  md: { box: "h-8 w-8", text: "text-xs", crown: 12, inset: "inset-[2.5px]", mid: "inset-[4px]" },
-  lg: { box: "h-10 w-10", text: "text-sm", crown: 14, inset: "inset-[3px]", mid: "inset-[5px]" },
+const LIST: Record<
+  1 | 2 | 3,
+  { col: string; text: string; crown: string; labelKey: "leaderboard.medalGold" | "leaderboard.medalSilver" | "leaderboard.medalBronze" }
+> = {
+  1: {
+    col: "bg-gradient-to-b from-yellow-300 via-amber-400 to-amber-700 shadow-[0_0_12px_rgba(251,191,36,0.55)]",
+    text: "text-amber-950",
+    crown: "text-amber-300",
+    labelKey: "leaderboard.medalGold",
+  },
+  2: {
+    col: "bg-gradient-to-b from-slate-100 via-slate-300 to-slate-500 shadow-[0_0_10px_rgba(203,213,225,0.45)]",
+    text: "text-slate-900",
+    crown: "text-slate-300",
+    labelKey: "leaderboard.medalSilver",
+  },
+  3: {
+    col: "bg-gradient-to-b from-orange-300 via-amber-700 to-orange-950 shadow-[0_0_10px_rgba(180,83,9,0.45)]",
+    text: "text-orange-50",
+    crown: "text-orange-300",
+    labelKey: "leaderboard.medalBronze",
+  },
 };
 
-/** Layered metallic rank medal for 1–3; tinted chip for other ranks. */
+const PODIUM_SIZE = {
+  sm: "h-6 w-6 text-[11px]",
+  md: "h-7 w-7 text-xs",
+  lg: "h-8 w-8 text-sm",
+};
+
+/** Rank badge matching the mock: podium circle or list column. */
 export default function RankBadge({
   rank,
   className = "",
   size = "sm",
-  showCrown = false,
+  variant = "list",
 }: RankBadgeProps) {
   const { t } = useI18n();
-  const s = SIZE[size];
-  const medal = rank >= 1 && rank <= 3 ? MEDAL[rank as 1 | 2 | 3] : null;
+  const top = rank >= 1 && rank <= 3 ? (rank as 1 | 2 | 3) : null;
 
-  if (!medal) {
+  if (variant === "podium" && top) {
+    const style = PODIUM[top];
     return (
       <span
-        className={`inline-flex ${s.box} items-center justify-center rounded-full bg-slate-200/90 font-bold tabular-nums text-slate-600 ring-1 ring-slate-300/80 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-600 ${className}`}
-        aria-label={t("leaderboard.rankLabel", { rank })}
+        className={`inline-flex shrink-0 items-center justify-center rounded-full font-heading font-black tabular-nums ${PODIUM_SIZE[size]} ${style.face} ${style.text} ${style.ring} ${style.glow} ${className}`}
+        title={t(style.labelKey)}
+        aria-label={t(style.labelKey)}
       >
-        <span className={s.text}>{rank}</span>
+        {rank}
+      </span>
+    );
+  }
+
+  if (variant === "list" && top) {
+    const style = LIST[top];
+    return (
+      <span
+        className={`relative inline-flex h-9 w-7 shrink-0 flex-col items-center justify-end ${className}`}
+        title={t(style.labelKey)}
+        aria-label={t(style.labelKey)}
+      >
+        <Crown
+          size={11}
+          className={`absolute -top-0.5 left-1/2 z-10 -translate-x-1/2 ${style.crown} drop-shadow-[0_0_5px_rgba(251,191,36,0.55)]`}
+          aria-hidden
+        />
+        <span
+          className={`flex h-7 w-6 items-center justify-center rounded-md font-heading text-xs font-black tabular-nums ring-1 ring-white/25 ${style.col} ${style.text}`}
+        >
+          {rank}
+        </span>
       </span>
     );
   }
 
   return (
     <span
-      className={`relative inline-flex ${s.box} shrink-0 items-center justify-center ${className}`}
-      title={t(medal.labelKey)}
-      aria-label={t(medal.labelKey)}
+      className={`inline-flex h-7 w-6 items-center justify-center font-heading text-sm font-bold tabular-nums text-slate-500 dark:text-slate-200 ${className}`}
+      aria-label={t("leaderboard.rankLabel", { rank })}
     >
-      {showCrown && (
-        <Crown
-          size={s.crown}
-          className={`absolute -top-2.5 left-1/2 z-20 -translate-x-1/2 ${medal.crown} drop-shadow-[0_0_6px_rgba(251,191,36,0.7)]`}
-          aria-hidden
-        />
-      )}
-      {/* Outer metallic rim */}
-      <span
-        className={`absolute inset-0 rounded-full bg-gradient-to-br ${medal.outer} ${medal.glow}`}
-        aria-hidden
-      />
-      {/* Mid ring highlight */}
-      <span
-        className={`absolute ${s.mid} rounded-full bg-gradient-to-br ${medal.mid}`}
-        aria-hidden
-      />
-      {/* Inner face */}
-      <span
-        className={`absolute ${s.inset} rounded-full bg-gradient-to-b ${medal.inner} ring-1 ring-white/35`}
-        aria-hidden
-      />
-      {/* Specular shine */}
-      <span
-        className="absolute inset-[18%] top-[12%] h-[28%] rounded-full bg-white/35 blur-[1px]"
-        aria-hidden
-      />
-      <span className={`relative z-10 font-heading font-black tabular-nums ${medal.text} ${s.text}`}>
-        {rank}
-      </span>
+      {rank}
     </span>
   );
 }
