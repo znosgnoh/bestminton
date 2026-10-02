@@ -69,7 +69,7 @@ function formatValue(spotlight: PlayerSpotlight): string {
     return `W${spotlight.value}`;
   }
   if (spotlight.kind === "mostActive") return String(spotlight.value);
-  if (spotlight.kind === "camKing") return `+${spotlight.value}`;
+  if (spotlight.kind === "camKing") return String(spotlight.value);
   return `${Math.round(spotlight.value * 100)}%`;
 }
 

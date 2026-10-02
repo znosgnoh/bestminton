@@ -45,8 +45,8 @@ export default function AppHeader() {
       <div className="mx-auto max-w-lg px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <Link href="/" className="tet-brand min-w-0">
-            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 via-amber-400 to-amber-600 text-slate-950 shadow-[0_0_14px_rgba(251,191,36,0.45)] ring-1 ring-amber-200/70">
-              <BadmintonRacketIcon size={18} variant="logo" className="text-slate-950" />
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-300 via-amber-400 to-amber-600 p-1.5 shadow-[0_0_14px_rgba(251,191,36,0.45)] ring-1 ring-amber-200/70">
+              <BadmintonRacketIcon size={22} variant="logo" className="h-full w-full object-contain" />
             </span>
             <span className="font-heading truncate text-lg font-bold leading-tight tracking-tight dark:text-amber-50">
               {SITE_SHORT}
