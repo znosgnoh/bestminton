@@ -87,13 +87,9 @@ export default function PlayerHeroBanner({
             <div className={`relative rounded-full ring-2 ${ringForRank(rank, hot)}`}>
               <Avatar name={member.name} avatarUrl={member.avatarUrl} size="lg" />
             </div>
-            {rank != null && (
-              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2">
-                <RankBadge
-                  rank={rank}
-                  size="lg"
-                  variant={rank <= 3 ? "podium" : "list"}
-                />
+            {rank != null && rank <= 3 && (
+              <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
+                <RankBadge rank={rank} size="lg" variant="podium" />
               </div>
             )}
           </div>

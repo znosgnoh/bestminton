@@ -10,6 +10,7 @@ import { useI18n } from "@/contexts/LocaleContext";
 import { podiumEntries } from "@/lib/leaderboardHighlights";
 import { streakKind } from "@/lib/streakUi";
 import type { LeaderboardEntryDTO } from "@/lib/types";
+// Crown still used in section header
 
 interface LeaderboardPodiumProps {
   entries: LeaderboardEntryDTO[];
@@ -150,15 +151,15 @@ export default function LeaderboardPodium({ entries }: LeaderboardPodiumProps) {
                   href={`/members/${entry.id}`}
                   className="group flex cursor-pointer flex-col items-center rounded-xl text-center outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                 >
-                  {/* Avatar + crown + platform */}
+                  {/* Avatar + crown badge + platform */}
                   <div className="relative z-10 mb-0">
-                    <Crown
-                      size={place === 1 ? 24 : 17}
+                    <div
                       className={`absolute z-20 -translate-x-1/2 left-1/2 ${
                         place === 1 ? "-top-7" : "-top-5"
-                      } ${style.crown} drop-shadow-[0_0_12px_rgba(251,191,36,0.8)]`}
-                      aria-hidden
-                    />
+                      }`}
+                    >
+                      <RankBadge rank={place} size={place === 1 ? "lg" : "md"} variant="podium" />
+                    </div>
                     <div
                       className={`absolute -inset-3 rounded-full bg-gradient-to-b ${style.glow}`}
                       aria-hidden
@@ -174,9 +175,6 @@ export default function LeaderboardPodium({ entries }: LeaderboardPodiumProps) {
                         avatarUrl={entry.avatarUrl}
                         size={style.avatar}
                       />
-                    </div>
-                    <div className="absolute -bottom-1.5 left-1/2 z-20 -translate-x-1/2">
-                      <RankBadge rank={place} size={place === 1 ? "md" : "sm"} variant="podium" />
                     </div>
                   </div>
 
