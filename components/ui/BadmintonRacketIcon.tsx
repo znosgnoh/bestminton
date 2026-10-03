@@ -1,10 +1,34 @@
+"use client";
+
+import Image from "next/image";
+
 interface BadmintonRacketIconProps {
   size?: number;
   className?: string;
+  /** Filled brand mark from the official racket+shuttlecock asset. */
+  variant?: "stroke" | "logo";
 }
 
-/** Badminton racket — Lucide-style stroke icon (no Lucide equivalent). */
-export default function BadmintonRacketIcon({ size = 24, className = "" }: BadmintonRacketIconProps) {
+/** Badminton racket — stroke icon, or official brand logo mark. */
+export default function BadmintonRacketIcon({
+  size = 24,
+  className = "",
+  variant = "stroke",
+}: BadmintonRacketIconProps) {
+  if (variant === "logo") {
+    return (
+      <Image
+        src="/brand/racket-shuttle.png"
+        alt=""
+        width={size}
+        height={size}
+        className={className}
+        aria-hidden
+        priority
+      />
+    );
+  }
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

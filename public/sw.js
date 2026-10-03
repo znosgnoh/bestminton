@@ -1,9 +1,14 @@
-const CACHE = "bestminton-static-v1";
+const CACHE = "bestminton-static-v2";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE).then((cache) =>
-      cache.addAll(["/", "/manifest.webmanifest"])
+      cache.addAll([
+        "/",
+        "/manifest.webmanifest",
+        "/brand/app-icon-192.png",
+        "/brand/app-icon-512.png",
+      ])
     )
   );
   self.skipWaiting();
@@ -27,6 +32,7 @@ self.addEventListener("fetch", (event) => {
 
   const isStatic =
     url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/brand/") ||
     url.pathname.startsWith("/pwa/") ||
     url.pathname.startsWith("/icons/");
 

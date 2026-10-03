@@ -76,7 +76,7 @@ describe("pickPlayerSpotlights", () => {
         totalMatches: 8,
         totalWins: 3,
         winRate: 0.375,
-        debtSummary: { totalOwed: 0, totalOwing: 0, netCam: 7 },
+        debtSummary: { totalOwed: 0, totalOwing: 7, netCam: 7 },
       }),
       entry({
         id: 7,
@@ -102,12 +102,60 @@ describe("pickPlayerSpotlights", () => {
     );
   });
 
-  it("returns empty when only podium exists", () => {
+  it("returns empty non-cam spotlights when only podium exists", () => {
     const entries = [
       entry({ id: 1, name: "A", rank: 1 }),
       entry({ id: 2, name: "B", rank: 2 }),
       entry({ id: 3, name: "C", rank: 3 }),
     ];
     assert.deepEqual(pickPlayerSpotlights(entries), []);
+  });
+
+  it("picks cam lead by total owned across all ranks", () => {
+    const entries = [
+      entry({
+        id: 1,
+        name: "PodiumCam",
+        rank: 1,
+        debtSummary: { totalOwed: 0, totalOwing: 12, netCam: 12 },
+      }),
+      entry({ id: 2, name: "B", rank: 2 }),
+      entry({ id: 3, name: "C", rank: 3 }),
+      entry({
+        id: 4,
+        name: "LowerCam",
+        rank: 4,
+        debtSummary: { totalOwed: 0, totalOwing: 3, netCam: 3 },
+      }),
+    ];
+    const spotlights = pickPlayerSpotlights(entries);
+    const cam = spotlights.find((s) => s.kind === "camKing");
+    assert.ok(cam);
+    assert.equal(cam!.entry.id, 1);
+    assert.equal(cam!.value, 12);
+  });
+
+  it("prefers higher total owned over higher signed netCam", () => {
+    const entries = [
+      entry({ id: 1, name: "A", rank: 1 }),
+      entry({ id: 2, name: "B", rank: 2 }),
+      entry({ id: 3, name: "C", rank: 3 }),
+      entry({
+        id: 4,
+        name: "TotalLead",
+        rank: 4,
+        debtSummary: { totalOwed: 0, totalOwing: 9, netCam: 2 },
+      }),
+      entry({
+        id: 5,
+        name: "NetLead",
+        rank: 5,
+        debtSummary: { totalOwed: 0, totalOwing: 4, netCam: 8 },
+      }),
+    ];
+    const cam = pickPlayerSpotlights(entries).find((s) => s.kind === "camKing");
+    assert.ok(cam);
+    assert.equal(cam!.entry.id, 4);
+    assert.equal(cam!.value, 9);
   });
 });

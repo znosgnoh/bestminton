@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
-import { Be_Vietnam_Pro, Noto_Sans } from "next/font/google";
+import { Be_Vietnam_Pro, Caveat, Noto_Sans } from "next/font/google";
 import AppHeader from "@/components/layout/AppHeader";
 import NavigationProgress from "@/components/layout/NavigationProgress";
 import PullToRefresh from "@/components/PullToRefresh";
@@ -27,6 +27,13 @@ const notoSans = Noto_Sans({
   display: "swap",
 });
 
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-caveat",
+  display: "swap",
+});
+
 export { SITE_SHORT, SITE_TITLE };
 
 export const metadata: Metadata = {
@@ -45,8 +52,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#dc2626" },
-    { media: "(prefers-color-scheme: dark)", color: "#1f1612" },
+    { media: "(prefers-color-scheme: light)", color: "#eef2f8" },
+    { media: "(prefers-color-scheme: dark)", color: "#070b14" },
   ],
 };
 
@@ -66,6 +73,7 @@ export default async function RootLayout({
     "antialiased",
     beVietnamPro.variable,
     notoSans.variable,
+    caveat.variable,
     isDark ? "dark" : "",
   ]
     .filter(Boolean)

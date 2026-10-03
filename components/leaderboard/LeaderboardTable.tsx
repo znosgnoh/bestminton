@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
 import RankBadge from "@/components/leaderboard/RankBadge";
@@ -15,7 +16,7 @@ interface LeaderboardTableProps {
 function netCamClass(net: number): string {
   if (net > 0) return "text-green-600 dark:text-green-400";
   if (net < 0) return "text-red-600 dark:text-red-400";
-  return "text-gray-600 dark:text-gray-400";
+  return "text-gray-600 dark:text-slate-400";
 }
 
 function formatNetCam(net: number): string {
@@ -25,9 +26,11 @@ function formatNetCam(net: number): string {
 }
 
 function rowHighlight(rank: number): string {
-  if (rank === 1) return "bg-orange-50/80 dark:bg-orange-950/30";
-  if (rank === 2) return "bg-slate-50/90 dark:bg-slate-800/40";
-  if (rank === 3) return "bg-fuchsia-50/70 dark:bg-fuchsia-950/25";
+  if (rank === 1) {
+    return "bg-amber-50/80 ring-1 ring-inset ring-amber-400/50 dark:bg-amber-500/10 dark:ring-amber-400/45 dark:shadow-[0_0_24px_rgba(251,191,36,0.12)]";
+  }
+  if (rank === 2) return "bg-cyan-50/50 dark:bg-cyan-500/5";
+  if (rank === 3) return "bg-fuchsia-50/50 dark:bg-fuchsia-500/5";
   return "";
 }
 
@@ -46,7 +49,7 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
     <>
       {/* Mobile: compact card rows */}
       <div className="tet-card overflow-hidden md:hidden">
-        <ul className="divide-y divide-amber-100/60 dark:divide-gray-800" aria-label="Leaderboard">
+        <ul className="divide-y divide-slate-200/70 dark:divide-slate-800/80" aria-label="Leaderboard">
           {entries.map((entry) => {
             const losses = entry.totalMatches - entry.totalWins;
             const netCam = entry.debtSummary.netCam;
@@ -55,12 +58,12 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
               <li key={entry.id} className={rowHighlight(entry.rank)}>
                 <Link
                   href={`/members/${entry.id}`}
-                  className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-amber-50/50 dark:hover:bg-gray-800/50"
+                  className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-amber-50/40 dark:hover:bg-white/5"
                 >
-                  <RankBadge rank={entry.rank} className="w-6 shrink-0" />
+                  <RankBadge rank={entry.rank} variant="list" className="mt-0.5 shrink-0" />
                   <Avatar name={entry.name} avatarUrl={entry.avatarUrl} size="sm" />
                   <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-1.5 truncate font-medium text-gray-900 dark:text-gray-100">
+                    <p className="flex items-center gap-1.5 truncate font-medium text-gray-900 dark:text-slate-50">
                       <span className="truncate">{entry.name}</span>
                       <StreakBadge
                         winStreak={entry.singlesWinStreak}
@@ -68,7 +71,7 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                         className="shrink-0"
                       />
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-slate-400">
                       {entry.totalWins}–{losses} · Elo {entry.eloRating}
                     </p>
                   </div>
@@ -78,6 +81,7 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                       {formatNetCam(netCam)}
                     </span>
                   </div>
+                  <ChevronRight size={16} className="shrink-0 text-slate-400 dark:text-slate-500" />
                 </Link>
               </li>
             );
@@ -89,8 +93,8 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
       <div className="hidden md:block tet-card overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-amber-100/80 dark:border-gray-800 text-left text-xs text-gray-500 dark:text-gray-400">
-              <th className="px-4 py-3 font-semibold w-10">#</th>
+            <tr className="border-b border-slate-200/80 dark:border-slate-800 text-left text-xs uppercase tracking-wide text-gray-500 dark:text-slate-400">
+              <th className="px-4 py-3 font-semibold w-12">#</th>
               <th className="px-4 py-3 font-semibold">{t("leaderboard.colPlayer")}</th>
               <th className="px-4 py-3 font-semibold text-right">{t("leaderboard.colElo")}</th>
               <th className="px-4 py-3 font-semibold text-right">{t("leaderboard.colWL")}</th>
@@ -103,27 +107,28 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                   <OrangeJuiceIcon size={14} className="text-orange-500 dark:text-orange-400" />
                 </span>
               </th>
+              <th className="w-8 px-2" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-amber-100/60 dark:divide-gray-800">
+          <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800/80">
             {entries.map((entry) => {
               const netCam = entry.debtSummary.netCam;
 
               return (
                 <tr
                   key={entry.id}
-                  className={`hover:bg-amber-50/40 dark:hover:bg-gray-800/40 ${rowHighlight(entry.rank)}`}
+                  className={`hover:bg-amber-50/40 dark:hover:bg-white/5 ${rowHighlight(entry.rank)}`}
                 >
                   <td className="px-4 py-3">
-                    <RankBadge rank={entry.rank} />
+                    <RankBadge rank={entry.rank} variant="list" />
                   </td>
                   <td className="px-4 py-3">
                     <Link
                       href={`/members/${entry.id}`}
-                      className="flex items-center gap-2 min-w-0 hover:underline"
+                      className="flex min-w-0 items-center gap-2 hover:underline"
                     >
                       <Avatar name={entry.name} avatarUrl={entry.avatarUrl} size="sm" />
-                      <span className="flex min-w-0 items-center gap-1.5 font-medium text-gray-900 dark:text-gray-100">
+                      <span className="flex min-w-0 items-center gap-1.5 font-medium text-gray-900 dark:text-slate-50">
                         <span className="truncate">{entry.name}</span>
                         <StreakBadge
                           winStreak={entry.singlesWinStreak}
@@ -133,10 +138,10 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                       </span>
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold text-emerald-700 dark:text-amber-400">
+                  <td className="px-4 py-3 text-right font-semibold text-amber-700 dark:text-amber-300">
                     {entry.eloRating}
                   </td>
-                  <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
+                  <td className="px-4 py-3 text-right text-gray-600 dark:text-slate-400">
                     {entry.totalWins}–{entry.totalMatches - entry.totalWins}
                   </td>
                   <td className={`px-4 py-3 text-right font-medium ${netCamClass(netCam)}`}>
@@ -144,6 +149,11 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                       <OrangeJuiceIcon size={12} />
                       {formatNetCam(netCam)}
                     </span>
+                  </td>
+                  <td className="px-2 py-3 text-slate-400">
+                    <Link href={`/members/${entry.id}`} aria-label={entry.name}>
+                      <ChevronRight size={16} />
+                    </Link>
                   </td>
                 </tr>
               );
