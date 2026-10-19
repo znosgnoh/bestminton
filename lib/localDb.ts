@@ -235,6 +235,7 @@ export async function createMatches(data: {
   venue: string;
   scheduledAt: string;
   isRecurring: boolean;
+  notifyMembers?: boolean;
 }): Promise<MatchDTO[]> {
   const base = new Date(data.scheduledAt);
   const dayOfWeek = getSingaporeWeekday(base);

@@ -390,6 +390,9 @@ const vi: Messages = {
     cloneTitle: "Nhân bản trận",
     cloneHint:
       "Đã copy tên, sân, giờ và lịch tuần. Chọn ngày mới — người chơi không được copy.",
+    repeatWeekly: "Lặp hàng tuần (tạo 4 buổi)",
+    repeatWeeklyHint: "Sẽ lặp mỗi {day} trong 4 tuần.",
+    notifyMembers: "Gửi email cho mọi thành viên đang bật thông báo",
     transactions: "Giao dịch sổ",
     transactionsHint:
       "Mọi dòng sân, cầu và số dư đầu. Rollback xóa khỏi sổ. Sau đó có thể ghi lại trận từ settle.",

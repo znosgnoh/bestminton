@@ -167,6 +167,7 @@ export function createMatches(data: {
   venue: string;
   scheduledAt: string;
   isRecurring: boolean;
+  notifyMembers?: boolean;
 }): Promise<MatchDTO[]> {
   return via(
     () =>

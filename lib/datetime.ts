@@ -69,6 +69,20 @@ export function singaporeDayKey(value: Date | string = new Date()): string {
   }).format(asDate(value));
 }
 
+/** Calendar month key `YYYY-MM` in Asia/Singapore. */
+export function singaporeYearMonth(value: Date | string = new Date()): string {
+  return singaporeDayKey(value).slice(0, 7);
+}
+
+/** True when `value` falls on the last calendar day of its month in Asia/Singapore. */
+export function isLastSingaporeCalendarDayOfMonth(value: Date | string = new Date()): boolean {
+  const dayKey = singaporeDayKey(value);
+  const [year, month, day] = dayKey.split("-").map(Number);
+  // Date.UTC(y, m, 0) with 1-based `month` → last day of that month.
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return day === lastDay;
+}
+
 /** @deprecated Use singaporeDayKey */
 export const appDayKey = singaporeDayKey;
 

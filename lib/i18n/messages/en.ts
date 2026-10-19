@@ -388,6 +388,9 @@ const en = {
     cloneTitle: "Clone match",
     cloneHint:
       "Copied title, venue, time, and weekly setting. Pick a new date — players are not copied.",
+    repeatWeekly: "Repeat weekly (creates 4 sessions)",
+    repeatWeeklyHint: "Will repeat every {day} for 4 weeks.",
+    notifyMembers: "Email all members with notifications on",
     transactions: "Ledger transactions",
     transactionsHint:
       "Every court, shuttlecock, and opening row. Rollback removes it from the ledger. You can record the match again afterwards.",

@@ -1,10 +1,20 @@
+import {
+  isLastSingaporeCalendarDayOfMonth,
+  singaporeYearMonth,
+} from "@/lib/datetime";
 import { db } from "@/lib/db";
+import { getLedgerSnapshot } from "@/lib/ledgerService";
 import { getAppBaseUrl } from "./config";
 import { reminderKindsDue, shareIdsFingerprint } from "./reminders";
-import { eligibleMembersByIds, unregisteredMembersForMatch } from "./recipients";
+import {
+  allEligibleMembers,
+  eligibleMembersByIds,
+  unregisteredMembersForMatch,
+} from "./recipients";
 import { sendToMany } from "./notify";
 import { renderChallengeResolvedEmail } from "./templates/challengeResolved";
 import { renderDrinkSettledEmail } from "./templates/drinkSettled";
+import { renderMonthlyDebtReminderEmail } from "./templates/debtReminder";
 import { renderLedgerMarkPaidEmail, renderLedgerRecordedEmail } from "./templates/ledger";
 import { renderMatchEmail } from "./templates/match";
 
@@ -186,4 +196,37 @@ export async function notifyLedgerMarkPaid(input: {
       balancesUrl,
     })
   );
+}
+
+export async function runMonthlyDebtReminderCron(
+  now = new Date()
+): Promise<{ sent: number; skipped: number; failed: number; reason?: string }> {
+  if (!isLastSingaporeCalendarDayOfMonth(now)) {
+    return { sent: 0, skipped: 0, failed: 0, reason: "not_month_end" };
+  }
+
+  const snapshot = await getLedgerSnapshot();
+  if (snapshot.edges.length === 0) {
+    return { sent: 0, skipped: 0, failed: 0, reason: "no_open_debts" };
+  }
+
+  const monthKey = singaporeYearMonth(now);
+  const recipients = await allEligibleMembers();
+  if (recipients.length === 0) {
+    return { sent: 0, skipped: 0, failed: 0, reason: "no_recipients" };
+  }
+
+  const balancesUrl = `${getAppBaseUrl()}/balances`;
+  const entityKey = `debt-clear:${monthKey}`;
+  const result = await sendToMany("MONTHLY_DEBT_REMINDER", entityKey, recipients, (r) =>
+    renderMonthlyDebtReminderEmail({
+      recipientName: r.name,
+      recipientMemberId: r.memberId,
+      monthLabel: monthKey,
+      currency: snapshot.currency,
+      edges: snapshot.edges,
+      balancesUrl,
+    })
+  );
+  return result;
 }

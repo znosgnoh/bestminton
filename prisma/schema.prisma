@@ -175,6 +175,7 @@ enum EmailEventType {
   DRINK_DEBT_SETTLED
   LEDGER_RECORDED
   LEDGER_MARK_PAID
+  MONTHLY_DEBT_REMINDER
 }
 
 model EmailDelivery {

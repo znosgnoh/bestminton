@@ -40,3 +40,9 @@ export async function eligibleMembersByIds(memberIds: number[]): Promise<EmailRe
   });
   return filterEligibleRecipients(members);
 }
+
+/** All members with an email and notifications enabled. */
+export async function allEligibleMembers(): Promise<EmailRecipient[]> {
+  const members = await db.member.findMany({ select: ELIGIBLE_MEMBER_SELECT });
+  return filterEligibleRecipients(members);
+}
