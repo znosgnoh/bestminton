@@ -250,7 +250,7 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/api/members` | Route | `GET` list, `POST` create |
 | `/api/members/[id]` | Route | `PUT` update, `DELETE` remove |
 | `/api/members/[id]/email-preferences` | Route | `PATCH` toggle email notifications (member PIN) |
-| `/api/matches` | Route | `GET` list, `POST` create |
+| `/api/matches` | Route | `GET` list, `POST` create (`notifyMembers` default `true` — email eligible members about the new match) |
 | `/api/matches/[id]` | Route | `GET` detail, `PUT` update, `DELETE` remove |
 | `/api/matches/[id]/register` | Route | `POST` self-register, `DELETE` unregister |
 | `/api/matches/[id]/guests` | Route | `POST` add guest |
