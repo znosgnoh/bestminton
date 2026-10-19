@@ -232,8 +232,8 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/api/challenges` | Route | `GET` list (`?status=PENDING,ACTIVE` or `COMPLETED`; omit for all), `POST` create |
 | `/api/challenges/[id]` | Route | `GET` detail, `PATCH` notes/21-15/drink/YouTube, `PUT` edit winner, `DELETE` |
 | `/api/cron/stale-challenges` | Route | `GET` daily cron (Hobby) — delete `PENDING` kèo older than 3 days |
-| `/api/cron/match-reminders` | Route | `GET` daily cron (16:00 UTC) — 96h/48h match registration reminder emails (±12h window on Hobby) |
-| `/api/cron/monthly-debt-reminder` | Route | `GET` daily cron (16:00 UTC / midnight SGT) — on last SGT calendar day of month, email eligible members a court-money debt report (`/balances`) |
+| `/api/cron/match-reminders` | Route | `GET` daily cron (16:00 UTC) — 96h/48h match registration reminder emails (±12h window on Hobby); also runs month-end court-money debt clear emails on the last SGT calendar day |
+| `/api/cron/monthly-debt-reminder` | Route | `GET` manual/optional trigger for the same month-end debt email (not registered in `vercel.json`; invoked from match-reminders) |
 | `/api/challenges/[id]/bets` | Route | `POST` upsert bet, `DELETE` remove |
 | `/api/challenges/[id]/start` | Route | `POST` lock bets and start kèo |
 | `/api/challenges/[id]/resolve` | Route | `POST` record winner, confirmed handicap/score, Elo, payouts |
@@ -308,7 +308,7 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 - **Expense creation:** Settle records the in-app ledger first (`POST /api/ledger/record`). When the Splitwise bridge is on, the same action dual-writes to Splitwise. `POST /api/splitwise/expense` is a thin server wrapper (PIN + `matchId`); clients must not call it.
 - **Bridge:** `SPLITWISE_API_KEY` and `SPLITWISE_GROUP_ID` both set = bridge **on**. Unset = bridge **off**; ledger and `/balances` still work, Import Splitwise balances is hidden, and settle does not require `splitwiseId`.
 - **Avatar uploads:** Stored in Vercel Blob via `POST /api/upload/avatar`. Requires `BLOB_READ_WRITE_TOKEN` (auto-set when a Blob store is linked in Vercel). Without it, captains can still paste avatar URLs.
-- **Email notifications:** When `RESEND_API_KEY` is set, the app sends bilingual (VI+EN) emails for new matches (optional checkbox on create, default on), 96h/48h registration reminders, month-end court-money debt clear reminders (last SGT day of month via `/api/cron/monthly-debt-reminder`), kèo resolve, drink settle, and ledger record/mark-paid. Unset = email bridge **off** (no errors). Members can opt out via `emailNotificationsEnabled` (management or profile).
+- **Email notifications:** When `RESEND_API_KEY` is set, the app sends bilingual (VI+EN) emails for new matches (optional checkbox on create, default on), 96h/48h registration reminders, month-end court-money debt clear reminders (last SGT day of month, hooked from `/api/cron/match-reminders`), kèo resolve, drink settle, and ledger record/mark-paid. Unset = email bridge **off** (no errors). Members can opt out via `emailNotificationsEnabled` (management or profile).
 
 ---
 

@@ -8,10 +8,6 @@
     {
       "path": "/api/cron/match-reminders",
       "schedule": "0 16 * * *"
-    },
-    {
-      "path": "/api/cron/monthly-debt-reminder",
-      "schedule": "0 16 * * *"
     }
   ]
 }

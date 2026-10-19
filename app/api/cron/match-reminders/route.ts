@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { databaseErrorResponse, requireDatabase } from "@/lib/apiHelpers";
-import { runMatchReminderCron } from "@/lib/email/events";
+import { runMatchReminderCron, runMonthlyDebtReminderCron } from "@/lib/email/events";
 
 export const dynamic = "force-dynamic";
 
@@ -23,8 +23,13 @@ export async function GET(request: NextRequest) {
   if (unavailable) return unavailable;
 
   try {
-    const result = await runMatchReminderCron();
-    return NextResponse.json(result);
+    // Month-end court-money reminder runs from this same daily job so Hobby
+    // stays at two vercel.json cron entries (stale-challenges + this route).
+    const [reminders, monthlyDebt] = await Promise.all([
+      runMatchReminderCron(),
+      runMonthlyDebtReminderCron(),
+    ]);
+    return NextResponse.json({ reminders, monthlyDebt });
   } catch (err) {
     return databaseErrorResponse(err, "GET /api/cron/match-reminders");
   }
