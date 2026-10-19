@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "EmailEventType" ADD VALUE 'MONTHLY_DEBT_REMINDER';

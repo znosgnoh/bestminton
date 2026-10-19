@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Bell, Loader2, RefreshCw } from "lucide-react";
 import { useI18n } from "@/contexts/LocaleContext";
 import * as dataService from "@/lib/dataService";
 import {
@@ -36,6 +36,7 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
   const [date, setDate] = useState(initial ? toSingaporeInputDate(initial.scheduledAt) : "");
   const [time, setTime] = useState(source ? toSingaporeInputTime(source.scheduledAt) : "20:00");
   const [isRecurring, setIsRecurring] = useState(source?.isRecurring ?? false);
+  const [notifyMembers, setNotifyMembers] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,6 +68,7 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
           venue: venue.trim(),
           scheduledAt,
           isRecurring,
+          notifyMembers,
         });
         onSaved(created);
       }
@@ -138,23 +140,38 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
       </div>
 
       {!initial && (
-        <label className="flex items-center gap-2.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={isRecurring}
-            onChange={(e) => setIsRecurring(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-emerald-600 focus:ring-emerald-500"
-          />
-          <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-            <RefreshCw size={13} className="text-gray-400" />
-            Repeat weekly (creates 4 sessions)
-          </span>
-        </label>
+        <>
+          <label className="flex items-center gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isRecurring}
+              onChange={(e) => setIsRecurring(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-emerald-600 focus:ring-emerald-500"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+              <RefreshCw size={13} className="text-gray-400" />
+              {t("management.repeatWeekly")}
+            </span>
+          </label>
+
+          <label className="flex items-center gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={notifyMembers}
+              onChange={(e) => setNotifyMembers(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-emerald-600 focus:ring-emerald-500"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+              <Bell size={13} className="text-gray-400" />
+              {t("management.notifyMembers")}
+            </span>
+          </label>
+        </>
       )}
 
       {isRecurring && dayName && (
         <p className="tet-alert-info px-3 py-2 text-xs">
-          Will repeat every <strong>{dayName}</strong> for 4 weeks.
+          {t("management.repeatWeeklyHint", { day: dayName })}
         </p>
       )}
 

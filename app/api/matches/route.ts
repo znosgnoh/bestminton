@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
     venue?: string;
     scheduledAt?: string;
     isRecurring?: boolean;
+    notifyMembers?: boolean;
     pin?: string;
   };
   try {
@@ -64,6 +65,8 @@ export async function POST(request: NextRequest) {
   }
 
   const isRecurring = Boolean(body.isRecurring);
+  // Default on: omit / undefined / null → notify; only explicit false skips.
+  const notifyMembers = body.notifyMembers !== false;
   const recurDayOfWeek = getSingaporeWeekday(scheduledAt);
 
   if (!isRecurring) {
@@ -72,7 +75,9 @@ export async function POST(request: NextRequest) {
       include: MATCH_FULL_INCLUDE,
     });
     revalidateMatchPages(match.id);
-    deferNotification(() => notifyMatchCreated(match.id));
+    if (notifyMembers) {
+      deferNotification(() => notifyMatchCreated(match.id));
+    }
     return NextResponse.json(toDTO([match]), { status: 201 });
   }
 
@@ -86,6 +91,8 @@ export async function POST(request: NextRequest) {
     )
   );
   revalidateMatchPages();
-  deferNotification(() => notifyMatchCreated(nearestMatch(created).id));
+  if (notifyMembers) {
+    deferNotification(() => notifyMatchCreated(nearestMatch(created).id));
+  }
   return NextResponse.json(toDTO(created), { status: 201 });
 }

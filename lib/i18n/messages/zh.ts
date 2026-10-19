@@ -379,6 +379,9 @@ const zh: Messages = {
     clone: "复制",
     cloneTitle: "复制比赛",
     cloneHint: "已复制标题、场地、时间和每周设置。请选择新日期 — 不会复制报名。",
+    repeatWeekly: "每周重复（创建 4 场）",
+    repeatWeeklyHint: "将在接下来 4 周的每个{day}重复。",
+    notifyMembers: "邮件通知所有已开启邮件提醒的成员",
     transactions: "账本流水",
     transactionsHint:
       "场地、羽毛球和期初余额。回滚会从账本删除该记录。之后可从结算页重新入账。",
