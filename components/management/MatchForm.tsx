@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, Loader2, RefreshCw } from "lucide-react";
+import { Bell, Loader2, RefreshCw, Timer } from "lucide-react";
 import { useI18n } from "@/contexts/LocaleContext";
 import * as dataService from "@/lib/dataService";
 import {
@@ -14,7 +14,7 @@ import type { MatchDTO } from "@/lib/types";
 
 export type MatchFormPrefill = Pick<
   MatchDTO,
-  "title" | "venue" | "scheduledAt" | "isRecurring"
+  "title" | "venue" | "scheduledAt" | "isRecurring" | "registrationClosesAt"
 >;
 
 interface MatchFormProps {
@@ -37,6 +37,16 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
   const [time, setTime] = useState(source ? toSingaporeInputTime(source.scheduledAt) : "20:00");
   const [isRecurring, setIsRecurring] = useState(source?.isRecurring ?? false);
   const [notifyMembers, setNotifyMembers] = useState(true);
+  const initialDeadline = source?.registrationClosesAt ?? null;
+  const [setRegistrationDeadline, setSetRegistrationDeadline] = useState(
+    initialDeadline != null
+  );
+  const [regDate, setRegDate] = useState(
+    initialDeadline ? toSingaporeInputDate(initialDeadline) : ""
+  );
+  const [regTime, setRegTime] = useState(
+    initialDeadline ? toSingaporeInputTime(initialDeadline) : "12:00"
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,6 +60,13 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
     if (!date) { setError("Date is required."); return; }
     if (!time) { setError("Time is required."); return; }
 
+    let registrationClosesAt: string | null = null;
+    if (setRegistrationDeadline) {
+      if (!regDate) { setError(t("management.registrationDeadlineRequired")); return; }
+      if (!regTime) { setError(t("management.registrationDeadlineRequired")); return; }
+      registrationClosesAt = singaporeLocalToIso(regDate, regTime);
+    }
+
     const scheduledAt = singaporeLocalToIso(date, time);
 
     setSaving(true);
@@ -60,6 +77,7 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
           title: title.trim(),
           venue: venue.trim(),
           scheduledAt,
+          registrationClosesAt,
         });
         onSaved([updated]);
       } else {
@@ -69,6 +87,7 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
           scheduledAt,
           isRecurring,
           notifyMembers,
+          registrationClosesAt,
         });
         onSaved(created);
       }
@@ -138,6 +157,50 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
           />
         </div>
       </div>
+
+      <label className="flex items-center gap-2.5 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={setRegistrationDeadline}
+          onChange={(e) => setSetRegistrationDeadline(e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-emerald-600 focus:ring-emerald-500"
+        />
+        <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+          <Timer size={13} className="text-gray-400" />
+          {t("management.setRegistrationDeadline")}
+        </span>
+      </label>
+
+      {setRegistrationDeadline && (
+        <div className="grid grid-cols-2 gap-3 pl-0.5">
+          <div>
+            <label className="tet-label">
+              {t("management.registrationByDate")}{" "}
+              <span className="text-red-500">*</span>
+              <span className="ml-1 font-normal text-gray-400">(SGT)</span>
+            </label>
+            <input
+              type="date"
+              value={regDate}
+              onChange={(e) => setRegDate(e.target.value)}
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className="tet-label">
+              {t("management.registrationByTime")}{" "}
+              <span className="text-red-500">*</span>
+              <span className="ml-1 font-normal text-gray-400">(SGT)</span>
+            </label>
+            <input
+              type="time"
+              value={regTime}
+              onChange={(e) => setRegTime(e.target.value)}
+              className={inputCls}
+            />
+          </div>
+        </div>
+      )}
 
       {!initial && (
         <>

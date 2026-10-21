@@ -135,6 +135,14 @@ const vi: Messages = {
     failedGuest: "Không thêm được khách.",
     failedUpdate: "Cập nhật thất bại.",
     somethingWrong: "Đã có lỗi.",
+    registrationClosesIn: "Đăng ký đóng sau",
+    registrationClosed: "Đã hết hạn đăng ký",
+    registrationClosedAt: "Hạn chót lúc {time}",
+    registrationClosesAt: "Đóng lúc {time}",
+    countdownDhms: "{days}n {hours}:{minutes}:{seconds}",
+    countdownHms: "{hours}:{minutes}:{seconds}",
+    registrationClosedCaptainHint:
+      "Đã hết hạn đăng ký. Đội trưởng vẫn có thể cập nhật danh sách từ Quản lý.",
   },
   challenges: {
     title: "Kèo",
@@ -393,6 +401,10 @@ const vi: Messages = {
     repeatWeekly: "Lặp hàng tuần (tạo 4 buổi)",
     repeatWeeklyHint: "Sẽ lặp mỗi {day} trong 4 tuần.",
     notifyMembers: "Gửi email cho mọi thành viên đang bật thông báo",
+    setRegistrationDeadline: "Đặt hạn đăng ký",
+    registrationByDate: "Đăng ký trước ngày",
+    registrationByTime: "Đăng ký trước giờ",
+    registrationDeadlineRequired: "Cần chọn ngày và giờ hạn đăng ký.",
     transactions: "Giao dịch sổ",
     transactionsHint:
       "Mọi dòng sân, cầu và số dư đầu. Rollback xóa khỏi sổ. Sau đó có thể ghi lại trận từ settle.",

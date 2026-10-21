@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
     scheduledAt?: string;
     isRecurring?: boolean;
     notifyMembers?: boolean;
+    registrationClosesAt?: string | null;
     pin?: string;
   };
   try {
@@ -64,6 +65,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid scheduledAt date." }, { status: 400 });
   }
 
+  let registrationClosesAt: Date | null = null;
+  if (body.registrationClosesAt != null && body.registrationClosesAt !== "") {
+    registrationClosesAt = new Date(body.registrationClosesAt);
+    if (isNaN(registrationClosesAt.getTime())) {
+      return NextResponse.json(
+        { error: "Invalid registrationClosesAt date." },
+        { status: 400 }
+      );
+    }
+  }
+
   const isRecurring = Boolean(body.isRecurring);
   // Default on: omit / undefined / null → notify; only explicit false skips.
   const notifyMembers = body.notifyMembers !== false;
@@ -71,7 +83,14 @@ export async function POST(request: NextRequest) {
 
   if (!isRecurring) {
     const match = await db.match.create({
-      data: { title, venue, scheduledAt, isRecurring: false, recurDayOfWeek: null },
+      data: {
+        title,
+        venue,
+        scheduledAt,
+        isRecurring: false,
+        recurDayOfWeek: null,
+        registrationClosesAt,
+      },
       include: MATCH_FULL_INCLUDE,
     });
     revalidateMatchPages(match.id);
@@ -83,9 +102,19 @@ export async function POST(request: NextRequest) {
 
   const dates = [0, 7, 14, 21].map((offset) => addDays(scheduledAt, offset));
   const created = await db.$transaction(
-    dates.map((date) =>
+    dates.map((date, index) =>
       db.match.create({
-        data: { title, venue, scheduledAt: date, isRecurring: true, recurDayOfWeek },
+        data: {
+          title,
+          venue,
+          scheduledAt: date,
+          isRecurring: true,
+          recurDayOfWeek,
+          registrationClosesAt:
+            registrationClosesAt != null
+              ? addDays(registrationClosesAt, index * 7)
+              : null,
+        },
         include: MATCH_FULL_INCLUDE,
       })
     )

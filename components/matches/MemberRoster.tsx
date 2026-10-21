@@ -12,6 +12,7 @@ interface MemberRosterProps {
   registrations: RegistrationDTO[];
   setRegistrations: (updater: (prev: RegistrationDTO[]) => RegistrationDTO[]) => void;
   isPast: boolean;
+  registrationClosed?: boolean;
   canEditRegistration: boolean;
 }
 
@@ -36,6 +37,7 @@ export default function MemberRoster({
   registrations,
   setRegistrations,
   isPast,
+  registrationClosed = false,
   canEditRegistration,
 }: MemberRosterProps) {
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +96,11 @@ export default function MemberRoster({
   return (
     <div className="tet-card p-4">
       <h2 className="tet-section-title text-sm mb-3">
-        {canEditRegistration ? (isPast ? "Tap to update roster" : "Tap to register") : "Players"}
+        {canEditRegistration
+          ? isPast || registrationClosed
+            ? "Tap to update roster"
+            : "Tap to register"
+          : "Players"}
       </h2>
       {error && (
         <div className="mb-3">

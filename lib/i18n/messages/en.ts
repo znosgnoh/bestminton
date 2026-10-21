@@ -133,6 +133,14 @@ const en = {
     failedGuest: "Failed to add guest.",
     failedUpdate: "Failed to update.",
     somethingWrong: "Something went wrong.",
+    registrationClosesIn: "Registration closes in",
+    registrationClosed: "Registration is closed",
+    registrationClosedAt: "Deadline was {time}",
+    registrationClosesAt: "Closes {time}",
+    countdownDhms: "{days}d {hours}:{minutes}:{seconds}",
+    countdownHms: "{hours}:{minutes}:{seconds}",
+    registrationClosedCaptainHint:
+      "Registration closed. The captain can still update the roster from Management.",
   },
   challenges: {
     title: "Kèo",
@@ -391,6 +399,10 @@ const en = {
     repeatWeekly: "Repeat weekly (creates 4 sessions)",
     repeatWeeklyHint: "Will repeat every {day} for 4 weeks.",
     notifyMembers: "Email all members with notifications on",
+    setRegistrationDeadline: "Set registration deadline",
+    registrationByDate: "Register by date",
+    registrationByTime: "Register by time",
+    registrationDeadlineRequired: "Registration deadline date and time are required.",
     transactions: "Ledger transactions",
     transactionsHint:
       "Every court, shuttlecock, and opening row. Rollback removes it from the ledger. You can record the match again afterwards.",
