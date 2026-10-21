@@ -374,6 +374,8 @@ export interface MatchDTO {
   synced: boolean;
   shuttlecockRemitted: boolean;
   youtubeUrl: string | null;
+  /** ISO datetime when self-registration closes; null = no deadline */
+  registrationClosesAt: string | null;
   settlementDetails: SettlementDetails | null;
   registrations: RegistrationDTO[];
 }

@@ -7,6 +7,7 @@ import { ArrowLeft, MapPin, Clock, Calendar } from "lucide-react";
 import { MatchDetailSkeleton } from "@/components/ui/Skeleton";
 import AdminPinModal from "@/components/ui/AdminPinModal";
 import MemberRoster from "@/components/matches/MemberRoster";
+import RegistrationCountdown from "@/components/matches/RegistrationCountdown";
 import RegistrationRow from "@/components/matches/RegistrationRow";
 import SettleForm from "@/components/matches/SettleForm";
 import { useRegisterPullToRefresh } from "@/components/PullToRefresh";
@@ -63,12 +64,18 @@ function MatchDetailClientInner({
     initialMatch?.registrations ?? []
   );
   const [loading, setLoading] = useState(!dbAvailable);
+  const [deadlineClosed, setDeadlineClosed] = useState(() => {
+    const closes = initialMatch?.registrationClosesAt;
+    return closes != null && new Date(closes).getTime() <= Date.now();
+  });
 
   useEffect(() => {
     if (dbAvailable) {
       setMatch(initialMatch);
       setAllMembers(initialMembers);
       setRegistrations(initialMatch?.registrations ?? []);
+      const closes = initialMatch?.registrationClosesAt;
+      setDeadlineClosed(closes != null && new Date(closes).getTime() <= Date.now());
       setLoading(false);
       return;
     }
@@ -77,6 +84,8 @@ function MatchDetailClientInner({
         setMatch(m);
         setAllMembers(members);
         setRegistrations(m?.registrations ?? []);
+        const closes = m?.registrationClosesAt;
+        setDeadlineClosed(closes != null && new Date(closes).getTime() <= Date.now());
         setLoading(false);
       }
     );
@@ -117,9 +126,13 @@ function MatchDetailClientInner({
   }
 
   const isPast = new Date(match.scheduledAt) < new Date();
-  const canManagePast = (isManageMode || unlocked) && (!pinRequired || unlocked);
-  const canEditRegistration = !isPast || canManagePast;
-  const needsCaptainPin = isPast && pinRequired && !unlocked && isManageMode;
+  const registrationClosed =
+    match.registrationClosesAt != null &&
+    (deadlineClosed || new Date(match.registrationClosesAt).getTime() <= Date.now());
+  const canManageAsCaptain = (isManageMode || unlocked) && (!pinRequired || unlocked);
+  const canEditRegistration = (!isPast && !registrationClosed) || canManageAsCaptain;
+  const needsCaptainPin =
+    (isPast || registrationClosed) && pinRequired && !unlocked && isManageMode;
   const totalHeadcount = registrations.reduce((sum, r) => sum + 1 + r.guests.length, 0);
 
   return (
@@ -138,7 +151,7 @@ function MatchDetailClientInner({
         All Matches
       </Link>
 
-      {isPast && !canManagePast && (
+      {isPast && !canManageAsCaptain && (
         <div className="tet-alert-info">
           <p className="text-sm">
             To update who played or settle costs, open this match from{" "}
@@ -151,6 +164,12 @@ function MatchDetailClientInner({
             </Link>
             .
           </p>
+        </div>
+      )}
+
+      {!isPast && registrationClosed && !canManageAsCaptain && (
+        <div className="tet-alert-info">
+          <p className="text-sm">{t("matches.registrationClosedCaptainHint")}</p>
         </div>
       )}
 
@@ -181,9 +200,16 @@ function MatchDetailClientInner({
         </div>
       </div>
 
+      {match.registrationClosesAt && !isPast && (
+        <RegistrationCountdown
+          closesAt={match.registrationClosesAt}
+          onClosedChange={setDeadlineClosed}
+        />
+      )}
+
       <YouTubeUrlEditor
         url={match.youtubeUrl}
-        editable={isManageMode && canManagePast}
+        editable={isManageMode && canManageAsCaptain}
         onSave={async (youtubeUrl) => {
           const updated = await dataService.saveMatchYoutubeUrl(match.id, youtubeUrl);
           setMatch(updated);
@@ -196,6 +222,7 @@ function MatchDetailClientInner({
         registrations={registrations}
         setRegistrations={setRegistrations}
         isPast={isPast}
+        registrationClosed={registrationClosed}
         canEditRegistration={canEditRegistration}
       />
 
@@ -218,7 +245,7 @@ function MatchDetailClientInner({
         </div>
       )}
 
-      {isPast && canManagePast && (
+      {isPast && canManageAsCaptain && (
         <SettleForm
           match={match}
           registrations={registrations}

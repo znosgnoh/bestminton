@@ -61,6 +61,7 @@ interface RawMatch {
   synced: boolean;
   shuttlecockRemitted?: boolean;
   youtubeUrl?: string | null;
+  registrationClosesAt?: string | null;
   settlementDetails?: SettlementDetails | null;
   createdAt: string;
 }
@@ -121,6 +122,7 @@ async function buildMatchDTO(match: RawMatch): Promise<MatchDTO> {
     synced: match.synced,
     shuttlecockRemitted: match.shuttlecockRemitted ?? false,
     youtubeUrl: match.youtubeUrl ?? null,
+    registrationClosesAt: match.registrationClosesAt ?? null,
     settlementDetails: match.settlementDetails ?? null,
     registrations: regDTOs,
   };
@@ -236,9 +238,14 @@ export async function createMatches(data: {
   scheduledAt: string;
   isRecurring: boolean;
   notifyMembers?: boolean;
+  registrationClosesAt?: string | null;
 }): Promise<MatchDTO[]> {
   const base = new Date(data.scheduledAt);
   const dayOfWeek = getSingaporeWeekday(base);
+  const closesBase =
+    data.registrationClosesAt != null && data.registrationClosesAt !== ""
+      ? new Date(data.registrationClosesAt)
+      : null;
   const offsets = data.isRecurring ? [0, 7, 14, 21] : [0];
   const results: MatchDTO[] = [];
   for (const days of offsets) {
@@ -255,6 +262,10 @@ export async function createMatches(data: {
       recurDayOfWeek: data.isRecurring ? dayOfWeek : null,
       synced: false,
       shuttlecockRemitted: false,
+      registrationClosesAt:
+        closesBase != null
+          ? new Date(closesBase.getTime() + days * 86400000).toISOString()
+          : null,
       settlementDetails: null,
       createdAt: new Date().toISOString(),
     };
@@ -275,6 +286,7 @@ export async function updateMatch(
     paidByMemberId?: number | null;
     shuttlecockRecipientMemberId?: number | null;
     youtubeUrl?: string | null;
+    registrationClosesAt?: string | null;
     settlementDetails?: SettlementDetails | null;
   }
 ): Promise<MatchDTO> {

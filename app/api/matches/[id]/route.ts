@@ -51,6 +51,7 @@ export async function PUT(
     paidByMemberId?: number | null;
     shuttlecockRecipientMemberId?: number | null;
     youtubeUrl?: string | null;
+    registrationClosesAt?: string | null;
     settlementDetails?: SettlementDetails | null;
     pin?: string;
   };
@@ -108,6 +109,20 @@ export async function PUT(
         return NextResponse.json({ error: parsed.error }, { status: 400 });
       }
       data.youtubeUrl = parsed.url;
+    }
+    if (body.registrationClosesAt !== undefined) {
+      if (body.registrationClosesAt === null || body.registrationClosesAt === "") {
+        data.registrationClosesAt = null;
+      } else {
+        const closes = new Date(body.registrationClosesAt);
+        if (isNaN(closes.getTime())) {
+          return NextResponse.json(
+            { error: "Invalid registrationClosesAt date." },
+            { status: 400 }
+          );
+        }
+        data.registrationClosesAt = closes;
+      }
     }
     if (body.settlementDetails !== undefined) {
       if (body.settlementDetails === null) {

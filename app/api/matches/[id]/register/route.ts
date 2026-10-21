@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { revalidateMatchPages } from "@/lib/revalidate";
-import { requirePastMatchAdminPin } from "@/lib/apiHelpers";
+import { requireRegistrationEditAccess } from "@/lib/apiHelpers";
 import { Prisma } from "@prisma/client";
 
 const REG_INCLUDE = { member: true, guests: true };
@@ -40,7 +40,7 @@ export async function POST(
   if ("error" in matchResult) return matchResult.error;
   const { match } = matchResult;
 
-  const pinDenied = requirePastMatchAdminPin(request, match.scheduledAt, body);
+  const pinDenied = requireRegistrationEditAccess(request, match, body);
   if (pinDenied) return pinDenied;
 
   try {
@@ -89,7 +89,7 @@ export async function PUT(
   if ("error" in matchResult) return matchResult.error;
   const { match } = matchResult;
 
-  const pinDenied = requirePastMatchAdminPin(request, match.scheduledAt, body);
+  const pinDenied = requireRegistrationEditAccess(request, match, body);
   if (pinDenied) return pinDenied;
 
   try {
@@ -134,7 +134,7 @@ export async function DELETE(
   if ("error" in matchResult) return matchResult.error;
   const { match } = matchResult;
 
-  const pinDenied = requirePastMatchAdminPin(request, match.scheduledAt, body);
+  const pinDenied = requireRegistrationEditAccess(request, match, body);
   if (pinDenied) return pinDenied;
 
   try {

@@ -46,6 +46,41 @@ export function requirePastMatchAdminPin(
   return requireAdminPin(pinFromRequest(request, body));
 }
 
+/** True when self-registration is locked (past match or deadline passed). */
+export function isRegistrationEditLocked(
+  match: {
+    scheduledAt: Date | string;
+    registrationClosesAt?: Date | string | null;
+  },
+  nowMs: number = Date.now()
+): boolean {
+  if (new Date(match.scheduledAt).getTime() < nowMs) return true;
+  if (
+    match.registrationClosesAt != null &&
+    new Date(match.registrationClosesAt).getTime() <= nowMs
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Registration mutations are open while the match is upcoming and
+ * (if set) before `registrationClosesAt`. After the match starts or the
+ * deadline passes, captain PIN is required when CAPTAIN_PIN is set.
+ */
+export function requireRegistrationEditAccess(
+  request: NextRequest,
+  match: {
+    scheduledAt: Date | string;
+    registrationClosesAt?: Date | string | null;
+  },
+  body?: { pin?: string }
+) {
+  if (!isRegistrationEditLocked(match)) return null;
+  return requireAdminPin(pinFromRequest(request, body));
+}
+
 export function requireDatabase() {
   if (!isDatabaseConfigured()) {
     return NextResponse.json(

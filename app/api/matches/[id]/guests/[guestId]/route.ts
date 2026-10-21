@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { revalidateMatchPages } from "@/lib/revalidate";
-import { requirePastMatchAdminPin } from "@/lib/apiHelpers";
+import { requireRegistrationEditAccess } from "@/lib/apiHelpers";
 import { Prisma } from "@prisma/client";
 
 const REG_INCLUDE = { member: true, guests: true };
@@ -36,9 +36,9 @@ export async function PUT(
       return NextResponse.json({ error: "Guest not found." }, { status: 404 });
     }
 
-    const pinDenied = requirePastMatchAdminPin(
+    const pinDenied = requireRegistrationEditAccess(
       request,
-      existing.registration.match.scheduledAt,
+      existing.registration.match,
       body
     );
     if (pinDenied) return pinDenied;
@@ -90,9 +90,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Guest not found." }, { status: 404 });
     }
 
-    const pinDenied = requirePastMatchAdminPin(
+    const pinDenied = requireRegistrationEditAccess(
       request,
-      guest.registration.match.scheduledAt,
+      guest.registration.match,
       body
     );
     if (pinDenied) return pinDenied;

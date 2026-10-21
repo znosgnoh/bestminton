@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { revalidateMatchPages } from "@/lib/revalidate";
-import { requirePastMatchAdminPin } from "@/lib/apiHelpers";
+import { requireRegistrationEditAccess } from "@/lib/apiHelpers";
 
 const REG_INCLUDE = { member: true, guests: true };
 
@@ -32,7 +32,7 @@ export async function POST(
     return NextResponse.json({ error: "Match not found." }, { status: 404 });
   }
 
-  const pinDenied = requirePastMatchAdminPin(request, match.scheduledAt, body);
+  const pinDenied = requireRegistrationEditAccess(request, match, body);
   if (pinDenied) return pinDenied;
 
   const registration = await db.matchRegistration.findUnique({
