@@ -1,6 +1,18 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
-import { Be_Vietnam_Pro, Caveat, Noto_Sans } from "next/font/google";
+// Self-hosted via @fontsource — avoids flaky next/font/google builds when Google
+// returns extensionless /l/font?kit=…&skey=… URLs (vercel/next.js#99114).
+import "@fontsource/be-vietnam-pro/400.css";
+import "@fontsource/be-vietnam-pro/500.css";
+import "@fontsource/be-vietnam-pro/600.css";
+import "@fontsource/be-vietnam-pro/700.css";
+import "@fontsource/noto-sans/400.css";
+import "@fontsource/noto-sans/500.css";
+import "@fontsource/noto-sans/600.css";
+import "@fontsource/noto-sans/700.css";
+import "@fontsource/caveat/500.css";
+import "@fontsource/caveat/600.css";
+import "@fontsource/caveat/700.css";
 import AppHeader from "@/components/layout/AppHeader";
 import NavigationProgress from "@/components/layout/NavigationProgress";
 import PullToRefresh from "@/components/PullToRefresh";
@@ -12,27 +24,6 @@ import { SITE_SHORT, SITE_TITLE } from "./layout.constants";
 import "./globals.css";
 
 export const preferredRegion = "sin1";
-
-const beVietnamPro = Be_Vietnam_Pro({
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-be-vietnam-pro",
-  display: "swap",
-});
-
-const notoSans = Noto_Sans({
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-noto-sans",
-  display: "swap",
-});
-
-const caveat = Caveat({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-caveat",
-  display: "swap",
-});
 
 export { SITE_SHORT, SITE_TITLE };
 
@@ -68,16 +59,7 @@ export default async function RootLayout({
   const storedTheme = cookieStore.get(THEME_COOKIE_KEY)?.value;
   const isDark = isTheme(storedTheme) ? storedTheme === "dark" : false;
 
-  const htmlClass = [
-    "h-full",
-    "antialiased",
-    beVietnamPro.variable,
-    notoSans.variable,
-    caveat.variable,
-    isDark ? "dark" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const htmlClass = ["h-full", "antialiased", isDark ? "dark" : ""].filter(Boolean).join(" ");
 
   return (
     <html
