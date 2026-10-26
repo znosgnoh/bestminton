@@ -125,6 +125,9 @@ const vi: Messages = {
     recordExpense: "Ghi chi phí",
     recording: "Đang ghi…",
     recordedOnBalances: "Đã ghi vào sổ.",
+    backfillCourtRemittances: "Bổ sung hoàn tiền sân",
+    backfillCourtHint:
+      "Nếu người đặt sân không thấy tiền hoàn trên Sổ, bấm để tạo các dòng hoàn tiền sân còn thiếu (bấm lại cũng an toàn).",
     saveBeforeSync: "Lưu quyết toán trước.",
     costPositive: "Tổng tiền phải là số dương.",
     hoursPositive: "Giờ chơi phải là số dương.",

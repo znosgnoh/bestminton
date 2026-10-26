@@ -124,6 +124,9 @@ const zh: Messages = {
     recordExpense: "记录费用",
     recording: "记录中…",
     recordedOnBalances: "已记入账本。",
+    backfillCourtRemittances: "补记场地退还",
+    backfillCourtHint:
+      "若订场人在账本上看不到退还记录，可点此补建缺失的场地退还行（可重复执行）。",
     saveBeforeSync: "请先保存结算数据。",
     costPositive: "总费用必须为正数。",
     hoursPositive: "打球时长必须为正数。",
