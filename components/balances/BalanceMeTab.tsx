@@ -1,9 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import AvatarTile from "@/components/matches/AvatarTile";
 import BalanceEdgeRow from "@/components/balances/BalanceEdgeRow";
+import { openRemittancesToMember } from "@/lib/balanceBreakdown";
 import { useI18n } from "@/contexts/LocaleContext";
 import { formatCurrency } from "@/lib/currency";
+import { formatLocal } from "@/lib/datetime";
 import type { LedgerEdgeDTO, LedgerSnapshotDTO, MemberDTO } from "@/lib/types";
 
 const EMPTY_DEBT = { totalOwed: 0, totalOwing: 0, netCam: 0 };
@@ -66,10 +69,14 @@ export default function BalanceMeTab({
   settlingKey,
   onPaid,
 }: BalanceMeTabProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const people = pickerMembers(members, snapshot);
   const owes = snapshot.edges.filter((e) => e.debtorId === selectedMemberId);
   const owedBy = snapshot.edges.filter((e) => e.creditorId === selectedMemberId);
+  const remittances =
+    selectedMemberId != null
+      ? openRemittancesToMember(snapshot.expenses, selectedMemberId)
+      : [];
   const totalOwes = owes.reduce((sum, e) => sum + e.amount, 0);
   const totalOwed = owedBy.reduce((sum, e) => sum + e.amount, 0);
   const selected = people.find((m) => m.id === selectedMemberId) ?? null;
@@ -112,12 +119,62 @@ export default function BalanceMeTab({
             </div>
           </div>
 
-          {owes.length === 0 && owedBy.length === 0 ? (
+          {owes.length === 0 && owedBy.length === 0 && remittances.length === 0 ? (
             <div className="tet-empty">
               <p className="font-medium">{t("balances.allClear")}</p>
             </div>
           ) : (
             <div className="space-y-4">
+              {remittances.length > 0 && (
+                <section>
+                  <h3 className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    {t("balances.returnMoney")}
+                  </h3>
+                  <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                    {t("balances.returnMoneyHint")}
+                  </p>
+                  <ul className="space-y-2" aria-label={t("balances.returnMoney")}>
+                    {remittances.map((row) => {
+                      const kindLabel =
+                        row.expense.kind === "COURT"
+                          ? t("balances.court")
+                          : t("balances.shuttlecock");
+                      const when = formatLocal(row.expense.createdAt, locale, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      });
+                      return (
+                        <li key={`${row.expense.id}:${row.debtorId}`} className="tet-card p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              {row.expense.matchId != null ? (
+                                <Link
+                                  href={`/matches/${row.expense.matchId}`}
+                                  className="block truncate text-sm font-medium text-gray-900 dark:text-gray-100 hover:underline underline-offset-2"
+                                >
+                                  {row.expense.title}
+                                </Link>
+                              ) : (
+                                <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                                  {row.expense.title}
+                                </p>
+                              )}
+                              <p className="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
+                                {kindLabel} · {t("balances.remitFrom", { name: row.debtorName })} ·{" "}
+                                {when}
+                              </p>
+                            </div>
+                            <span className="shrink-0 text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                              {formatCurrency(row.remainder, snapshot.currency)}
+                            </span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              )}
               {owes.length > 0 && (
                 <section>
                   <h3 className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">

@@ -123,6 +123,9 @@ const en = {
     recordExpense: "Record expense",
     recording: "Recording…",
     recordedOnBalances: "Recorded on balances.",
+    backfillCourtRemittances: "Backfill court remittances",
+    backfillCourtHint:
+      "If a booker is missing return-money on Balances, run this to create any missing court remittance rows (safe to repeat).",
     saveBeforeSync: "Save settlement data first.",
     costPositive: "Total cost must be a positive number.",
     hoursPositive: "Hours played must be a positive number.",
@@ -338,6 +341,11 @@ const en = {
     paidPartial: "Marked the direct amount as paid. {remaining} still outstanding on this pair.",
     chainOnly: "This net is via other players. Only direct debts can be marked paid.",
     breakdown: "Breakdown",
+    remittanceCredit: "return",
+    returnMoney: "Return money",
+    returnMoneyHint:
+      "Court or shuttlecock remittances owed back to you (still listed when they offset match shares).",
+    remitFrom: "from {name}",
     opening: "Opening",
     match: "Match",
     shuttlecock: "Shuttlecock",

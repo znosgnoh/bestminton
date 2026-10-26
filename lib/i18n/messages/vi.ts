@@ -125,6 +125,9 @@ const vi: Messages = {
     recordExpense: "Ghi chi phí",
     recording: "Đang ghi…",
     recordedOnBalances: "Đã ghi vào sổ.",
+    backfillCourtRemittances: "Bổ sung hoàn tiền sân",
+    backfillCourtHint:
+      "Nếu người đặt sân không thấy tiền hoàn trên Sổ, bấm để tạo các dòng hoàn tiền sân còn thiếu (bấm lại cũng an toàn).",
     saveBeforeSync: "Lưu quyết toán trước.",
     costPositive: "Tổng tiền phải là số dương.",
     hoursPositive: "Giờ chơi phải là số dương.",
@@ -340,6 +343,11 @@ const vi: Messages = {
     paidPartial: "Đã ghi nhận phần nợ trực tiếp. Còn {remaining} trên cặp này.",
     chainOnly: "Số này đi qua người khác. Chỉ nợ trực tiếp mới đánh dấu đã trả.",
     breakdown: "Chi tiết",
+    remittanceCredit: "hoàn tiền",
+    returnMoney: "Tiền hoàn lại",
+    returnMoneyHint:
+      "Tiền sân / cầu người khác cần trả lại bạn (vẫn hiện khi đã bù với phần chia trận).",
+    remitFrom: "từ {name}",
     opening: "Số dư đầu",
     match: "Trận đấu",
     shuttlecock: "Cầu",

@@ -15,7 +15,11 @@ import { sendToMany } from "./notify";
 import { renderChallengeResolvedEmail } from "./templates/challengeResolved";
 import { renderDrinkSettledEmail } from "./templates/drinkSettled";
 import { renderMonthlyDebtReminderEmail } from "./templates/debtReminder";
-import { renderLedgerMarkPaidEmail, renderLedgerRecordedEmail } from "./templates/ledger";
+import {
+  renderLedgerMarkPaidEmail,
+  renderLedgerRecordedEmail,
+  renderLedgerRemittanceReceivedEmail,
+} from "./templates/ledger";
 import { renderMatchEmail } from "./templates/match";
 
 export async function notifyMatchCreated(matchId: number): Promise<void> {
@@ -140,8 +144,16 @@ export async function notifyLedgerRecorded(expenseId: number): Promise<void> {
   const expense = await db.expense.findUnique({
     where: { id: expenseId },
     include: {
-      paidBy: { select: { name: true } },
-      shares: { include: { member: { select: { id: true, name: true, email: true, emailNotificationsEnabled: true } } } },
+      paidBy: {
+        select: { id: true, name: true, email: true, emailNotificationsEnabled: true },
+      },
+      shares: {
+        include: {
+          member: {
+            select: { id: true, name: true, email: true, emailNotificationsEnabled: true },
+          },
+        },
+      },
     },
   });
   if (!expense || !expense.paidBy) return;
@@ -162,6 +174,35 @@ export async function notifyLedgerRecorded(expenseId: number): Promise<void> {
           shareAmount: Number(share.owed),
           currency: expense.currency,
           paidByName: expense.paidBy!.name,
+          balancesUrl,
+        })
+    );
+  }
+
+  // Court / shuttlecock remittances credit the expense "paidBy" (booker / recipient).
+  // They must be emailed too — previously only debtors (share members) were notified.
+  if (expense.kind === "COURT" || expense.kind === "SHUTTLECOCK") {
+    const creditor = expense.paidBy;
+    if (!creditor.email || !creditor.emailNotificationsEnabled) return;
+    const totalOwed = expense.shares.reduce((sum, s) => sum + Number(s.owed), 0);
+    if (!(totalOwed > 0)) return;
+    const fromNames = expense.shares.map((s) => s.member.name).filter(Boolean);
+    const fromName = fromNames.length > 0 ? fromNames.join(", ") : "Paid By";
+    const kindLabelVi = expense.kind === "COURT" ? "tiền sân" : "tiền cầu";
+    const kindLabelEn = expense.kind === "COURT" ? "court" : "shuttlecock";
+    await sendToMany(
+      "LEDGER_RECORDED",
+      `expense:${expenseId}:remittance:${creditor.id}`,
+      [{ memberId: creditor.id, email: creditor.email, name: creditor.name }],
+      (r) =>
+        renderLedgerRemittanceReceivedEmail({
+          recipientName: r.name,
+          expenseTitle: expense.title,
+          amount: totalOwed,
+          currency: expense.currency,
+          fromName,
+          kindLabelVi,
+          kindLabelEn,
           balancesUrl,
         })
     );

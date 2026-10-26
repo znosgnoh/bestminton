@@ -29,6 +29,34 @@ export function renderLedgerRecordedEmail(input: {
   });
 }
 
+export function renderLedgerRemittanceReceivedEmail(input: {
+  recipientName: string;
+  expenseTitle: string;
+  amount: number;
+  currency: string;
+  fromName: string;
+  kindLabelVi: string;
+  kindLabelEn: string;
+  balancesUrl: string;
+}): RenderedEmail {
+  const amount = `${input.amount.toFixed(2)} ${input.currency}`;
+  return renderBilingualEmail({
+    subject: `[Bestminton] Hoàn tiền / Remittance: ${input.expenseTitle}`,
+    bodyVi: `
+      <p>Xin chào ${input.recipientName},</p>
+      <p><strong>${input.fromName}</strong> cần hoàn <strong>${amount}</strong> (${input.kindLabelVi}) cho bạn.</p>
+      <p>Trận / khoản: <strong>${input.expenseTitle}</strong></p>
+      <p><a href="${input.balancesUrl}">Xem sổ nợ</a></p>
+    `,
+    bodyEn: `
+      <p>Hi ${input.recipientName},</p>
+      <p><strong>${input.fromName}</strong> owes you a <strong>${amount}</strong> ${input.kindLabelEn} remittance.</p>
+      <p>For: <strong>${input.expenseTitle}</strong></p>
+      <p><a href="${input.balancesUrl}">View balances</a></p>
+    `,
+  });
+}
+
 export function renderLedgerMarkPaidEmail(input: {
   recipientName: string;
   debtorName: string;
