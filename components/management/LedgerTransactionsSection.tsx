@@ -171,7 +171,9 @@ export default function LedgerTransactionsSection({ dbAvailable }: LedgerTransac
                       )}
                       <p className="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
                         {kindLabel(expense.kind, t)} · {formatWhen(expense.createdAt, locale)} ·{" "}
-                        {expense.paidByName}
+                        {expense.shares.length === 1
+                          ? `${expense.shares[0].memberName} → ${expense.paidByName}`
+                          : expense.paidByName}
                       </p>
                     </div>
                     <p className="shrink-0 text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-100">

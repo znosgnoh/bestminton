@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import { Check, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
-import BalanceBreakdown, { pairBreakdownItems } from "@/components/balances/BalanceBreakdown";
+import BalanceBreakdown from "@/components/balances/BalanceBreakdown";
 import { useI18n } from "@/contexts/LocaleContext";
+import {
+  pairBreakdownItems,
+  pairGrossBreakdownItems,
+} from "@/lib/balanceBreakdown";
 import { formatCurrency } from "@/lib/currency";
 import type { LedgerEdgeDTO, LedgerExpenseDTO } from "@/lib/types";
 
@@ -26,8 +30,10 @@ export default function BalanceEdgeRow({
 }: BalanceEdgeRowProps) {
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
-  const items = pairBreakdownItems(expenses, edge.debtorId, edge.creditorId);
-  const canPay = edge.amount > 0 && items.length > 0;
+  const payItems = pairBreakdownItems(expenses, edge.debtorId, edge.creditorId);
+  const displayItems = pairGrossBreakdownItems(expenses, edge.debtorId, edge.creditorId);
+  const canPay = edge.amount > 0 && payItems.length > 0;
+  const canExpand = displayItems.length > 0;
   const money = formatCurrency(edge.amount, currency);
 
   return (
@@ -36,11 +42,11 @@ export default function BalanceEdgeRow({
         <button
           type="button"
           onClick={() => {
-            if (canPay) setExpanded((open) => !open);
+            if (canExpand) setExpanded((open) => !open);
           }}
-          disabled={!canPay}
-          className={`min-w-0 flex-1 text-left ${canPay ? "cursor-pointer" : "cursor-default"}`}
-          aria-expanded={canPay ? expanded : undefined}
+          disabled={!canExpand}
+          className={`min-w-0 flex-1 text-left ${canExpand ? "cursor-pointer" : "cursor-default"}`}
+          aria-expanded={canExpand ? expanded : undefined}
         >
           <p className="text-sm leading-snug">
             <span className="font-medium text-gray-900 dark:text-gray-100">{edge.debtorName}</span>
@@ -55,7 +61,7 @@ export default function BalanceEdgeRow({
               {money}
             </span>
           </p>
-          {canPay ? (
+          {canExpand ? (
             <span className="mt-1 inline-flex items-center gap-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400">
               {t("balances.breakdown")}
               {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -85,7 +91,7 @@ export default function BalanceEdgeRow({
           </button>
         )}
       </div>
-      {expanded && canPay && <BalanceBreakdown items={items} currency={currency} />}
+      {expanded && canExpand && <BalanceBreakdown items={displayItems} currency={currency} />}
     </li>
   );
 }

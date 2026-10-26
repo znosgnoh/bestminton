@@ -340,6 +340,11 @@ const vi: Messages = {
     paidPartial: "Đã ghi nhận phần nợ trực tiếp. Còn {remaining} trên cặp này.",
     chainOnly: "Số này đi qua người khác. Chỉ nợ trực tiếp mới đánh dấu đã trả.",
     breakdown: "Chi tiết",
+    remittanceCredit: "hoàn tiền",
+    returnMoney: "Tiền hoàn lại",
+    returnMoneyHint:
+      "Tiền sân / cầu người khác cần trả lại bạn (vẫn hiện khi đã bù với phần chia trận).",
+    remitFrom: "từ {name}",
     opening: "Số dư đầu",
     match: "Trận đấu",
     shuttlecock: "Cầu",

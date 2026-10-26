@@ -338,6 +338,11 @@ const en = {
     paidPartial: "Marked the direct amount as paid. {remaining} still outstanding on this pair.",
     chainOnly: "This net is via other players. Only direct debts can be marked paid.",
     breakdown: "Breakdown",
+    remittanceCredit: "return",
+    returnMoney: "Return money",
+    returnMoneyHint:
+      "Court or shuttlecock remittances owed back to you (still listed when they offset match shares).",
+    remitFrom: "from {name}",
     opening: "Opening",
     match: "Match",
     shuttlecock: "Shuttlecock",

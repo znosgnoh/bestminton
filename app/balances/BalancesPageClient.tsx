@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Wallet } from "lucide-react";
-import { pairDirectRemainder } from "@/components/balances/BalanceBreakdown";
+import { pairDirectRemainder } from "@/lib/balanceBreakdown";
 import BalanceGroupTab from "@/components/balances/BalanceGroupTab";
 import BalanceMeTab from "@/components/balances/BalanceMeTab";
 import { useRegisterPullToRefresh } from "@/components/PullToRefresh";

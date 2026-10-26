@@ -92,7 +92,11 @@ export default function SettleForm({
   );
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [savedOk, setSavedOk] = useState(match.totalCost !== null);
+  // Require persisted settlementDetails so Record creates COURT remittances for bookers.
+  // Legacy rows with only totalCost would otherwise look "saved" while remits are skipped.
+  const [savedOk, setSavedOk] = useState(
+    match.totalCost !== null && parseSettlementDetails(match.settlementDetails) != null
+  );
   const [synced, setSynced] = useState(match.synced);
   const isFirstRender = useRef(true);
   useEffect(() => {
@@ -198,6 +202,22 @@ export default function SettleForm({
   async function handleRecord() {
     if (!canRecord) return;
 
+    setRecordStatus("recording");
+    setRecordError(null);
+    try {
+      await dataService.recordMatchLedger(match.id);
+      setRecordStatus("success");
+      setSynced(true);
+      setRecordedOnBalances(true);
+    } catch (err) {
+      setRecordStatus("error");
+      setRecordError(err instanceof Error ? err.message : t("matches.somethingWrong"));
+    }
+  }
+
+  /** Idempotent: creates any missing COURT/SHUTTLECOCK remittance rows for this match. */
+  async function handleBackfillRemittances() {
+    if (!savedOk || recordStatus === "recording") return;
     setRecordStatus("recording");
     setRecordError(null);
     try {
@@ -545,9 +565,44 @@ export default function SettleForm({
             <h3 className="tet-section-title text-sm">{t("matches.recordExpense")}</h3>
 
             {alreadyComplete ? (
-              <div className="tet-alert-success">
-                <CheckCircle size={16} />
-                <span>{t("matches.recordedOnBalances")}</span>
+              <div className="space-y-3">
+                <div className="tet-alert-success">
+                  <CheckCircle size={16} />
+                  <span>{t("matches.recordedOnBalances")}</span>
+                </div>
+                {savedOk &&
+                  bookingRemittances(
+                    {
+                      shuttlecockCount: countNum,
+                      shuttlecockUnitPrice: priceNum,
+                      courtFeePerHour: rateNum,
+                      bookings: completeBookings(bookings),
+                    },
+                    paidByMemberId
+                  ).length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {t("matches.backfillCourtHint")}
+                      </p>
+                      {recordStatus === "error" && recordError && (
+                        <p className="tet-alert-error">
+                          <AlertTriangle size={15} className="shrink-0" />
+                          {recordError}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleBackfillRemittances}
+                        disabled={recordStatus === "recording"}
+                        className="tet-btn-ghost inline-flex items-center gap-1.5 px-3 py-2 text-sm cursor-pointer disabled:opacity-50"
+                      >
+                        {recordStatus === "recording" && (
+                          <Loader2 size={15} className="animate-spin" />
+                        )}
+                        {t("matches.backfillCourtRemittances")}
+                      </button>
+                    </div>
+                  )}
               </div>
             ) : (
               <>
