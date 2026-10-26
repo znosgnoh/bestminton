@@ -53,6 +53,11 @@
 
   --color-white: #ffffff;
 
+  /* Family names from @fontsource CSS (self-hosted; not next/font/google). */
+  --font-be-vietnam-pro: "Be Vietnam Pro";
+  --font-noto-sans: "Noto Sans";
+  --font-caveat: "Caveat";
+
   --font-heading: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-noto-sans), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
