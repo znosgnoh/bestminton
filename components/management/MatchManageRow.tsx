@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Pencil, Trash2, Loader2, MapPin, Users, RefreshCw, CheckCircle, ClipboardList, Copy } from "lucide-react";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ErrorBanner from "@/components/ui/ErrorBanner";
+import TournamentBadge from "@/components/matches/TournamentBadge";
 import MatchForm from "./MatchForm";
 import { useI18n } from "@/contexts/LocaleContext";
 import * as dataService from "@/lib/dataService";
@@ -103,11 +104,18 @@ export default function MatchManageRow({
 
   return (
     <>
-      <div className="tet-card p-4">
-        <div className="flex items-start gap-3">
+      <div className={`${match.isTournament ? "tournament-card" : "tet-card"} p-4`}>
+        {match.isTournament && (
+          <span
+            className="tournament-ember pointer-events-none absolute -top-8 right-2 h-24 w-28 rounded-full bg-orange-400/25 blur-3xl"
+            aria-hidden
+          />
+        )}
+        <div className="relative flex items-start gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{match.title}</p>
+              {match.isTournament && <TournamentBadge />}
               {match.isRecurring && (
                 <span className="tet-badge-gold shrink-0">
                   <RefreshCw size={10} />

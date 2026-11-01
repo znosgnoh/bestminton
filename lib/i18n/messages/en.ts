@@ -144,6 +144,7 @@ const en = {
     countdownHms: "{hours}:{minutes}:{seconds}",
     registrationClosedCaptainHint:
       "Registration closed. The captain can still update the roster from Management.",
+    tournament: "Tournament",
   },
   challenges: {
     title: "Kèo",
@@ -403,7 +404,8 @@ const en = {
     clone: "Clone",
     cloneTitle: "Clone match",
     cloneHint:
-      "Copied title, venue, time, and weekly setting. Pick a new date — players are not copied.",
+      "Copied title, venue, time, tournament, and weekly setting. Pick a new date — players are not copied.",
+    tournamentMatch: "Tournament match (fire UI)",
     repeatWeekly: "Repeat weekly (creates 4 sessions)",
     repeatWeeklyHint: "Will repeat every {day} for 4 weeks.",
     notifyMembers: "Email all members with notifications on",

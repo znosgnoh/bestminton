@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, Loader2, RefreshCw, Timer } from "lucide-react";
+import { Bell, Flame, Loader2, RefreshCw, Timer } from "lucide-react";
 import { useI18n } from "@/contexts/LocaleContext";
 import * as dataService from "@/lib/dataService";
 import {
@@ -14,7 +14,7 @@ import type { MatchDTO } from "@/lib/types";
 
 export type MatchFormPrefill = Pick<
   MatchDTO,
-  "title" | "venue" | "scheduledAt" | "isRecurring" | "registrationClosesAt"
+  "title" | "venue" | "scheduledAt" | "isRecurring" | "isTournament" | "registrationClosesAt"
 >;
 
 interface MatchFormProps {
@@ -36,6 +36,7 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
   const [date, setDate] = useState(initial ? toSingaporeInputDate(initial.scheduledAt) : "");
   const [time, setTime] = useState(source ? toSingaporeInputTime(source.scheduledAt) : "20:00");
   const [isRecurring, setIsRecurring] = useState(source?.isRecurring ?? false);
+  const [isTournament, setIsTournament] = useState(source?.isTournament ?? false);
   const [notifyMembers, setNotifyMembers] = useState(true);
   const initialDeadline = source?.registrationClosesAt ?? null;
   const [setRegistrationDeadline, setSetRegistrationDeadline] = useState(
@@ -77,6 +78,7 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
           title: title.trim(),
           venue: venue.trim(),
           scheduledAt,
+          isTournament,
           registrationClosesAt,
         });
         onSaved([updated]);
@@ -86,6 +88,7 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
           venue: venue.trim(),
           scheduledAt,
           isRecurring,
+          isTournament,
           notifyMembers,
           registrationClosesAt,
         });
@@ -201,6 +204,28 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
           </div>
         </div>
       )}
+
+      <label
+        className={`flex items-center gap-2.5 cursor-pointer rounded-xl px-2.5 py-2 transition-colors ${
+          isTournament
+            ? "bg-orange-500/10 ring-1 ring-orange-400/40"
+            : "hover:bg-gray-50 dark:hover:bg-slate-900/60"
+        }`}
+      >
+        <input
+          type="checkbox"
+          checked={isTournament}
+          onChange={(e) => setIsTournament(e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-orange-500 focus:ring-orange-500"
+        />
+        <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+          <Flame
+            size={13}
+            className={isTournament ? "streak-flame-core text-orange-500" : "text-gray-400"}
+          />
+          {t("management.tournamentMatch")}
+        </span>
+      </label>
 
       {!initial && (
         <>

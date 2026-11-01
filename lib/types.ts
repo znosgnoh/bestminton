@@ -370,6 +370,7 @@ export interface MatchDTO {
   paidByMemberId: number | null;
   shuttlecockRecipientMemberId: number | null;
   isRecurring: boolean;
+  isTournament: boolean;
   recurDayOfWeek: number | null;
   synced: boolean;
   shuttlecockRemitted: boolean;

@@ -52,6 +52,8 @@ model Match {
   paidByMemberId              Int?
   shuttlecockRecipientMemberId Int?
   isRecurring                 Boolean  @default(false)
+  /// Special tournament session — fire UI on cards / detail
+  isTournament                Boolean  @default(false)
   recurDayOfWeek              Int?
   synced                      Boolean  @default(false)
   /// Splitwise shuttlecock remittance (Paid By → recipient) already logged

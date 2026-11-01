@@ -167,6 +167,7 @@ export function createMatches(data: {
   venue: string;
   scheduledAt: string;
   isRecurring: boolean;
+  isTournament?: boolean;
   notifyMembers?: boolean;
   registrationClosesAt?: string | null;
 }): Promise<MatchDTO[]> {
@@ -188,6 +189,7 @@ export function updateMatchInfo(
     venue?: string;
     scheduledAt?: string;
     youtubeUrl?: string | null;
+    isTournament?: boolean;
     registrationClosesAt?: string | null;
   }
 ): Promise<MatchDTO> {

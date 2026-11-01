@@ -146,6 +146,7 @@ const vi: Messages = {
     countdownHms: "{hours}:{minutes}:{seconds}",
     registrationClosedCaptainHint:
       "Đã hết hạn đăng ký. Đội trưởng vẫn có thể cập nhật danh sách từ Quản lý.",
+    tournament: "Giải đấu",
   },
   challenges: {
     title: "Kèo",
@@ -405,7 +406,8 @@ const vi: Messages = {
     clone: "Nhân bản",
     cloneTitle: "Nhân bản trận",
     cloneHint:
-      "Đã copy tên, sân, giờ và lịch tuần. Chọn ngày mới — người chơi không được copy.",
+      "Đã copy tên, sân, giờ, giải đấu và lịch tuần. Chọn ngày mới — người chơi không được copy.",
+    tournamentMatch: "Trận giải đấu (giao diện lửa)",
     repeatWeekly: "Lặp hàng tuần (tạo 4 buổi)",
     repeatWeeklyHint: "Sẽ lặp mỗi {day} trong 4 tuần.",
     notifyMembers: "Gửi email cho mọi thành viên đang bật thông báo",
