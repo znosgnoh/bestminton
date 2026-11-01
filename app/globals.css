@@ -137,15 +137,20 @@
       linear-gradient(155deg, rgba(255, 247, 237, 0.96), rgba(255, 255, 255, 0.92) 55%);
   }
 
-  .dark .tournament-card {
+  .tournament-card-hover {
+    @apply relative overflow-hidden rounded-2xl shadow-md ring-1 ring-orange-400/55 dark:ring-orange-400/45 backdrop-blur-md transition-colors duration-200 cursor-pointer hover:shadow-lg hover:ring-orange-400/80 dark:hover:ring-orange-300/60;
+    background:
+      radial-gradient(120% 90% at 100% 0%, rgba(251, 146, 60, 0.22), transparent 55%),
+      radial-gradient(90% 70% at 0% 100%, rgba(239, 68, 68, 0.12), transparent 50%),
+      linear-gradient(155deg, rgba(255, 247, 237, 0.96), rgba(255, 255, 255, 0.92) 55%);
+  }
+
+  .dark .tournament-card,
+  .dark .tournament-card-hover {
     background:
       radial-gradient(120% 90% at 100% 0%, rgba(251, 146, 60, 0.28), transparent 55%),
       radial-gradient(90% 70% at 0% 100%, rgba(239, 68, 68, 0.18), transparent 50%),
       linear-gradient(155deg, rgba(20, 12, 8, 0.96), rgba(7, 11, 20, 0.92) 55%);
-  }
-
-  .tournament-card-hover {
-    @apply tournament-card cursor-pointer hover:shadow-lg hover:ring-orange-400/80 dark:hover:ring-orange-300/60;
   }
 
   .tet-panel {
