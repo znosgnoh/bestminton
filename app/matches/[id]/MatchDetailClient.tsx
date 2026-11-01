@@ -10,6 +10,7 @@ import MemberRoster from "@/components/matches/MemberRoster";
 import RegistrationCountdown from "@/components/matches/RegistrationCountdown";
 import RegistrationRow from "@/components/matches/RegistrationRow";
 import SettleForm from "@/components/matches/SettleForm";
+import TournamentBadge from "@/components/matches/TournamentBadge";
 import { useRegisterPullToRefresh } from "@/components/PullToRefresh";
 import { YouTubeUrlEditor } from "@/components/ui/YouTubeVideo";
 import { useI18n } from "@/contexts/LocaleContext";
@@ -173,28 +174,76 @@ function MatchDetailClientInner({
         </div>
       )}
 
-      <div className="tet-card p-5">
-        <div className="flex items-start justify-between gap-2">
-          <h1 className="font-heading text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight">
-            {match.title}
-          </h1>
+      <div className={`${match.isTournament ? "tournament-card" : "tet-card"} p-5`}>
+        {match.isTournament && (
+          <>
+            <span
+              className="tournament-ember pointer-events-none absolute -top-12 right-0 h-36 w-44 rounded-full bg-orange-400/30 blur-3xl"
+              aria-hidden
+            />
+            <span
+              className="pointer-events-none absolute -bottom-10 left-0 h-28 w-32 rounded-full bg-red-500/15 blur-3xl"
+              aria-hidden
+            />
+          </>
+        )}
+        <div className="relative flex items-start justify-between gap-2">
+          <div className="min-w-0 space-y-2">
+            {match.isTournament && <TournamentBadge size="md" />}
+            <h1
+              className={`font-heading text-xl font-bold leading-tight ${
+                match.isTournament
+                  ? "text-orange-950 dark:text-orange-50"
+                  : "text-gray-900 dark:text-gray-100"
+              }`}
+            >
+              {match.title}
+            </h1>
+          </div>
           {isPast ? (
             <span className="tet-badge-past">{t("common.pastBadge")}</span>
           ) : (
             <span className="tet-badge-upcoming">{t("common.upcomingBadge")}</span>
           )}
         </div>
-        <div className="mt-3 space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
+        <div
+          className={`relative mt-3 space-y-1.5 text-sm ${
+            match.isTournament
+              ? "text-orange-900/75 dark:text-orange-100/75"
+              : "text-gray-600 dark:text-gray-400"
+          }`}
+        >
           <div className="flex items-center gap-2">
-            <MapPin size={14} className="shrink-0 text-amber-600 dark:text-amber-400" />
+            <MapPin
+              size={14}
+              className={`shrink-0 ${
+                match.isTournament
+                  ? "text-orange-500 dark:text-orange-400"
+                  : "text-amber-600 dark:text-amber-400"
+              }`}
+            />
             <span className="whitespace-pre-line">{match.venue}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Calendar size={14} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <Calendar
+              size={14}
+              className={`shrink-0 ${
+                match.isTournament
+                  ? "text-orange-500 dark:text-orange-400"
+                  : "text-emerald-600 dark:text-emerald-400"
+              }`}
+            />
             {formatDate(match.scheduledAt)}
           </div>
           <div className="flex items-center gap-2">
-            <Clock size={14} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <Clock
+              size={14}
+              className={`shrink-0 ${
+                match.isTournament
+                  ? "text-orange-500 dark:text-orange-400"
+                  : "text-emerald-600 dark:text-emerald-400"
+              }`}
+            />
             {formatTime(match.scheduledAt)}
           </div>
         </div>

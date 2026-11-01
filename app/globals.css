@@ -129,6 +129,25 @@
     @apply rounded-2xl bg-white/90 dark:bg-slate-950/80 shadow-sm ring-1 ring-slate-200/80 dark:ring-amber-400/20 backdrop-blur-md transition-colors duration-200 cursor-pointer hover:shadow-md hover:ring-amber-300/70 dark:hover:ring-amber-400/40;
   }
 
+  .tournament-card {
+    @apply relative overflow-hidden rounded-2xl shadow-md ring-1 ring-orange-400/55 dark:ring-orange-400/45 backdrop-blur-md transition-colors duration-200;
+    background:
+      radial-gradient(120% 90% at 100% 0%, rgba(251, 146, 60, 0.22), transparent 55%),
+      radial-gradient(90% 70% at 0% 100%, rgba(239, 68, 68, 0.12), transparent 50%),
+      linear-gradient(155deg, rgba(255, 247, 237, 0.96), rgba(255, 255, 255, 0.92) 55%);
+  }
+
+  .dark .tournament-card {
+    background:
+      radial-gradient(120% 90% at 100% 0%, rgba(251, 146, 60, 0.28), transparent 55%),
+      radial-gradient(90% 70% at 0% 100%, rgba(239, 68, 68, 0.18), transparent 50%),
+      linear-gradient(155deg, rgba(20, 12, 8, 0.96), rgba(7, 11, 20, 0.92) 55%);
+  }
+
+  .tournament-card-hover {
+    @apply tournament-card cursor-pointer hover:shadow-lg hover:ring-orange-400/80 dark:hover:ring-orange-300/60;
+  }
+
   .tet-panel {
     @apply rounded-2xl border border-slate-200/80 dark:border-amber-400/20 bg-white/90 dark:bg-slate-950/80 p-4 shadow-sm backdrop-blur-md;
   }
@@ -499,6 +518,15 @@
   background: rgba(251, 146, 60, 0.12);
 }
 
+.tournament-badge {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.95), rgba(220, 38, 38, 0.9));
+  box-shadow: 0 0 12px rgba(251, 146, 60, 0.45);
+}
+
+.tournament-ember {
+  animation: fire-glow-breathe 2.4s ease-in-out infinite;
+}
+
 .streak-badge-inferno {
   animation: inferno-badge-pulse 1.6s ease-in-out infinite;
 }
@@ -543,6 +571,7 @@
   .streak-flame-ember,
   .streak-ice-spin,
   .streak-badge-inferno,
+  .tournament-ember,
   .podium-fire-glow,
   .podium-racket-float,
   .podium-racket-float-delay,

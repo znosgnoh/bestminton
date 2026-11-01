@@ -57,6 +57,7 @@ interface RawMatch {
   paidByMemberId: number | null;
   shuttlecockRecipientMemberId: number | null;
   isRecurring: boolean;
+  isTournament?: boolean;
   recurDayOfWeek: number | null;
   synced: boolean;
   shuttlecockRemitted?: boolean;
@@ -118,6 +119,7 @@ async function buildMatchDTO(match: RawMatch): Promise<MatchDTO> {
     paidByMemberId: match.paidByMemberId,
     shuttlecockRecipientMemberId: match.shuttlecockRecipientMemberId ?? null,
     isRecurring: match.isRecurring,
+    isTournament: match.isTournament ?? false,
     recurDayOfWeek: match.recurDayOfWeek,
     synced: match.synced,
     shuttlecockRemitted: match.shuttlecockRemitted ?? false,
@@ -237,6 +239,7 @@ export async function createMatches(data: {
   venue: string;
   scheduledAt: string;
   isRecurring: boolean;
+  isTournament?: boolean;
   notifyMembers?: boolean;
   registrationClosesAt?: string | null;
 }): Promise<MatchDTO[]> {
@@ -259,6 +262,7 @@ export async function createMatches(data: {
       paidByMemberId: null,
       shuttlecockRecipientMemberId: null,
       isRecurring: data.isRecurring,
+      isTournament: data.isTournament ?? false,
       recurDayOfWeek: data.isRecurring ? dayOfWeek : null,
       synced: false,
       shuttlecockRemitted: false,
@@ -286,6 +290,7 @@ export async function updateMatch(
     paidByMemberId?: number | null;
     shuttlecockRecipientMemberId?: number | null;
     youtubeUrl?: string | null;
+    isTournament?: boolean;
     registrationClosesAt?: string | null;
     settlementDetails?: SettlementDetails | null;
   }

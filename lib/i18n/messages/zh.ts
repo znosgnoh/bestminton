@@ -144,6 +144,7 @@ const zh: Messages = {
     countdownDhms: "{days}天 {hours}:{minutes}:{seconds}",
     countdownHms: "{hours}:{minutes}:{seconds}",
     registrationClosedCaptainHint: "报名已截止。队长仍可在管理页更新名单。",
+    tournament: "锦标赛",
   },
   challenges: {
     title: "对局",
@@ -392,7 +393,8 @@ const zh: Messages = {
     syncEmailsSkippedUnmapped: "Splitwise 用户未在应用中关联：{names}。",
     clone: "复制",
     cloneTitle: "复制比赛",
-    cloneHint: "已复制标题、场地、时间和每周设置。请选择新日期 — 不会复制报名。",
+    cloneHint: "已复制标题、场地、时间、锦标赛和每周设置。请选择新日期 — 不会复制报名。",
+    tournamentMatch: "锦标赛场次（火焰界面）",
     repeatWeekly: "每周重复（创建 4 场）",
     repeatWeeklyHint: "将在接下来 4 周的每个{day}重复。",
     notifyMembers: "邮件通知所有已开启邮件提醒的成员",

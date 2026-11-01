@@ -51,6 +51,7 @@ export async function PUT(
     paidByMemberId?: number | null;
     shuttlecockRecipientMemberId?: number | null;
     youtubeUrl?: string | null;
+    isTournament?: boolean;
     registrationClosesAt?: string | null;
     settlementDetails?: SettlementDetails | null;
     pin?: string;
@@ -109,6 +110,9 @@ export async function PUT(
         return NextResponse.json({ error: parsed.error }, { status: 400 });
       }
       data.youtubeUrl = parsed.url;
+    }
+    if (body.isTournament !== undefined) {
+      data.isTournament = Boolean(body.isTournament);
     }
     if (body.registrationClosesAt !== undefined) {
       if (body.registrationClosesAt === null || body.registrationClosesAt === "") {

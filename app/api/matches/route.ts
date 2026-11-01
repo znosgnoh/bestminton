@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
     venue?: string;
     scheduledAt?: string;
     isRecurring?: boolean;
+    isTournament?: boolean;
     notifyMembers?: boolean;
     registrationClosesAt?: string | null;
     pin?: string;
@@ -77,6 +78,7 @@ export async function POST(request: NextRequest) {
   }
 
   const isRecurring = Boolean(body.isRecurring);
+  const isTournament = Boolean(body.isTournament);
   // Default on: omit / undefined / null → notify; only explicit false skips.
   const notifyMembers = body.notifyMembers !== false;
   const recurDayOfWeek = getSingaporeWeekday(scheduledAt);
@@ -88,6 +90,7 @@ export async function POST(request: NextRequest) {
         venue,
         scheduledAt,
         isRecurring: false,
+        isTournament,
         recurDayOfWeek: null,
         registrationClosesAt,
       },
@@ -109,6 +112,7 @@ export async function POST(request: NextRequest) {
           venue,
           scheduledAt: date,
           isRecurring: true,
+          isTournament,
           recurDayOfWeek,
           registrationClosesAt:
             registrationClosesAt != null
