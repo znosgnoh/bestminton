@@ -6,6 +6,7 @@ export const ELIGIBLE_MEMBER_SELECT = {
   name: true,
   email: true,
   emailNotificationsEnabled: true,
+  isActive: true,
 } as const;
 
 type EligibleRow = {
@@ -13,11 +14,12 @@ type EligibleRow = {
   name: string;
   email: string | null;
   emailNotificationsEnabled: boolean;
+  isActive?: boolean;
 };
 
 export function filterEligibleRecipients(rows: EligibleRow[]): EmailRecipient[] {
   return rows
-    .filter((m) => m.email && m.emailNotificationsEnabled)
+    .filter((m) => m.isActive !== false && m.email && m.emailNotificationsEnabled)
     .map((m) => ({ memberId: m.id, email: m.email!, name: m.name }));
 }
 
@@ -27,7 +29,10 @@ export async function unregisteredMembersForMatch(matchId: number): Promise<Emai
     select: { memberId: true },
   });
   const registeredIds = new Set(registered.map((r) => r.memberId));
-  const members = await db.member.findMany({ select: ELIGIBLE_MEMBER_SELECT });
+  const members = await db.member.findMany({
+    where: { isActive: true },
+    select: ELIGIBLE_MEMBER_SELECT,
+  });
   return filterEligibleRecipients(members).filter((m) => !registeredIds.has(m.memberId));
 }
 
@@ -35,14 +40,17 @@ export async function eligibleMembersByIds(memberIds: number[]): Promise<EmailRe
   if (memberIds.length === 0) return [];
   const uniqueIds = [...new Set(memberIds)];
   const members = await db.member.findMany({
-    where: { id: { in: uniqueIds } },
+    where: { id: { in: uniqueIds }, isActive: true },
     select: ELIGIBLE_MEMBER_SELECT,
   });
   return filterEligibleRecipients(members);
 }
 
-/** All members with an email and notifications enabled. */
+/** All active members with an email and notifications enabled. */
 export async function allEligibleMembers(): Promise<EmailRecipient[]> {
-  const members = await db.member.findMany({ select: ELIGIBLE_MEMBER_SELECT });
+  const members = await db.member.findMany({
+    where: { isActive: true },
+    select: ELIGIBLE_MEMBER_SELECT,
+  });
   return filterEligibleRecipients(members);
 }

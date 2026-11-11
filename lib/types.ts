@@ -62,6 +62,8 @@ export interface MemberDTO {
   singlesWinStreak: number;
   singlesLoseStreak: number;
   emailNotificationsEnabled: boolean;
+  /** When false, member is hidden from match registration until reactivated. */
+  isActive: boolean;
   debtSummary: MemberDebtSummary;
 }
 

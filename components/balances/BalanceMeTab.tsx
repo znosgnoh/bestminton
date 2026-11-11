@@ -24,6 +24,7 @@ function stubMember(id: number, name: string): MemberDTO {
     singlesWinStreak: 0,
     singlesLoseStreak: 0,
     emailNotificationsEnabled: true,
+    isActive: true,
     debtSummary: EMPTY_DEBT,
   };
 }

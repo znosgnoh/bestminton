@@ -43,6 +43,20 @@ export async function POST(
   const pinDenied = requireRegistrationEditAccess(request, match, body);
   if (pinDenied) return pinDenied;
 
+  const member = await db.member.findUnique({
+    where: { id: memberId },
+    select: { id: true, isActive: true },
+  });
+  if (!member) {
+    return NextResponse.json({ error: "Member not found." }, { status: 404 });
+  }
+  if (!member.isActive) {
+    return NextResponse.json(
+      { error: "This member is deactivated and cannot register." },
+      { status: 403 }
+    );
+  }
+
   try {
     const registration = await db.matchRegistration.upsert({
       where: { matchId_memberId: { matchId, memberId } },

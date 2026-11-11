@@ -19,13 +19,15 @@ type MemberRow = {
   singlesWinStreak: number;
   singlesLoseStreak: number;
   emailNotificationsEnabled: boolean;
+  isActive?: boolean;
 };
 
 export function toMemberDTO(
   member: MemberRow,
   debtSummary: MemberDebtSummary = EMPTY_DEBT_SUMMARY
 ): MemberDTO {
-  return { ...member, debtSummary };
+  const { isActive, ...rest } = member;
+  return { ...rest, isActive: isActive !== false, debtSummary };
 }
 
 export async function membersToDTOs(members: MemberRow[]): Promise<MemberDTO[]> {

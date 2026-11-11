@@ -430,6 +430,18 @@ const en = {
     statusOpen: "Open",
     statusSettled: "Settled",
     paidProgress: "{paid}/{total} shares paid",
+    deactivate: "Deactivate",
+    activate: "Activate",
+    deactivateTitle: "Deactivate member?",
+    activateTitle: "Activate member?",
+    deactivateConfirm:
+      'Hide "{name}" from match registration until you activate them again. History and balances stay intact.',
+    activateConfirm: 'Show "{name}" on match registration again?',
+    deactivateAria: "Deactivate {name}",
+    activateAria: "Activate {name}",
+    deactivateFailed: "Failed to deactivate member.",
+    activateFailed: "Failed to activate member.",
+    inactiveBadge: "Inactive",
   },
 } as const;
 

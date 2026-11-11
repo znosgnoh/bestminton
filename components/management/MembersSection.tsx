@@ -12,6 +12,7 @@ import * as dataService from "@/lib/dataService";
 import { DEFAULT_ELO } from "@/lib/elo";
 import { normalizeMemberEmail } from "@/lib/memberEmail";
 import { useI18n } from "@/contexts/LocaleContext";
+import { isMemberActive } from "@/lib/memberActive";
 import type { MemberDTO, SplitwiseMember } from "@/lib/types";
 
 interface MembersSectionProps {
@@ -397,14 +398,21 @@ export default function MembersSection({
         </p>
       ) : (
         <div className="space-y-2">
-          {members.map((m) => (
-            <MemberCard
-              key={m.id}
-              member={m}
-              onUpdated={handleSaved}
-              onDeleted={handleDeleted}
-            />
-          ))}
+          {[...members]
+            .sort((a, b) => {
+              const aActive = isMemberActive(a) ? 0 : 1;
+              const bActive = isMemberActive(b) ? 0 : 1;
+              if (aActive !== bActive) return aActive - bActive;
+              return a.name.localeCompare(b.name);
+            })
+            .map((m) => (
+              <MemberCard
+                key={m.id}
+                member={m}
+                onUpdated={handleSaved}
+                onDeleted={handleDeleted}
+              />
+            ))}
         </div>
       )}
         </div>
