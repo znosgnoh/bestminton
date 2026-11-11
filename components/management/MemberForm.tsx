@@ -130,7 +130,12 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
     try {
       const saved = initial
         ? await dataService.updateMember(initial.id, payload)
-        : await dataService.createMember(payload);
+        : await dataService.createMember({
+            name: payload.name ?? name.trim(),
+            email: payload.email,
+            avatarUrl: payload.avatarUrl,
+            splitwiseId: payload.splitwiseId,
+          });
       onSaved(saved);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save.");

@@ -111,7 +111,7 @@ export function createMember(data: {
 export function updateMember(
   id: number,
   data: {
-    name: string;
+    name?: string;
     email?: string | null;
     avatarUrl?: string | null;
     splitwiseId?: number | null;
@@ -119,6 +119,7 @@ export function updateMember(
     totalMatches?: number;
     totalWins?: number;
     emailNotificationsEnabled?: boolean;
+    isActive?: boolean;
     pin?: string;
   }
 ): Promise<MemberDTO> {

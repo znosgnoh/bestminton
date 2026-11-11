@@ -432,6 +432,18 @@ const vi: Messages = {
     statusOpen: "Đang mở",
     statusSettled: "Đã tất toán",
     paidProgress: "{paid}/{total} phần đã trả",
+    deactivate: "Vô hiệu hóa",
+    activate: "Kích hoạt",
+    deactivateTitle: "Vô hiệu hóa thành viên?",
+    activateTitle: "Kích hoạt thành viên?",
+    deactivateConfirm:
+      'Ẩn "{name}" khỏi đăng ký trận cho đến khi bạn kích hoạt lại. Lịch sử và số dư vẫn giữ nguyên.',
+    activateConfirm: 'Hiện lại "{name}" trên đăng ký trận?',
+    deactivateAria: "Vô hiệu hóa {name}",
+    activateAria: "Kích hoạt {name}",
+    deactivateFailed: "Không vô hiệu hóa được thành viên.",
+    activateFailed: "Không kích hoạt được thành viên.",
+    inactiveBadge: "Ngưng",
   },
 };
 

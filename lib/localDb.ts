@@ -26,6 +26,7 @@ interface RawMember {
   singlesWinStreak?: number;
   singlesLoseStreak?: number;
   emailNotificationsEnabled?: boolean;
+  isActive?: boolean;
   debtSummary?: { totalOwed: number; totalOwing: number; netCam: number };
   createdAt: string;
 }
@@ -43,6 +44,7 @@ function toMemberDTO(m: RawMember): MemberDTO {
     singlesWinStreak: m.singlesWinStreak ?? 0,
     singlesLoseStreak: m.singlesLoseStreak ?? 0,
     emailNotificationsEnabled: m.emailNotificationsEnabled ?? true,
+    isActive: m.isActive !== false,
     debtSummary: m.debtSummary ?? { totalOwed: 0, totalOwing: 0, netCam: 0 },
   };
 }
@@ -148,6 +150,7 @@ export async function createMember(data: {
     email: data.email ?? null,
     avatarUrl: data.avatarUrl ?? null,
     splitwiseId: data.splitwiseId ?? null,
+    isActive: true,
     createdAt: new Date().toISOString(),
   });
   return toMemberDTO({
@@ -156,6 +159,7 @@ export async function createMember(data: {
     email: data.email ?? null,
     avatarUrl: data.avatarUrl ?? null,
     splitwiseId: data.splitwiseId ?? null,
+    isActive: true,
     createdAt: new Date().toISOString(),
   });
 }
@@ -163,7 +167,7 @@ export async function createMember(data: {
 export async function updateMember(
   id: number,
   data: {
-    name: string;
+    name?: string;
     email?: string | null;
     avatarUrl?: string | null;
     splitwiseId?: number | null;
@@ -171,30 +175,34 @@ export async function updateMember(
     totalMatches?: number;
     totalWins?: number;
     emailNotificationsEnabled?: boolean;
+    isActive?: boolean;
     pin?: string;
   }
 ): Promise<MemberDTO> {
   const existing = await idbGetById<RawMember>("members", id);
   if (!existing) throw new Error("Member not found.");
+  const name = data.name !== undefined ? data.name : existing.name;
   await idbPut("members", {
     ...existing,
-    name: data.name,
+    name,
     ...(data.email !== undefined && { email: data.email }),
-    avatarUrl: data.avatarUrl ?? null,
-    splitwiseId: data.splitwiseId ?? null,
+    ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl ?? null }),
+    ...(data.splitwiseId !== undefined && { splitwiseId: data.splitwiseId ?? null }),
     ...(data.eloRating !== undefined && { eloRating: data.eloRating }),
     ...(data.totalMatches !== undefined && { totalMatches: data.totalMatches }),
     ...(data.totalWins !== undefined && { totalWins: data.totalWins }),
     ...(data.emailNotificationsEnabled !== undefined && {
       emailNotificationsEnabled: data.emailNotificationsEnabled,
     }),
+    ...(data.isActive !== undefined && { isActive: data.isActive }),
   });
   return toMemberDTO({
     id,
-    name: data.name,
+    name,
     email: data.email !== undefined ? data.email : (existing.email ?? null),
-    avatarUrl: data.avatarUrl ?? null,
-    splitwiseId: data.splitwiseId ?? null,
+    avatarUrl: data.avatarUrl !== undefined ? data.avatarUrl ?? null : existing.avatarUrl,
+    splitwiseId:
+      data.splitwiseId !== undefined ? data.splitwiseId ?? null : existing.splitwiseId,
     eloRating: data.eloRating ?? existing.eloRating,
     totalMatches: data.totalMatches ?? existing.totalMatches,
     totalWins: data.totalWins ?? existing.totalWins,
@@ -202,6 +210,7 @@ export async function updateMember(
     singlesLoseStreak: existing.singlesLoseStreak,
     emailNotificationsEnabled:
       data.emailNotificationsEnabled ?? existing.emailNotificationsEnabled ?? true,
+    isActive: data.isActive !== undefined ? data.isActive : existing.isActive !== false,
     createdAt: existing.createdAt ?? new Date().toISOString(),
   });
 }
@@ -315,6 +324,11 @@ export async function deleteMatch(id: number): Promise<void> {
 // ---- Registrations ----
 
 export async function registerMember(matchId: number, memberId: number): Promise<RegistrationDTO> {
+  const member = await idbGetById<RawMember>("members", memberId);
+  if (!member) throw new Error("Member not found.");
+  if (member.isActive === false) {
+    throw new Error("This member is deactivated and cannot register.");
+  }
   const raw: Omit<RawRegistration, "id"> = {
     matchId,
     memberId,

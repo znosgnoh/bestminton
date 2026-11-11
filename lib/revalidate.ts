@@ -13,6 +13,8 @@ export function revalidateMemberPages(memberId?: number) {
   revalidatePath("/leaderboard");
   revalidatePath("/challenges");
   revalidatePath("/cam");
+  // Match registration rosters depend on member active state
+  revalidatePath("/matches", "layout");
   if (memberId) revalidatePath(`/members/${memberId}`);
 }
 

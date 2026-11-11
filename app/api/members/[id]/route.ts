@@ -59,6 +59,7 @@ export async function PUT(
     totalMatches?: number;
     totalWins?: number;
     emailNotificationsEnabled?: boolean;
+    isActive?: boolean;
     pin?: string;
   };
   try {
@@ -178,6 +179,9 @@ export async function PUT(
       ? Boolean(body.emailNotificationsEnabled)
       : undefined;
 
+  const isActive =
+    body.isActive !== undefined ? Boolean(body.isActive) : undefined;
+
   try {
     const member = await db.member.update({
       where: { id },
@@ -190,6 +194,7 @@ export async function PUT(
         ...(totalMatches !== undefined && { totalMatches }),
         ...(totalWins !== undefined && { totalWins }),
         ...(emailNotificationsEnabled !== undefined && { emailNotificationsEnabled }),
+        ...(isActive !== undefined && { isActive }),
       },
     });
     revalidateMemberPages(id);

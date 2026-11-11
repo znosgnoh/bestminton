@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import AvatarTile from "./AvatarTile";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import * as dataService from "@/lib/dataService";
+import { membersForRegistrationRoster } from "@/lib/memberActive";
 import type { MemberDTO, RegistrationDTO } from "@/lib/types";
 
 interface MemberRosterProps {
@@ -43,6 +44,15 @@ export default function MemberRoster({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Set<number>>(new Set());
 
+  const rosterMembers = useMemo(
+    () =>
+      membersForRegistrationRoster(
+        allMembers,
+        registrations.map((r) => r.memberId)
+      ),
+    [allMembers, registrations]
+  );
+
   async function handleToggle(member: MemberDTO) {
     if (!canEditRegistration || pending.has(member.id)) return;
     setError(null);
@@ -79,7 +89,7 @@ export default function MemberRoster({
     }
   }
 
-  if (allMembers.length === 0) {
+  if (rosterMembers.length === 0) {
     return (
       <div className="tet-card p-5">
         <p className="text-sm text-gray-600 dark:text-gray-400 text-center py-4">
@@ -108,7 +118,7 @@ export default function MemberRoster({
         </div>
       )}
       <div className="flex flex-wrap gap-1">
-        {allMembers.map((member) => {
+        {rosterMembers.map((member) => {
           const reg = registrations.find((r) => r.memberId === member.id);
           return (
             <AvatarTile

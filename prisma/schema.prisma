@@ -22,6 +22,8 @@ model Member {
   /// Consecutive singles losses (reset on a singles win). Amplifies Elo when ≥ 3.
   singlesLoseStreak Int      @default(0)
   emailNotificationsEnabled Boolean @default(true)
+  /// Soft flag: inactive members stay in history/admin but are hidden from match registration.
+  isActive                  Boolean  @default(true)
   ojBalance                 Int      @default(0)
   createdAt         DateTime @default(now())
 

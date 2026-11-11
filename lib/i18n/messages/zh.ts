@@ -419,6 +419,18 @@ const zh: Messages = {
     statusOpen: "未结清",
     statusSettled: "已结清",
     paidProgress: "已付 {paid}/{total} 份额",
+    deactivate: "停用",
+    activate: "启用",
+    deactivateTitle: "停用该成员？",
+    activateTitle: "启用该成员？",
+    deactivateConfirm:
+      "停用后“{name}”不会出现在比赛报名中，直到再次启用。历史与余额会保留。",
+    activateConfirm: "重新在比赛报名中显示“{name}”？",
+    deactivateAria: "停用 {name}",
+    activateAria: "启用 {name}",
+    deactivateFailed: "停用成员失败。",
+    activateFailed: "启用成员失败。",
+    inactiveBadge: "已停用",
   },
 };
 

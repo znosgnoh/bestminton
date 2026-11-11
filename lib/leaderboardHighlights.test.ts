@@ -9,6 +9,7 @@ function entry(
   return {
     email: null,
     emailNotificationsEnabled: true,
+    isActive: true,
     avatarUrl: null,
     splitwiseId: null,
     eloRating: 1000,
