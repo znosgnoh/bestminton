@@ -96,6 +96,7 @@ export function createMember(data: {
   email?: string | null;
   avatarUrl?: string | null;
   splitwiseId?: number | null;
+  paynowMobile?: string | null;
 }): Promise<MemberDTO> {
   return via(
     () =>
@@ -120,6 +121,7 @@ export function updateMember(
     totalWins?: number;
     emailNotificationsEnabled?: boolean;
     isActive?: boolean;
+    paynowMobile?: string | null;
     pin?: string;
   }
 ): Promise<MemberDTO> {

@@ -64,6 +64,8 @@ export interface MemberDTO {
   emailNotificationsEnabled: boolean;
   /** When false, member is hidden from match registration until reactivated. */
   isActive: boolean;
+  /** PayNow personal mobile, normalized +65XXXXXXXX when set. */
+  paynowMobile: string | null;
   debtSummary: MemberDebtSummary;
 }
 

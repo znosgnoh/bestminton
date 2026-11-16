@@ -8,6 +8,7 @@ import { useAdminPin } from "@/hooks/useAdminPin";
 import { adminPinHeaders } from "@/lib/adminPinClient";
 import * as dataService from "@/lib/dataService";
 import { DEFAULT_ELO } from "@/lib/elo";
+import { formatPaynowMobileDisplay, normalizePaynowMobile } from "@/lib/paynow";
 import type { MemberDTO } from "@/lib/types";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png"]);
@@ -40,6 +41,9 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
   const [avatarUrl, setAvatarUrl] = useState(initial?.avatarUrl ?? "");
   const [splitwiseIdStr, setSplitiwseIdStr] = useState(
     initial?.splitwiseId?.toString() ?? ""
+  );
+  const [paynowMobileStr, setPaynowMobileStr] = useState(
+    initial?.paynowMobile ? formatPaynowMobileDisplay(initial.paynowMobile) : ""
   );
   const [eloRatingStr, setEloRatingStr] = useState(
     initial?.eloRating?.toString() ?? String(DEFAULT_ELO)
@@ -135,6 +139,7 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
             email: payload.email,
             avatarUrl: payload.avatarUrl,
             splitwiseId: payload.splitwiseId,
+            paynowMobile: payload.paynowMobile,
           });
       onSaved(saved);
     } catch (err) {
@@ -161,6 +166,14 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
       setError("Email must be a valid address.");
       return;
     }
+    let paynowMobile: string | null = null;
+    if (paynowMobileStr.trim()) {
+      paynowMobile = normalizePaynowMobile(paynowMobileStr);
+      if (!paynowMobile) {
+        setError("PayNow mobile must be a Singapore number (8/9xxxxxxx).");
+        return;
+      }
+    }
     if (uploading) {
       setError("Please wait for the avatar upload to finish.");
       return;
@@ -171,6 +184,7 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
       email: trimmedEmail ? trimmedEmail.toLowerCase() : null,
       avatarUrl: avatarUrl.trim() || null,
       splitwiseId: splitwiseId ?? null,
+      paynowMobile,
       emailNotificationsEnabled,
     };
 
@@ -326,6 +340,24 @@ export default function MemberForm({ initial, onSaved, onCancel }: MemberFormPro
             className={`${inputCls} mt-2`}
           />
         </details>
+      </div>
+
+      <div>
+        <label className="tet-label">
+          PayNow mobile (optional)
+        </label>
+        <input
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          value={paynowMobileStr}
+          onChange={(e) => setPaynowMobileStr(e.target.value)}
+          placeholder="e.g. 9123 4567"
+          className={inputCls}
+        />
+        <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-500">
+          Singapore mobile for debt PayNow QR (+65)
+        </p>
       </div>
 
       <div>

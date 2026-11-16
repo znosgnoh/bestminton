@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
 import { normalizeMemberEmail } from "@/lib/memberEmail";
 import { buildMemberProfile } from "@/lib/memberProfile";
+import { normalizePaynowMobile } from "@/lib/paynow";
 import { revalidateMemberPages } from "@/lib/revalidate";
 import { memberToDTO } from "@/lib/memberSerialize";
 import { Prisma } from "@prisma/client";
@@ -60,6 +61,7 @@ export async function PUT(
     totalWins?: number;
     emailNotificationsEnabled?: boolean;
     isActive?: boolean;
+    paynowMobile?: string | null;
     pin?: string;
   };
   try {
@@ -182,6 +184,21 @@ export async function PUT(
   const isActive =
     body.isActive !== undefined ? Boolean(body.isActive) : undefined;
 
+  let paynowMobile: string | null | undefined;
+  if (body.paynowMobile !== undefined) {
+    if (body.paynowMobile === null || String(body.paynowMobile).trim() === "") {
+      paynowMobile = null;
+    } else {
+      paynowMobile = normalizePaynowMobile(body.paynowMobile);
+      if (!paynowMobile) {
+        return NextResponse.json(
+          { error: "paynowMobile must be a valid Singapore mobile (+65 8/9xxxxxxx)." },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
   try {
     const member = await db.member.update({
       where: { id },
@@ -195,6 +212,7 @@ export async function PUT(
         ...(totalWins !== undefined && { totalWins }),
         ...(emailNotificationsEnabled !== undefined && { emailNotificationsEnabled }),
         ...(isActive !== undefined && { isActive }),
+        ...(paynowMobile !== undefined && { paynowMobile }),
       },
     });
     revalidateMemberPages(id);

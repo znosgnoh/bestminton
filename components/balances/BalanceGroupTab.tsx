@@ -8,12 +8,14 @@ interface BalanceGroupTabProps {
   snapshot: LedgerSnapshotDTO;
   settlingKey: string | null;
   onPaid: (edge: LedgerEdgeDTO) => void;
+  onPayNow: (edge: LedgerEdgeDTO) => void;
 }
 
 export default function BalanceGroupTab({
   snapshot,
   settlingKey,
   onPaid,
+  onPayNow,
 }: BalanceGroupTabProps) {
   const { t } = useI18n();
 
@@ -38,6 +40,7 @@ export default function BalanceGroupTab({
             isPaying={settlingKey === key}
             payingDisabled={settlingKey !== null && settlingKey !== key}
             onPaid={onPaid}
+            onPayNow={onPayNow}
           />
         );
       })}
