@@ -357,7 +357,7 @@ const vi: Messages = {
     openMatch: "Mở trận",
     paynow: "PayNow",
     paynowTitle: "Mã QR PayNow",
-    paynowHint: "Quét bằng app ngân hàng SG để trả đúng số tiền này.",
+    paynowHint: "Quét bằng điện thoại khác, hoặc chạm QR / Mở app ngân hàng trên máy này.",
     paynowMissing:
       "{name} chưa có số PayNow. Nhờ đội trưởng thêm trong Management.",
     paynowCopyMobile: "Sao chép SĐT",
@@ -368,6 +368,12 @@ const vi: Messages = {
     paynowPayTo: "Trả cho {name}",
     paynowFrom: "Từ {name}",
     paynowAnyAmount: "số tiền tùy chọn",
+    paynowTapQr: "Chạm để mở app ngân hàng",
+    paynowOpenBank: "Mở app ngân hàng",
+    paynowOpenBankHint: "Sẽ sao chép {mobile}. Trong app chọn PayNow và dán số.",
+    paynowOpenBankAmount: "Chuyển {amount}.",
+    paynowOpenBankFooter:
+      "Ngân hàng không cho link web điền sẵn PayNow (chống lừa đảo). Quét QR từ máy khác để có sẵn số tiền.",
   },
   profile: {
     backToLeaderboard: "Bảng xếp hạng",

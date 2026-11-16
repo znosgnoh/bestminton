@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, Copy, Link2, QrCode, X } from "lucide-react";
+import { Check, Copy, Link2, QrCode, Smartphone, X } from "lucide-react";
+import PayNowBankSheet from "@/components/paynow/PayNowBankSheet";
 import PayNowQrImage from "@/components/paynow/PayNowQrImage";
 import { useI18n } from "@/contexts/LocaleContext";
 import { formatCurrency } from "@/lib/currency";
@@ -40,6 +41,7 @@ export default function PayNowQrModal({
 }: PayNowQrModalProps) {
   const { t } = useI18n();
   const [copied, setCopied] = useState<"mobile" | "link" | null>(null);
+  const [bankSheetOpen, setBankSheetOpen] = useState(false);
 
   const reference = useMemo(() => {
     if (debtorName) return `BM ${debtorName}`.slice(0, 25);
@@ -136,6 +138,8 @@ export default function PayNowQrModal({
               payload={payload}
               size={220}
               alt={t("balances.paynowQrAlt", { name: creditorName, amount: money })}
+              onActivate={() => setBankSheetOpen(true)}
+              activateLabel={t("balances.paynowTapQr")}
             />
             <p className="text-center text-xs text-gray-500 dark:text-gray-400">
               {t("balances.paynowHint")}
@@ -143,6 +147,14 @@ export default function PayNowQrModal({
             <p className="text-sm font-medium tabular-nums text-gray-800 dark:text-gray-200">
               {formatPaynowMobileDisplay(paynowMobile)}
             </p>
+            <button
+              type="button"
+              onClick={() => setBankSheetOpen(true)}
+              className="tet-btn-primary min-h-11 w-full text-sm inline-flex items-center justify-center gap-1.5"
+            >
+              <Smartphone size={16} />
+              {t("balances.paynowOpenBank")}
+            </button>
             <div className="flex w-full flex-wrap gap-2">
               <button
                 type="button"
@@ -180,6 +192,16 @@ export default function PayNowQrModal({
           )}
         </div>
       </div>
+
+      {paynowMobile && (
+        <PayNowBankSheet
+          open={bankSheetOpen}
+          paynowMobile={paynowMobile}
+          amount={amount}
+          currency={currency}
+          onClose={() => setBankSheetOpen(false)}
+        />
+      )}
     </div>
   );
 }

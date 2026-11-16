@@ -355,7 +355,7 @@ const en = {
     openMatch: "Open match",
     paynow: "PayNow",
     paynowTitle: "PayNow QR",
-    paynowHint: "Scan with any SG banking app to pay this amount.",
+    paynowHint: "Scan with another phone, or tap the QR / Open bank app on this phone.",
     paynowMissing: "{name} has no PayNow mobile yet. Ask the captain to add it in Management.",
     paynowCopyMobile: "Copy number",
     paynowCopyLink: "Copy link",
@@ -365,6 +365,12 @@ const en = {
     paynowPayTo: "Pay {name}",
     paynowFrom: "From {name}",
     paynowAnyAmount: "any amount",
+    paynowTapQr: "Tap to open a banking app",
+    paynowOpenBank: "Open bank app",
+    paynowOpenBankHint: "We'll copy {mobile}. In your bank app use PayNow and paste the number.",
+    paynowOpenBankAmount: "Send {amount}.",
+    paynowOpenBankFooter:
+      "Banks don't allow web links to prefill PayNow (anti-phishing). Scan this QR from another phone for the amount filled in automatically.",
   },
   profile: {
     backToLeaderboard: "Leaderboard",

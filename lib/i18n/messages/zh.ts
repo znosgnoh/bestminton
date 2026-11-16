@@ -345,7 +345,7 @@ const zh: Messages = {
     openMatch: "打开场次",
     paynow: "PayNow",
     paynowTitle: "PayNow 二维码",
-    paynowHint: "用新加坡银行 App 扫描即可支付该金额。",
+    paynowHint: "用另一部手机扫描，或在本机点按二维码 / 打开银行 App。",
     paynowMissing: "{name} 尚未登记 PayNow 手机号。请队长在管理页添加。",
     paynowCopyMobile: "复制号码",
     paynowCopyLink: "复制链接",
@@ -355,6 +355,12 @@ const zh: Messages = {
     paynowPayTo: "付款给 {name}",
     paynowFrom: "来自 {name}",
     paynowAnyAmount: "任意金额",
+    paynowTapQr: "点按以打开银行 App",
+    paynowOpenBank: "打开银行 App",
+    paynowOpenBankHint: "将复制 {mobile}。在银行 App 中选择 PayNow 并粘贴号码。",
+    paynowOpenBankAmount: "转账 {amount}。",
+    paynowOpenBankFooter:
+      "银行不允许网页链接预填 PayNow（防钓鱼）。用另一部手机扫描本二维码可自动带上金额。",
   },
   profile: {
     backToLeaderboard: "排行榜",

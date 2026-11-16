@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Copy, Check, QrCode } from "lucide-react";
+import { ArrowLeft, Copy, Check, QrCode, Smartphone } from "lucide-react";
+import PayNowBankSheet from "@/components/paynow/PayNowBankSheet";
 import PayNowQrImage from "@/components/paynow/PayNowQrImage";
 import { useI18n } from "@/contexts/LocaleContext";
 import { formatCurrency } from "@/lib/currency";
@@ -28,6 +29,7 @@ export default function PayNowPageClient({
 }: PayNowPageClientProps) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
+  const [bankSheetOpen, setBankSheetOpen] = useState(false);
 
   const billRef = (reference?.trim() || (fromName ? `BM ${fromName}` : "Bestminton")).slice(
     0,
@@ -107,6 +109,8 @@ export default function PayNowPageClient({
                   ? formatCurrency(amount, "SGD")
                   : t("balances.paynowAnyAmount"),
             })}
+            onActivate={() => setBankSheetOpen(true)}
+            activateLabel={t("balances.paynowTapQr")}
           />
           <p className="text-center text-xs text-gray-500 dark:text-gray-400">
             {t("balances.paynowHint")}
@@ -116,12 +120,26 @@ export default function PayNowPageClient({
           </p>
           <button
             type="button"
+            onClick={() => setBankSheetOpen(true)}
+            className="tet-btn-primary min-h-11 w-full text-sm inline-flex items-center justify-center gap-1.5"
+          >
+            <Smartphone size={16} />
+            {t("balances.paynowOpenBank")}
+          </button>
+          <button
+            type="button"
             onClick={() => void copyMobile()}
             className="tet-btn-ghost min-h-10 px-3 text-xs inline-flex items-center gap-1"
           >
             {copied ? <Check size={14} /> : <Copy size={14} />}
             {copied ? t("balances.paynowCopied") : t("balances.paynowCopyMobile")}
           </button>
+          <PayNowBankSheet
+            open={bankSheetOpen}
+            paynowMobile={paynowMobile}
+            amount={amount}
+            onClose={() => setBankSheetOpen(false)}
+          />
         </div>
       )}
     </div>
