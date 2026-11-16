@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, Copy, Link2, QrCode, Smartphone, X } from "lucide-react";
+import { Check, Copy, Download, Link2, Loader2, QrCode, Smartphone, X } from "lucide-react";
 import PayNowBankSheet from "@/components/paynow/PayNowBankSheet";
 import PayNowQrImage from "@/components/paynow/PayNowQrImage";
 import { useI18n } from "@/contexts/LocaleContext";
@@ -11,6 +11,7 @@ import {
   formatPaynowMobileDisplay,
   paynowDeeplinkPath,
 } from "@/lib/paynow";
+import { paynowQrFilename, savePayNowQr } from "@/lib/paynowSaveQr";
 
 interface PayNowQrModalProps {
   open: boolean;
@@ -42,6 +43,9 @@ export default function PayNowQrModal({
   const { t } = useI18n();
   const [copied, setCopied] = useState<"mobile" | "link" | null>(null);
   const [bankSheetOpen, setBankSheetOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const reference = useMemo(() => {
     if (debtorName) return `BM ${debtorName}`.slice(0, 25);
@@ -78,6 +82,25 @@ export default function PayNowQrModal({
       window.setTimeout(() => setCopied(null), 1600);
     } catch {
       // clipboard may be blocked
+    }
+  }
+
+  async function handleSaveQr() {
+    if (!payload) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await savePayNowQr(
+        payload,
+        paynowQrFilename({ name: creditorName, amount })
+      );
+      setSavedFlash(true);
+      window.setTimeout(() => setSavedFlash(false), 1600);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      setSaveError(t("balances.paynowSaveFailed"));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -158,6 +181,21 @@ export default function PayNowQrModal({
             <div className="flex w-full flex-wrap gap-2">
               <button
                 type="button"
+                onClick={() => void handleSaveQr()}
+                disabled={saving}
+                className="tet-btn-ghost min-h-10 flex-1 text-xs inline-flex items-center justify-center gap-1 disabled:opacity-50"
+              >
+                {saving ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : savedFlash ? (
+                  <Check size={14} />
+                ) : (
+                  <Download size={14} />
+                )}
+                {savedFlash ? t("balances.paynowSaved") : t("balances.paynowSaveQr")}
+              </button>
+              <button
+                type="button"
                 onClick={() => void copyText("mobile", paynowMobile)}
                 className="tet-btn-ghost min-h-10 flex-1 text-xs inline-flex items-center justify-center gap-1"
               >
@@ -173,6 +211,11 @@ export default function PayNowQrModal({
                 {copied === "link" ? t("balances.paynowCopied") : t("balances.paynowCopyLink")}
               </button>
             </div>
+            {saveError && (
+              <p className="w-full text-center text-xs text-red-600 dark:text-red-400">
+                {saveError}
+              </p>
+            )}
           </div>
         )}
 
