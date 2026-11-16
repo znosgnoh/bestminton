@@ -3,6 +3,7 @@ import PayNowPageClient from "@/components/paynow/PayNowPageClient";
 import { db } from "@/lib/db";
 import { isDatabaseConfigured } from "@/lib/dbConfig";
 import { formatDatabaseError, logDatabaseError, withDbRetry } from "@/lib/dbHealth";
+import { ensurePaynowMobileColumn } from "@/lib/ensurePaynowMobile";
 
 export const dynamic = "force-dynamic";
 export const preferredRegion = "sin1";
@@ -28,6 +29,7 @@ export default async function PayNowPage({ params, searchParams }: PageProps) {
 
   let member: { id: number; name: string; paynowMobile: string | null } | null = null;
   try {
+    await ensurePaynowMobileColumn();
     member = await withDbRetry(() =>
       db.member.findUnique({
         where: { id: memberId },

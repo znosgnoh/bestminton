@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
+import { ensurePaynowMobileColumn } from "@/lib/ensurePaynowMobile";
 import { normalizeMemberEmail } from "@/lib/memberEmail";
 import { normalizePaynowMobile } from "@/lib/paynow";
 import { revalidateMemberPages } from "@/lib/revalidate";
@@ -14,6 +15,7 @@ const CACHE_HEADERS = {
 };
 
 export async function GET() {
+  await ensurePaynowMobileColumn();
   const members = await db.member.findMany({ orderBy: { name: "asc" } });
   const dtos = await membersToDTOs(members);
   return NextResponse.json(dtos, { headers: CACHE_HEADERS });
@@ -77,6 +79,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    await ensurePaynowMobileColumn();
     const member = await db.member.create({
       data: {
         name,

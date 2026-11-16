@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { getCurrencyCode } from "@/lib/currency";
 import { isDatabaseConfigured } from "@/lib/dbConfig";
 import { formatDatabaseError, logDatabaseError, withDbRetry } from "@/lib/dbHealth";
+import { ensurePaynowMobileColumn } from "@/lib/ensurePaynowMobile";
 import { getLedgerSnapshot } from "@/lib/ledgerService";
 import { toMemberDTO } from "@/lib/memberSerialize";
 import BalancesPageClient from "./BalancesPageClient";
@@ -25,6 +26,7 @@ export default async function BalancesLoader() {
       "POSTGRES_PRISMA_URL is not set. Configure Postgres env vars for kèo and leaderboard features.";
   } else {
     try {
+      await ensurePaynowMobileColumn();
       const [snap, rawMembers] = await withDbRetry(() =>
         Promise.all([
           getLedgerSnapshot(),

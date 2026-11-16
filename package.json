@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "prisma generate && next dev",
-    "build": "prisma generate && node scripts/deployMigrate.mjs && next build",
+    "build": "prisma generate && next build",
+    "migrate:deploy": "node scripts/deployMigrate.mjs",
     "start": "next start",
     "postinstall": "prisma generate",
     "test": "tsx --test 'lib/**/*.test.ts'"

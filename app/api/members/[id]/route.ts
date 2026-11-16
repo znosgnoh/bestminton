@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
+import { ensurePaynowMobileColumn } from "@/lib/ensurePaynowMobile";
 import { normalizeMemberEmail } from "@/lib/memberEmail";
 import { buildMemberProfile } from "@/lib/memberProfile";
 import { normalizePaynowMobile } from "@/lib/paynow";
@@ -30,6 +31,7 @@ export async function GET(
   }
 
   try {
+    await ensurePaynowMobileColumn();
     const profile = await buildMemberProfile(id);
     if (!profile) {
       return NextResponse.json({ error: "Member not found." }, { status: 404 });
@@ -200,6 +202,7 @@ export async function PUT(
   }
 
   try {
+    await ensurePaynowMobileColumn();
     const member = await db.member.update({
       where: { id },
       data: {
