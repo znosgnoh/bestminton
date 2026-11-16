@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import QRCode from "qrcode";
 
 interface PayNowQrImageProps {
   payload: string;
@@ -23,18 +22,24 @@ export default function PayNowQrImage({
     let cancelled = false;
     setError(false);
     setDataUrl(null);
-    void QRCode.toDataURL(payload, {
-      width: size,
-      margin: 2,
-      errorCorrectionLevel: "M",
-      color: { dark: "#0f172a", light: "#ffffff" },
-    })
+
+    // Dynamic import keeps `qrcode` out of the SSR graph.
+    void import("qrcode")
+      .then((QRCode) =>
+        QRCode.toDataURL(payload, {
+          width: size,
+          margin: 2,
+          errorCorrectionLevel: "M",
+          color: { dark: "#0f172a", light: "#ffffff" },
+        })
+      )
       .then((url) => {
         if (!cancelled) setDataUrl(url);
       })
       .catch(() => {
         if (!cancelled) setError(true);
       });
+
     return () => {
       cancelled = true;
     };
