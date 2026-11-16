@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Loader2, QrCode } from "lucide-react";
 import BalanceBreakdown from "@/components/balances/BalanceBreakdown";
 import { useI18n } from "@/contexts/LocaleContext";
 import {
@@ -18,6 +18,7 @@ interface BalanceEdgeRowProps {
   isPaying: boolean;
   payingDisabled: boolean;
   onPaid: (edge: LedgerEdgeDTO) => void;
+  onPayNow?: (edge: LedgerEdgeDTO) => void;
 }
 
 export default function BalanceEdgeRow({
@@ -27,6 +28,7 @@ export default function BalanceEdgeRow({
   isPaying,
   payingDisabled,
   onPaid,
+  onPayNow,
 }: BalanceEdgeRowProps) {
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
@@ -73,22 +75,36 @@ export default function BalanceEdgeRow({
           )}
         </button>
         {canPay && (
-          <button
-            type="button"
-            onClick={() => onPaid(edge)}
-            disabled={isPaying || payingDisabled}
-            className="tet-btn-primary shrink-0 min-h-9 px-2.5 py-1.5 text-xs inline-flex items-center justify-center gap-1 disabled:opacity-50"
-            aria-label={`${t("balances.markPaid")} ${edge.debtorName} → ${edge.creditorName} ${money}`}
-          >
-            {isPaying ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <>
-                <Check size={14} />
-                {t("balances.markPaid")}
-              </>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {onPayNow && (
+              <button
+                type="button"
+                onClick={() => onPayNow(edge)}
+                disabled={payingDisabled}
+                className="tet-btn-ghost min-h-9 px-2.5 py-1.5 text-xs inline-flex items-center justify-center gap-1 disabled:opacity-50"
+                aria-label={`${t("balances.paynow")} ${edge.creditorName} ${money}`}
+              >
+                <QrCode size={14} />
+                {t("balances.paynow")}
+              </button>
             )}
-          </button>
+            <button
+              type="button"
+              onClick={() => onPaid(edge)}
+              disabled={isPaying || payingDisabled}
+              className="tet-btn-primary shrink-0 min-h-9 px-2.5 py-1.5 text-xs inline-flex items-center justify-center gap-1 disabled:opacity-50"
+              aria-label={`${t("balances.markPaid")} ${edge.debtorName} → ${edge.creditorName} ${money}`}
+            >
+              {isPaying ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <>
+                  <Check size={14} />
+                  {t("balances.markPaid")}
+                </>
+              )}
+            </button>
+          </div>
         )}
       </div>
       {expanded && canExpand && <BalanceBreakdown items={displayItems} currency={currency} />}

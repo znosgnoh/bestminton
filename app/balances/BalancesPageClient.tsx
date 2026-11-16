@@ -6,6 +6,7 @@ import { Wallet } from "lucide-react";
 import { pairDirectRemainder } from "@/lib/balanceBreakdown";
 import BalanceGroupTab from "@/components/balances/BalanceGroupTab";
 import BalanceMeTab from "@/components/balances/BalanceMeTab";
+import PayNowQrModal from "@/components/paynow/PayNowQrModal";
 import { useRegisterPullToRefresh } from "@/components/PullToRefresh";
 import AdminPinModal from "@/components/ui/AdminPinModal";
 import ErrorBanner from "@/components/ui/ErrorBanner";
@@ -48,6 +49,7 @@ export default function BalancesPageClient({
   const [settlingKey, setSettlingKey] = useState<string | null>(null);
   const [pending, setPending] = useState<LedgerEdgeDTO | null>(null);
   const [showPinModal, setShowPinModal] = useState(false);
+  const [paynowEdge, setPaynowEdge] = useState<LedgerEdgeDTO | null>(null);
 
   useEffect(() => {
     try {
@@ -153,6 +155,17 @@ export default function BalancesPageClient({
     void runPaid(edge);
   }
 
+  function handlePayNow(edge: LedgerEdgeDTO) {
+    setPaynowEdge(edge);
+  }
+
+  function handleMarkPaidFromPaynow() {
+    if (!paynowEdge) return;
+    const edge = paynowEdge;
+    setPaynowEdge(null);
+    handlePaid(edge);
+  }
+
   async function handlePinSubmit(pin: string): Promise<string | null> {
     const pinError = await unlock(pin);
     if (pinError) return pinError;
@@ -215,14 +228,33 @@ export default function BalancesPageClient({
           onSelectMember={selectMember}
           settlingKey={settlingKey}
           onPaid={handlePaid}
+          onPayNow={handlePayNow}
         />
       ) : (
         <BalanceGroupTab
           snapshot={snapshot}
           settlingKey={settlingKey}
           onPaid={handlePaid}
+          onPayNow={handlePayNow}
         />
       )}
+
+      <PayNowQrModal
+        open={paynowEdge != null}
+        creditorName={paynowEdge?.creditorName ?? ""}
+        creditorId={paynowEdge?.creditorId ?? 0}
+        paynowMobile={
+          paynowEdge
+            ? (members.find((m) => m.id === paynowEdge.creditorId)?.paynowMobile ?? null)
+            : null
+        }
+        amount={paynowEdge?.amount ?? 0}
+        currency={snapshot.currency}
+        debtorName={paynowEdge?.debtorName}
+        onClose={() => setPaynowEdge(null)}
+        onMarkPaid={handleMarkPaidFromPaynow}
+        markPaidBusy={settlingKey != null}
+      />
 
       <AdminPinModal
         open={showPinModal}

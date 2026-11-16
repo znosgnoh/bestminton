@@ -10,6 +10,7 @@ function entry(
     email: null,
     emailNotificationsEnabled: true,
     isActive: true,
+    paynowMobile: null,
     avatarUrl: null,
     splitwiseId: null,
     eloRating: 1000,

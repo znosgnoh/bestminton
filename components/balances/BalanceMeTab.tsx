@@ -25,6 +25,7 @@ function stubMember(id: number, name: string): MemberDTO {
     singlesLoseStreak: 0,
     emailNotificationsEnabled: true,
     isActive: true,
+    paynowMobile: null,
     debtSummary: EMPTY_DEBT,
   };
 }
@@ -60,6 +61,7 @@ interface BalanceMeTabProps {
   onSelectMember: (id: number) => void;
   settlingKey: string | null;
   onPaid: (edge: LedgerEdgeDTO) => void;
+  onPayNow: (edge: LedgerEdgeDTO) => void;
 }
 
 export default function BalanceMeTab({
@@ -69,6 +71,7 @@ export default function BalanceMeTab({
   onSelectMember,
   settlingKey,
   onPaid,
+  onPayNow,
 }: BalanceMeTabProps) {
   const { t, locale } = useI18n();
   const people = pickerMembers(members, snapshot);
@@ -193,6 +196,7 @@ export default function BalanceMeTab({
                           isPaying={settlingKey === key}
                           payingDisabled={settlingKey !== null && settlingKey !== key}
                           onPaid={onPaid}
+                          onPayNow={onPayNow}
                         />
                       );
                     })}
@@ -216,6 +220,7 @@ export default function BalanceMeTab({
                           isPaying={settlingKey === key}
                           payingDisabled={settlingKey !== null && settlingKey !== key}
                           onPaid={onPaid}
+                          onPayNow={onPayNow}
                         />
                       );
                     })}

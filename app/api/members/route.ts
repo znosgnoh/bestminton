@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
+import { ensurePaynowMobileColumn } from "@/lib/ensurePaynowMobile";
 import { normalizeMemberEmail } from "@/lib/memberEmail";
+import { normalizePaynowMobile } from "@/lib/paynow";
 import { revalidateMemberPages } from "@/lib/revalidate";
 import { memberToDTO, membersToDTOs } from "@/lib/memberSerialize";
 import { Prisma } from "@prisma/client";
@@ -13,13 +15,21 @@ const CACHE_HEADERS = {
 };
 
 export async function GET() {
+  await ensurePaynowMobileColumn();
   const members = await db.member.findMany({ orderBy: { name: "asc" } });
   const dtos = await membersToDTOs(members);
   return NextResponse.json(dtos, { headers: CACHE_HEADERS });
 }
 
 export async function POST(request: NextRequest) {
-  let body: { name?: string; email?: string | null; avatarUrl?: string; splitwiseId?: number; pin?: string };
+  let body: {
+    name?: string;
+    email?: string | null;
+    avatarUrl?: string;
+    splitwiseId?: number;
+    paynowMobile?: string | null;
+    pin?: string;
+  };
   try {
     body = await request.json();
   } catch {
@@ -53,13 +63,30 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "email must be a valid address." }, { status: 400 });
   }
 
+  let paynowMobile: string | null | undefined;
+  if (body.paynowMobile !== undefined) {
+    if (body.paynowMobile === null || String(body.paynowMobile).trim() === "") {
+      paynowMobile = null;
+    } else {
+      paynowMobile = normalizePaynowMobile(body.paynowMobile);
+      if (!paynowMobile) {
+        return NextResponse.json(
+          { error: "paynowMobile must be a valid Singapore mobile (+65 8/9xxxxxxx)." },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
   try {
+    await ensurePaynowMobileColumn();
     const member = await db.member.create({
       data: {
         name,
         ...(email !== undefined && { email }),
         avatarUrl: body.avatarUrl?.trim() || null,
         splitwiseId,
+        ...(paynowMobile !== undefined && { paynowMobile }),
       },
     });
     revalidateMemberPages();

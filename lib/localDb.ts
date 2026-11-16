@@ -27,6 +27,7 @@ interface RawMember {
   singlesLoseStreak?: number;
   emailNotificationsEnabled?: boolean;
   isActive?: boolean;
+  paynowMobile?: string | null;
   debtSummary?: { totalOwed: number; totalOwing: number; netCam: number };
   createdAt: string;
 }
@@ -45,6 +46,7 @@ function toMemberDTO(m: RawMember): MemberDTO {
     singlesLoseStreak: m.singlesLoseStreak ?? 0,
     emailNotificationsEnabled: m.emailNotificationsEnabled ?? true,
     isActive: m.isActive !== false,
+    paynowMobile: m.paynowMobile ?? null,
     debtSummary: m.debtSummary ?? { totalOwed: 0, totalOwing: 0, netCam: 0 },
   };
 }
@@ -144,12 +146,14 @@ export async function createMember(data: {
   email?: string | null;
   avatarUrl?: string | null;
   splitwiseId?: number | null;
+  paynowMobile?: string | null;
 }): Promise<MemberDTO> {
   const id = await idbAdd("members", {
     name: data.name,
     email: data.email ?? null,
     avatarUrl: data.avatarUrl ?? null,
     splitwiseId: data.splitwiseId ?? null,
+    paynowMobile: data.paynowMobile ?? null,
     isActive: true,
     createdAt: new Date().toISOString(),
   });
@@ -159,6 +163,7 @@ export async function createMember(data: {
     email: data.email ?? null,
     avatarUrl: data.avatarUrl ?? null,
     splitwiseId: data.splitwiseId ?? null,
+    paynowMobile: data.paynowMobile ?? null,
     isActive: true,
     createdAt: new Date().toISOString(),
   });
@@ -176,6 +181,7 @@ export async function updateMember(
     totalWins?: number;
     emailNotificationsEnabled?: boolean;
     isActive?: boolean;
+    paynowMobile?: string | null;
     pin?: string;
   }
 ): Promise<MemberDTO> {
@@ -195,6 +201,7 @@ export async function updateMember(
       emailNotificationsEnabled: data.emailNotificationsEnabled,
     }),
     ...(data.isActive !== undefined && { isActive: data.isActive }),
+    ...(data.paynowMobile !== undefined && { paynowMobile: data.paynowMobile }),
   });
   return toMemberDTO({
     id,
@@ -211,6 +218,8 @@ export async function updateMember(
     emailNotificationsEnabled:
       data.emailNotificationsEnabled ?? existing.emailNotificationsEnabled ?? true,
     isActive: data.isActive !== undefined ? data.isActive : existing.isActive !== false,
+    paynowMobile:
+      data.paynowMobile !== undefined ? data.paynowMobile : (existing.paynowMobile ?? null),
     createdAt: existing.createdAt ?? new Date().toISOString(),
   });
 }

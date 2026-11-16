@@ -24,6 +24,8 @@ model Member {
   emailNotificationsEnabled Boolean @default(true)
   /// Soft flag: inactive members stay in history/admin but are hidden from match registration.
   isActive                  Boolean  @default(true)
+  /// PayNow personal proxy — normalized +65XXXXXXXX (optional; used for debt QR)
+  paynowMobile              String?
   ojBalance                 Int      @default(0)
   createdAt         DateTime @default(now())
 
