@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import { renderSVG } from "uqr";
 
 interface PayNowQrImageProps {
   payload: string;
@@ -9,66 +10,40 @@ interface PayNowQrImageProps {
   className?: string;
 }
 
+/** Render PayNow EMV payload as an SVG QR (pure JS, no canvas / native deps). */
 export default function PayNowQrImage({
   payload,
   size = 240,
   alt = "PayNow QR",
   className,
 }: PayNowQrImageProps) {
-  const [dataUrl, setDataUrl] = useState<string | null>(null);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    setError(false);
-    setDataUrl(null);
-
-    // Dynamic import keeps `qrcode` out of the SSR graph.
-    void import("qrcode")
-      .then((QRCode) =>
-        QRCode.toDataURL(payload, {
-          width: size,
-          margin: 2,
-          errorCorrectionLevel: "M",
-          color: { dark: "#0f172a", light: "#ffffff" },
-        })
-      )
-      .then((url) => {
-        if (!cancelled) setDataUrl(url);
-      })
-      .catch(() => {
-        if (!cancelled) setError(true);
+  const svg = useMemo(() => {
+    try {
+      return renderSVG(payload, {
+        ecc: "M",
+        border: 2,
+        pixelSize: 8,
+        whiteColor: "#ffffff",
+        blackColor: "#0f172a",
       });
+    } catch {
+      return null;
+    }
+  }, [payload]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [payload, size]);
-
-  if (error) {
+  if (!svg) {
     return (
       <p className="text-sm text-red-600 dark:text-red-400">Could not render QR.</p>
     );
   }
 
-  if (!dataUrl) {
-    return (
-      <div
-        className={`animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800 ${className ?? ""}`}
-        style={{ width: size, height: size }}
-        aria-hidden
-      />
-    );
-  }
-
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- data URL from qrcode
-    <img
-      src={dataUrl}
-      width={size}
-      height={size}
-      alt={alt}
-      className={`rounded-lg bg-white ${className ?? ""}`}
+    <div
+      className={`inline-block overflow-hidden rounded-lg bg-white [&>svg]:h-full [&>svg]:w-full ${className ?? ""}`}
+      style={{ width: size, height: size }}
+      role="img"
+      aria-label={alt}
+      dangerouslySetInnerHTML={{ __html: svg }}
     />
   );
 }
