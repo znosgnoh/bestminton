@@ -17,6 +17,11 @@ import { useI18n } from "@/contexts/LocaleContext";
 import { useAdminPin } from "@/hooks/useAdminPin";
 import * as dataService from "@/lib/dataService";
 import { formatLocal } from "@/lib/datetime";
+import {
+  isMatchAtCapacity,
+  matchHeadcount,
+  slotsRemaining,
+} from "@/lib/matchCapacity";
 import type { MatchDTO, MemberDTO, RegistrationDTO } from "@/lib/types";
 
 interface MatchDetailClientProps {
@@ -134,7 +139,10 @@ function MatchDetailClientInner({
   const canEditRegistration = (!isPast && !registrationClosed) || canManageAsCaptain;
   const needsCaptainPin =
     (isPast || registrationClosed) && pinRequired && !unlocked && isManageMode;
-  const totalHeadcount = registrations.reduce((sum, r) => sum + 1 + r.guests.length, 0);
+  const totalHeadcount = matchHeadcount(registrations);
+  const matchFull = isMatchAtCapacity(match.maxPlayers, totalHeadcount);
+  const canRegisterNew = canEditRegistration && (!matchFull || canManageAsCaptain);
+  const slotsLeft = slotsRemaining(match.maxPlayers, totalHeadcount);
 
   return (
     <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
@@ -171,6 +179,12 @@ function MatchDetailClientInner({
       {!isPast && registrationClosed && !canManageAsCaptain && (
         <div className="tet-alert-info">
           <p className="text-sm">{t("matches.registrationClosedCaptainHint")}</p>
+        </div>
+      )}
+
+      {!isPast && matchFull && !canManageAsCaptain && (
+        <div className="tet-alert-info">
+          <p className="text-sm">{t("matches.matchFullHint")}</p>
         </div>
       )}
 
@@ -272,13 +286,24 @@ function MatchDetailClientInner({
         setRegistrations={setRegistrations}
         isPast={isPast}
         registrationClosed={registrationClosed}
+        matchFull={matchFull && !canManageAsCaptain}
         canEditRegistration={canEditRegistration}
+        canRegisterNew={canRegisterNew}
       />
 
       {registrations.length > 0 && (
         <div className="tet-card p-4">
           <h2 className="tet-section-title text-sm mb-1">
-            Registered ({totalHeadcount} player{totalHeadcount !== 1 ? "s" : ""})
+            {match.maxPlayers != null
+              ? t("matches.registeredWithCap", {
+                  count: totalHeadcount,
+                  max: match.maxPlayers,
+                  slots:
+                    slotsLeft === 0
+                      ? t("matches.matchFull")
+                      : t("matches.slotsLeft", { count: slotsLeft ?? 0 }),
+                })
+              : `Registered (${totalHeadcount} player${totalHeadcount !== 1 ? "s" : ""})`}
           </h2>
           <div className="divide-y divide-amber-100/60 dark:divide-gray-800">
             {registrations.map((reg) => (
@@ -287,6 +312,7 @@ function MatchDetailClientInner({
                 registration={reg}
                 matchId={match.id}
                 canEditRegistration={canEditRegistration}
+                canAddGuest={canRegisterNew}
                 onUpdated={handleRegistrationUpdated}
               />
             ))}

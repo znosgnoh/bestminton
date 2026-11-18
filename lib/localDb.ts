@@ -67,6 +67,7 @@ interface RawMatch {
   shuttlecockRemitted?: boolean;
   youtubeUrl?: string | null;
   registrationClosesAt?: string | null;
+  maxPlayers?: number | null;
   settlementDetails?: SettlementDetails | null;
   createdAt: string;
 }
@@ -129,6 +130,7 @@ async function buildMatchDTO(match: RawMatch): Promise<MatchDTO> {
     shuttlecockRemitted: match.shuttlecockRemitted ?? false,
     youtubeUrl: match.youtubeUrl ?? null,
     registrationClosesAt: match.registrationClosesAt ?? null,
+    maxPlayers: match.maxPlayers ?? null,
     settlementDetails: match.settlementDetails ?? null,
     registrations: regDTOs,
   };
@@ -260,6 +262,7 @@ export async function createMatches(data: {
   isTournament?: boolean;
   notifyMembers?: boolean;
   registrationClosesAt?: string | null;
+  maxPlayers?: number | null;
 }): Promise<MatchDTO[]> {
   const base = new Date(data.scheduledAt);
   const dayOfWeek = getSingaporeWeekday(base);
@@ -267,6 +270,7 @@ export async function createMatches(data: {
     data.registrationClosesAt != null && data.registrationClosesAt !== ""
       ? new Date(data.registrationClosesAt)
       : null;
+  const maxPlayers = data.maxPlayers ?? null;
   const offsets = data.isRecurring ? [0, 7, 14, 21] : [0];
   const results: MatchDTO[] = [];
   for (const days of offsets) {
@@ -288,6 +292,7 @@ export async function createMatches(data: {
         closesBase != null
           ? new Date(closesBase.getTime() + days * 86400000).toISOString()
           : null,
+      maxPlayers,
       settlementDetails: null,
       createdAt: new Date().toISOString(),
     };
@@ -310,6 +315,7 @@ export async function updateMatch(
     youtubeUrl?: string | null;
     isTournament?: boolean;
     registrationClosesAt?: string | null;
+    maxPlayers?: number | null;
     settlementDetails?: SettlementDetails | null;
   }
 ): Promise<MatchDTO> {
@@ -337,6 +343,23 @@ export async function registerMember(matchId: number, memberId: number): Promise
   if (!member) throw new Error("Member not found.");
   if (member.isActive === false) {
     throw new Error("This member is deactivated and cannot register.");
+  }
+  const existingRegs = await idbGetByIndex<RawRegistration>("registrations", "matchId", matchId);
+  if (!existingRegs.some((r) => r.memberId === memberId)) {
+    const match = await idbGetById<RawMatch>("matches", matchId);
+    if (match?.maxPlayers != null) {
+      const occupied = (
+        await Promise.all(
+          existingRegs.map(async (r) => {
+            const guests = await idbGetByIndex<RawGuest>("guests", "registrationId", r.id);
+            return 1 + guests.length;
+          })
+        )
+      ).reduce((a, b) => a + b, 0);
+      if (occupied >= match.maxPlayers) {
+        throw new Error("Match is full.");
+      }
+    }
   }
   const raw: Omit<RawRegistration, "id"> = {
     matchId,
@@ -380,6 +403,20 @@ export async function addGuest(
   const regs = await idbGetByIndex<RawRegistration>("registrations", "matchId", matchId);
   const reg = regs.find((r) => r.memberId === memberId);
   if (!reg) throw new Error("Registration not found.");
+  const match = await idbGetById<RawMatch>("matches", matchId);
+  if (match?.maxPlayers != null) {
+    const occupied = (
+      await Promise.all(
+        regs.map(async (r) => {
+          const guests = await idbGetByIndex<RawGuest>("guests", "registrationId", r.id);
+          return 1 + guests.length;
+        })
+      )
+    ).reduce((a, b) => a + b, 0);
+    if (occupied >= match.maxPlayers) {
+      throw new Error("Match is full.");
+    }
+  }
   await idbAdd("guests", {
     registrationId: reg.id,
     label: data.label?.trim() || null,
