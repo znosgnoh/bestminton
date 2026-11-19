@@ -65,6 +65,8 @@ model Match {
   youtubeUrl                  String?
   /// When set, self-registration closes at this time (captain can still edit)
   registrationClosesAt        DateTime?
+  /// Optional player cap (members + guests); null = unlimited
+  maxPlayers                  Int?
   /// Shuttle count/price, court rate, and who booked × hours
   settlementDetails           Json?
   createdAt                   DateTime @default(now())

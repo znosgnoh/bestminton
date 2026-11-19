@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { revalidateMatchPages } from "@/lib/revalidate";
-import { requireRegistrationEditAccess } from "@/lib/apiHelpers";
+import {
+  requireMatchCapacityAccess,
+  requireRegistrationEditAccess,
+} from "@/lib/apiHelpers";
+import { matchHeadcount } from "@/lib/matchCapacity";
 import { Prisma } from "@prisma/client";
 
 const REG_INCLUDE = { member: true, guests: true };
@@ -55,6 +59,25 @@ export async function POST(
       { error: "This member is deactivated and cannot register." },
       { status: 403 }
     );
+  }
+
+  const existingReg = await db.matchRegistration.findUnique({
+    where: { matchId_memberId: { matchId, memberId } },
+    select: { id: true },
+  });
+  if (!existingReg) {
+    const regs = await db.matchRegistration.findMany({
+      where: { matchId },
+      include: { guests: { select: { id: true } } },
+    });
+    const capacityDenied = requireMatchCapacityAccess(
+      request,
+      match,
+      matchHeadcount(regs),
+      body,
+      1
+    );
+    if (capacityDenied) return capacityDenied;
   }
 
   try {

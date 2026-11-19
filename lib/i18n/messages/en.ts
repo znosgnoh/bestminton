@@ -144,6 +144,11 @@ const en = {
     countdownHms: "{hours}:{minutes}:{seconds}",
     registrationClosedCaptainHint:
       "Registration closed. The captain can still update the roster from Management.",
+    matchFull: "Full",
+    slotsLeft: "{count} slots left",
+    matchFullHint:
+      "This match is full. The captain can still update the roster from Management.",
+    registeredWithCap: "Registered ({count}/{max} · {slots})",
     tournament: "Tournament",
   },
   challenges: {
@@ -425,7 +430,7 @@ const en = {
     clone: "Clone",
     cloneTitle: "Clone match",
     cloneHint:
-      "Copied title, venue, time, tournament, and weekly setting. Pick a new date — players are not copied.",
+      "Copied title, venue, time, tournament, player limit, and weekly setting. Pick a new date — players are not copied.",
     tournamentMatch: "Tournament match (fire UI)",
     repeatWeekly: "Repeat weekly (creates 4 sessions)",
     repeatWeeklyHint: "Will repeat every {day} for 4 weeks.",
@@ -434,6 +439,11 @@ const en = {
     registrationByDate: "Register by date",
     registrationByTime: "Register by time",
     registrationDeadlineRequired: "Registration deadline date and time are required.",
+    setPlayerLimit: "Limit number of players",
+    maxPlayers: "Max players",
+    maxPlayersPlaceholder: "e.g. 16",
+    maxPlayersHint: "Members and guests count toward the limit. Leave off for no limit.",
+    maxPlayersInvalid: "Max players must be a positive whole number.",
     transactions: "Ledger transactions",
     transactionsHint:
       "Every court, shuttlecock, and opening row. Rollback removes it from the ledger. You can record the match again afterwards.",

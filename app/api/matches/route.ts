@@ -4,6 +4,7 @@ import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
 import { getSingaporeWeekday } from "@/lib/datetime";
 import { deferNotification } from "@/lib/email/defer";
 import { notifyMatchCreated } from "@/lib/email/events";
+import { parseMaxPlayersField } from "@/lib/matchCapacity";
 import { MATCH_FULL_INCLUDE, MATCH_LIST_INCLUDE } from "@/lib/prismaIncludes";
 import { revalidateMatchPages } from "@/lib/revalidate";
 import { toDTO } from "@/lib/serialize";
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest) {
     isTournament?: boolean;
     notifyMembers?: boolean;
     registrationClosesAt?: string | null;
+    maxPlayers?: number | null;
     pin?: string;
   };
   try {
@@ -77,6 +79,12 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const maxPlayersParsed = parseMaxPlayersField(body.maxPlayers);
+  if (!maxPlayersParsed.ok) {
+    return NextResponse.json({ error: maxPlayersParsed.error }, { status: 400 });
+  }
+  const maxPlayers = maxPlayersParsed.value ?? null;
+
   const isRecurring = Boolean(body.isRecurring);
   const isTournament = Boolean(body.isTournament);
   // Default on: omit / undefined / null → notify; only explicit false skips.
@@ -93,6 +101,7 @@ export async function POST(request: NextRequest) {
         isTournament,
         recurDayOfWeek: null,
         registrationClosesAt,
+        maxPlayers,
       },
       include: MATCH_FULL_INCLUDE,
     });
@@ -118,6 +127,7 @@ export async function POST(request: NextRequest) {
             registrationClosesAt != null
               ? addDays(registrationClosesAt, index * 7)
               : null,
+          maxPlayers,
         },
         include: MATCH_FULL_INCLUDE,
       })

@@ -13,6 +13,7 @@ import { bookingRemittances, parseSettlementDetails, resolveFeeSplit } from "@/l
 import { shouldCreateShuttlecockRemittance } from "@/lib/shuttlecock";
 import { formatAmount, getCurrencySymbol } from "@/lib/currency";
 import { formatLocal } from "@/lib/datetime";
+import { matchHeadcount, slotsRemaining } from "@/lib/matchCapacity";
 import type { MatchDTO } from "@/lib/types";
 
 interface MatchManageRowProps {
@@ -31,10 +32,6 @@ function formatDate(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function totalHeadcount(match: MatchDTO): number {
-  return match.registrations.reduce((sum, r) => sum + 1 + r.guests.length, 0);
 }
 
 export default function MatchManageRow({
@@ -99,8 +96,15 @@ export default function MatchManageRow({
     );
   }
 
-  const headcount = totalHeadcount(match);
+  const headcount = matchHeadcount(match.registrations);
+  const left = slotsRemaining(match.maxPlayers, headcount);
   const isPast = new Date(match.scheduledAt) < new Date();
+  const countLabel =
+    left == null
+      ? `${headcount} ${headcount === 1 ? "player" : "players"}`
+      : left === 0
+        ? t("matches.matchFull")
+        : `${t("matches.slotsLeft", { count: left })} · ${headcount}/${match.maxPlayers}`;
 
   return (
     <>
@@ -136,7 +140,7 @@ export default function MatchManageRow({
             <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-500">{formatDate(match.scheduledAt)}</p>
             <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-500">
               <Users size={11} />
-              {headcount} {headcount === 1 ? "player" : "players"}
+              {countLabel}
             </p>
             {feeSplit && paidByName && (
               <div className="mt-1.5 space-y-0.5 text-xs text-gray-600 dark:text-gray-400">

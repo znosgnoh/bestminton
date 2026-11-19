@@ -14,7 +14,10 @@ interface MemberRosterProps {
   setRegistrations: (updater: (prev: RegistrationDTO[]) => RegistrationDTO[]) => void;
   isPast: boolean;
   registrationClosed?: boolean;
+  /** True when at capacity and viewer cannot override (disables new joins only). */
+  matchFull?: boolean;
   canEditRegistration: boolean;
+  canRegisterNew: boolean;
 }
 
 function buildOptimisticRegistration(
@@ -39,7 +42,9 @@ export default function MemberRoster({
   setRegistrations,
   isPast,
   registrationClosed = false,
+  matchFull = false,
   canEditRegistration,
+  canRegisterNew,
 }: MemberRosterProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Set<number>>(new Set());
@@ -54,10 +59,15 @@ export default function MemberRoster({
   );
 
   async function handleToggle(member: MemberDTO) {
-    if (!canEditRegistration || pending.has(member.id)) return;
+    if (pending.has(member.id)) return;
     setError(null);
 
     const isRegistered = registrations.some((r) => r.memberId === member.id);
+    if (isRegistered) {
+      if (!canEditRegistration) return;
+    } else if (!canRegisterNew) {
+      return;
+    }
     const snapshot = [...registrations];
 
     if (isRegistered) {
@@ -109,7 +119,9 @@ export default function MemberRoster({
         {canEditRegistration
           ? isPast || registrationClosed
             ? "Tap to update roster"
-            : "Tap to register"
+            : matchFull
+              ? "Match is full"
+              : "Tap to register"
           : "Players"}
       </h2>
       {error && (
@@ -120,13 +132,14 @@ export default function MemberRoster({
       <div className="flex flex-wrap gap-1">
         {rosterMembers.map((member) => {
           const reg = registrations.find((r) => r.memberId === member.id);
+          const canToggle = reg ? canEditRegistration : canRegisterNew;
           return (
             <AvatarTile
               key={member.id}
               member={member}
               registered={!!reg}
               playedFull={reg?.playedFull}
-              disabled={!canEditRegistration || pending.has(member.id)}
+              disabled={!canToggle || pending.has(member.id)}
               pending={pending.has(member.id)}
               onToggle={() => handleToggle(member)}
             />

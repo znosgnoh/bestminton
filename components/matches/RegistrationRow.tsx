@@ -10,6 +10,8 @@ interface RegistrationRowProps {
   registration: RegistrationDTO;
   matchId: number;
   canEditRegistration: boolean;
+  /** When false, hide/disable adding guests (e.g. match at capacity). */
+  canAddGuest?: boolean;
   onUpdated: (updated: RegistrationDTO) => void;
 }
 
@@ -17,6 +19,7 @@ export default function RegistrationRow({
   registration,
   matchId,
   canEditRegistration,
+  canAddGuest = true,
   onUpdated,
 }: RegistrationRowProps) {
   const [addingGuest, setAddingGuest] = useState(false);
@@ -177,7 +180,7 @@ export default function RegistrationRow({
             );
           })}
 
-          {canEditRegistration && !addingGuest && (
+          {canEditRegistration && canAddGuest && !addingGuest && (
             <button
               type="button"
               onClick={() => setAddingGuest(true)}
@@ -188,7 +191,7 @@ export default function RegistrationRow({
             </button>
           )}
 
-          {canEditRegistration && addingGuest && (
+          {canEditRegistration && canAddGuest && addingGuest && (
             <div className="mt-1 w-full rounded-xl border border-amber-200/60 dark:border-gray-700 bg-amber-50/50 dark:bg-gray-800/60 p-2.5 flex flex-col gap-2">
               <input
                 autoFocus

@@ -81,6 +81,26 @@ export function requireRegistrationEditAccess(
   return requireAdminPin(pinFromRequest(request, body));
 }
 
+/**
+ * When `maxPlayers` is set and adding `delta` would exceed capacity,
+ * captain PIN is required (same localdev convenience as deadline: if
+ * CAPTAIN_PIN is unset, allow). Otherwise return 409 Match is full.
+ */
+export function requireMatchCapacityAccess(
+  request: NextRequest,
+  match: { maxPlayers?: number | null },
+  occupied: number,
+  body?: { pin?: string },
+  delta: number = 1
+) {
+  const max = match.maxPlayers;
+  if (max == null) return null;
+  if (occupied + delta <= max) return null;
+  const pinDenied = requireAdminPin(pinFromRequest(request, body));
+  if (!pinDenied) return null;
+  return NextResponse.json({ error: "Match is full." }, { status: 409 });
+}
+
 export function requireDatabase() {
   if (!isDatabaseConfigured()) {
     return NextResponse.json(

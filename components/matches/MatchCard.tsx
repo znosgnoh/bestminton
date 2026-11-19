@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { MapPin, Users, RefreshCw, CheckCircle, Play } from "lucide-react";
 import TournamentBadge from "./TournamentBadge";
+import { useI18n } from "@/contexts/LocaleContext";
 import { formatLocal } from "@/lib/datetime";
+import { matchHeadcount, slotsRemaining } from "@/lib/matchCapacity";
 import type { MatchDTO } from "@/lib/types";
 
 interface MatchCardProps {
@@ -20,13 +22,18 @@ function formatDate(iso: string): string {
   });
 }
 
-function totalHeadcount(match: MatchDTO): number {
-  return match.registrations.reduce((sum, r) => sum + 1 + r.guests.length, 0);
-}
-
 export default function MatchCard({ match }: MatchCardProps) {
-  const headcount = totalHeadcount(match);
+  const { t } = useI18n();
+  const headcount = matchHeadcount(match.registrations);
+  const left = slotsRemaining(match.maxPlayers, headcount);
   const tournament = match.isTournament;
+
+  const countLabel =
+    left == null
+      ? `${headcount} ${headcount === 1 ? t("common.player") : t("common.playersPlural")}`
+      : left === 0
+        ? t("matches.matchFull")
+        : t("matches.slotsLeft", { count: left });
 
   return (
     <Link
@@ -100,9 +107,16 @@ export default function MatchCard({ match }: MatchCardProps) {
               <Play size={12} />
             </span>
           )}
-          <span className="tet-badge-count">
+          <span
+            className="tet-badge-count"
+            title={
+              match.maxPlayers != null
+                ? `${headcount}/${match.maxPlayers}`
+                : undefined
+            }
+          >
             <Users size={12} />
-            {headcount} {headcount === 1 ? "player" : "players"}
+            {countLabel}
           </span>
         </div>
       </div>

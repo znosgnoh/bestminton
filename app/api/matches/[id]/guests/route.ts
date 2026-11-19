@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { revalidateMatchPages } from "@/lib/revalidate";
-import { requireRegistrationEditAccess } from "@/lib/apiHelpers";
+import {
+  requireMatchCapacityAccess,
+  requireRegistrationEditAccess,
+} from "@/lib/apiHelpers";
+import { matchHeadcount } from "@/lib/matchCapacity";
 
 const REG_INCLUDE = { member: true, guests: true };
 
@@ -44,6 +48,19 @@ export async function POST(
       { status: 404 }
     );
   }
+
+  const regs = await db.matchRegistration.findMany({
+    where: { matchId },
+    include: { guests: { select: { id: true } } },
+  });
+  const capacityDenied = requireMatchCapacityAccess(
+    request,
+    match,
+    matchHeadcount(regs),
+    body,
+    1
+  );
+  if (capacityDenied) return capacityDenied;
 
   await db.guest.create({
     data: {

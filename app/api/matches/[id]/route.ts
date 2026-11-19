@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
+import { parseMaxPlayersField } from "@/lib/matchCapacity";
 import { MATCH_FULL_INCLUDE } from "@/lib/prismaIncludes";
 import { revalidateMatchPages } from "@/lib/revalidate";
 import { toDTO } from "@/lib/serialize";
@@ -53,6 +54,7 @@ export async function PUT(
     youtubeUrl?: string | null;
     isTournament?: boolean;
     registrationClosesAt?: string | null;
+    maxPlayers?: number | null;
     settlementDetails?: SettlementDetails | null;
     pin?: string;
   };
@@ -126,6 +128,15 @@ export async function PUT(
           );
         }
         data.registrationClosesAt = closes;
+      }
+    }
+    if (body.maxPlayers !== undefined) {
+      const parsed = parseMaxPlayersField(body.maxPlayers);
+      if (!parsed.ok) {
+        return NextResponse.json({ error: parsed.error }, { status: 400 });
+      }
+      if (parsed.value !== undefined) {
+        data.maxPlayers = parsed.value;
       }
     }
     if (body.settlementDetails !== undefined) {

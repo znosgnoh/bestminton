@@ -381,6 +381,8 @@ export interface MatchDTO {
   youtubeUrl: string | null;
   /** ISO datetime when self-registration closes; null = no deadline */
   registrationClosesAt: string | null;
+  /** Max members+guests; null = unlimited */
+  maxPlayers: number | null;
   settlementDetails: SettlementDetails | null;
   registrations: RegistrationDTO[];
 }

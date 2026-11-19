@@ -134,6 +134,7 @@ export default function MatchesSection({
                     isRecurring: cloneFrom.isRecurring,
                     isTournament: cloneFrom.isTournament,
                     registrationClosesAt: cloneFrom.registrationClosesAt,
+                    maxPlayers: cloneFrom.maxPlayers,
                   }
                 : undefined
             }

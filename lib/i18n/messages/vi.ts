@@ -146,6 +146,11 @@ const vi: Messages = {
     countdownHms: "{hours}:{minutes}:{seconds}",
     registrationClosedCaptainHint:
       "Đã hết hạn đăng ký. Đội trưởng vẫn có thể cập nhật danh sách từ Quản lý.",
+    matchFull: "Đã đủ",
+    slotsLeft: "Còn {count} chỗ",
+    matchFullHint:
+      "Trận đã đủ người. Đội trưởng vẫn có thể cập nhật danh sách từ Quản lý.",
+    registeredWithCap: "Đã đăng ký ({count}/{max} · {slots})",
     tournament: "Giải đấu",
   },
   challenges: {
@@ -428,7 +433,7 @@ const vi: Messages = {
     clone: "Nhân bản",
     cloneTitle: "Nhân bản trận",
     cloneHint:
-      "Đã copy tên, sân, giờ, giải đấu và lịch tuần. Chọn ngày mới — người chơi không được copy.",
+      "Đã copy tên, sân, giờ, giải đấu, giới hạn người và lịch tuần. Chọn ngày mới — người chơi không được copy.",
     tournamentMatch: "Trận giải đấu (giao diện lửa)",
     repeatWeekly: "Lặp hàng tuần (tạo 4 buổi)",
     repeatWeeklyHint: "Sẽ lặp mỗi {day} trong 4 tuần.",
@@ -437,6 +442,11 @@ const vi: Messages = {
     registrationByDate: "Đăng ký trước ngày",
     registrationByTime: "Đăng ký trước giờ",
     registrationDeadlineRequired: "Cần chọn ngày và giờ hạn đăng ký.",
+    setPlayerLimit: "Giới hạn số người chơi",
+    maxPlayers: "Số người tối đa",
+    maxPlayersPlaceholder: "vd. 16",
+    maxPlayersHint: "Thành viên và khách đều tính vào giới hạn. Bỏ trống = không giới hạn.",
+    maxPlayersInvalid: "Số người tối đa phải là số nguyên dương.",
     transactions: "Giao dịch sổ",
     transactionsHint:
       "Mọi dòng sân, cầu và số dư đầu. Rollback xóa khỏi sổ. Sau đó có thể ghi lại trận từ settle.",

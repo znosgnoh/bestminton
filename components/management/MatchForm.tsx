@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, Flame, Loader2, RefreshCw, Timer } from "lucide-react";
+import { Bell, Flame, Loader2, RefreshCw, Timer, Users } from "lucide-react";
 import { useI18n } from "@/contexts/LocaleContext";
 import * as dataService from "@/lib/dataService";
 import {
@@ -14,7 +14,13 @@ import type { MatchDTO } from "@/lib/types";
 
 export type MatchFormPrefill = Pick<
   MatchDTO,
-  "title" | "venue" | "scheduledAt" | "isRecurring" | "isTournament" | "registrationClosesAt"
+  | "title"
+  | "venue"
+  | "scheduledAt"
+  | "isRecurring"
+  | "isTournament"
+  | "registrationClosesAt"
+  | "maxPlayers"
 >;
 
 interface MatchFormProps {
@@ -48,6 +54,11 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
   const [regTime, setRegTime] = useState(
     initialDeadline ? toSingaporeInputTime(initialDeadline) : "12:00"
   );
+  const initialMax = source?.maxPlayers ?? null;
+  const [setPlayerLimit, setSetPlayerLimit] = useState(initialMax != null);
+  const [maxPlayersInput, setMaxPlayersInput] = useState(
+    initialMax != null ? String(initialMax) : ""
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,6 +79,16 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
       registrationClosesAt = singaporeLocalToIso(regDate, regTime);
     }
 
+    let maxPlayers: number | null = null;
+    if (setPlayerLimit) {
+      const n = Number(maxPlayersInput);
+      if (!Number.isInteger(n) || n < 1) {
+        setError(t("management.maxPlayersInvalid"));
+        return;
+      }
+      maxPlayers = n;
+    }
+
     const scheduledAt = singaporeLocalToIso(date, time);
 
     setSaving(true);
@@ -80,6 +101,7 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
           scheduledAt,
           isTournament,
           registrationClosesAt,
+          maxPlayers,
         });
         onSaved([updated]);
       } else {
@@ -91,6 +113,7 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
           isTournament,
           notifyMembers,
           registrationClosesAt,
+          maxPlayers,
         });
         onSaved(created);
       }
@@ -202,6 +225,41 @@ export default function MatchForm({ initial, prefill, onSaved, onCancel }: Match
               className={inputCls}
             />
           </div>
+        </div>
+      )}
+
+      <label className="flex items-center gap-2.5 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={setPlayerLimit}
+          onChange={(e) => setSetPlayerLimit(e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-emerald-600 focus:ring-emerald-500"
+        />
+        <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+          <Users size={13} className="text-gray-400" />
+          {t("management.setPlayerLimit")}
+        </span>
+      </label>
+
+      {setPlayerLimit && (
+        <div className="pl-0.5">
+          <label className="tet-label">
+            {t("management.maxPlayers")}{" "}
+            <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="number"
+            min={1}
+            step={1}
+            inputMode="numeric"
+            value={maxPlayersInput}
+            onChange={(e) => setMaxPlayersInput(e.target.value)}
+            placeholder={t("management.maxPlayersPlaceholder")}
+            className={inputCls}
+          />
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            {t("management.maxPlayersHint")}
+          </p>
         </div>
       )}
 
