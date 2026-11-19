@@ -1,2 +1,3 @@
 -- Optional court capacity; null = unlimited
-ALTER TABLE "Match" ADD COLUMN "maxPlayers" INTEGER;
+-- IF NOT EXISTS: safe when runtime ensureMaxPlayersColumn already patched prod/preview
+ALTER TABLE "Match" ADD COLUMN IF NOT EXISTS "maxPlayers" INTEGER;

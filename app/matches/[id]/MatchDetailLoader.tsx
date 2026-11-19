@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { isDatabaseConfigured } from "@/lib/dbConfig";
+import { ensureMaxPlayersColumn } from "@/lib/ensureMaxPlayers";
 import { getCurrencyCode } from "@/lib/splitwise";
 import { getShuttlecockFeePerHour } from "@/lib/shuttlecock";
 import { MATCH_FULL_INCLUDE } from "@/lib/prismaIncludes";
@@ -38,6 +39,7 @@ export default async function MatchDetailLoader({
 
   if (isDatabaseConfigured()) {
     try {
+      await ensureMaxPlayersColumn();
       const [rawMatch, rawMembers] = await Promise.all([
         db.match.findUnique({
           where: { id: matchId },

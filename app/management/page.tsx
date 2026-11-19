@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { isDatabaseConfigured } from "@/lib/dbConfig";
+import { ensureMaxPlayersColumn } from "@/lib/ensureMaxPlayers";
 import { isSplitwiseConfigured } from "@/lib/splitwise";
 import { getShuttlecockFeePerHour } from "@/lib/shuttlecock";
 import { MATCH_LIST_INCLUDE } from "@/lib/prismaIncludes";
@@ -20,6 +21,7 @@ export default async function ManagementPage() {
 
   if (isDatabaseConfigured()) {
     try {
+      await ensureMaxPlayersColumn();
       const [rawMembers, rawMatches, rawChallenges] = await Promise.all([
         db.member.findMany({ orderBy: { name: "asc" } }),
         db.match.findMany({

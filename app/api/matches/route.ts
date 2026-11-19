@@ -4,6 +4,7 @@ import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
 import { getSingaporeWeekday } from "@/lib/datetime";
 import { deferNotification } from "@/lib/email/defer";
 import { notifyMatchCreated } from "@/lib/email/events";
+import { ensureMaxPlayersColumn } from "@/lib/ensureMaxPlayers";
 import { parseMaxPlayersField } from "@/lib/matchCapacity";
 import { MATCH_FULL_INCLUDE, MATCH_LIST_INCLUDE } from "@/lib/prismaIncludes";
 import { revalidateMatchPages } from "@/lib/revalidate";
@@ -28,6 +29,7 @@ function nearestMatch<T extends { id: number; scheduledAt: Date }>(matches: T[])
 }
 
 export async function GET() {
+  await ensureMaxPlayersColumn();
   const matches = await db.match.findMany({
     include: MATCH_LIST_INCLUDE,
     orderBy: { scheduledAt: "asc" },
@@ -36,6 +38,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  await ensureMaxPlayersColumn();
   let body: {
     title?: string;
     venue?: string;
