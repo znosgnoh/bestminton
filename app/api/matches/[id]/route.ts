@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { pinFromRequest, requireAdminPin } from "@/lib/apiHelpers";
+import { ensureMaxPlayersColumn } from "@/lib/ensureMaxPlayers";
 import { parseMaxPlayersField } from "@/lib/matchCapacity";
 import { MATCH_FULL_INCLUDE } from "@/lib/prismaIncludes";
 import { revalidateMatchPages } from "@/lib/revalidate";
@@ -26,6 +27,7 @@ export async function GET(
     return NextResponse.json({ error: "Invalid match ID." }, { status: 400 });
   }
 
+  await ensureMaxPlayersColumn();
   const match = await db.match.findUnique({ where: { id }, include: MATCH_FULL_INCLUDE });
   if (!match) {
     return NextResponse.json({ error: "Match not found." }, { status: 404 });
@@ -37,6 +39,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  await ensureMaxPlayersColumn();
   const { id: idStr } = await params;
   const id = parseInt(idStr);
   if (isNaN(id)) {

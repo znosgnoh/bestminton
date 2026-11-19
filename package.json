@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "prisma generate && next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && npm run migrate:deploy && next build",
     "migrate:deploy": "node scripts/deployMigrate.mjs",
     "start": "next start",
     "postinstall": "prisma generate",

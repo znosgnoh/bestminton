@@ -6,4 +6,10 @@ export async function register() {
   } catch (err) {
     console.warn("[instrumentation] ensurePaynowMobileColumn:", err);
   }
+  try {
+    const { ensureMaxPlayersColumn } = await import("@/lib/ensureMaxPlayers");
+    await ensureMaxPlayersColumn();
+  } catch (err) {
+    console.warn("[instrumentation] ensureMaxPlayersColumn:", err);
+  }
 }

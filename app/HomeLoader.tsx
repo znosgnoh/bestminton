@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { isDatabaseConfigured } from "@/lib/dbConfig";
+import { ensureMaxPlayersColumn } from "@/lib/ensureMaxPlayers";
 import { MATCH_LIST_INCLUDE } from "@/lib/prismaIncludes";
 import { toDTO } from "@/lib/serialize";
 import MatchTabs from "@/components/matches/MatchTabs";
@@ -15,6 +16,7 @@ export default async function HomeLoader() {
 
   if (isDatabaseConfigured()) {
     try {
+      await ensureMaxPlayersColumn();
       const now = new Date();
       const [upcomingRaw, pastRaw] = await Promise.all([
         db.match.findMany({
