@@ -5,7 +5,7 @@
 A full-stack web application that helps a badminton team manage their sessions end-to-end:
 
 - **Captains** access `/management` directly (not linked in the nav) to register members, schedule matches (single or recurring weekly), and manage settlement / ledger transactions. When `CAPTAIN_PIN` is set, the management UI and captain-only API mutations require that PIN (see §8–9).
-- **Players** visit the homepage, see upcoming matches, and self-register by tapping their avatar. They can also add guests with an optional name and Full / Half-time playtime flag. From **Kèo** (`/challenges`) they can view active challenges, place bets while a kèo is pending, and check the Elo leaderboard. Mutating kèo actions (start / resolve / bulk), balances mark-paid, and nước cam settle use the shared **member PIN** (`MEMBER_PIN`, default `12345`).
+- **Players** visit the homepage, see upcoming matches, and self-register by tapping their avatar. They can also add guests with an optional name and Full / Half-time playtime flag. From **Kèo** (`/challenges`) they can view active challenges, place bets while a kèo is pending, and check the Elo leaderboard. **Videos** (`/videos`) lists session recordings from the team YouTube playlist. Mutating kèo actions (start / resolve / bulk), balances mark-paid, and nước cam settle use the shared **member PIN** (`MEMBER_PIN`, default `12345`).
 - **After a match**, the captain opens the match from `/management` → past match row → clipboard icon, enters the total court cost, hours played, and who paid. The app calculates each player's weighted share and syncs the expense directly to a Splitwise group (captain PIN required on those APIs when `CAPTAIN_PIN` is set).
 
 ---
@@ -224,8 +224,10 @@ Implemented in `lib/elo.ts`. Player-facing explanation with examples and charts:
 | `/challenges/new` | Page | Create a new kèo |
 | `/challenges/[id]` | Page | Kèo detail — betting board, start/resolve (captain) |
 | `/leaderboard` | Page | Elo rankings |
+| `/videos` | Page | Session recordings from the team YouTube playlist |
 | `/cam` | Page | Nước cam pool — Owns / Owes groups, settle, history, captain rollback |
 | `/balances` | Page | Court-money ledger — My / Group tabs (Sổ) |
+| `/api/videos` | Route | `GET` YouTube playlist snapshot (cached ~15m) |
 | `/api/health` | Route | `GET` DB availability check |
 | `/api/admin/verify-pin` | Route | `GET` captain PIN required?, `POST` verify captain PIN (client gate) |
 | `/api/member/verify-pin` | Route | `GET` member PIN required?, `POST` verify member PIN (balances / cam / kèo) |
@@ -346,6 +348,10 @@ CRON_SECRET=
 RESEND_API_KEY=
 EMAIL_FROM=Bestminton <notifications@yourdomain.com>
 APP_BASE_URL=https://your-app.vercel.app
+
+# Session videos playlist (optional — defaults to the team CCC playlist; API key preferred when set)
+# YOUTUBE_PLAYLIST_ID=PLcuS_id41Tj5-NF8TSkoKwanli-VHIq3W
+# YOUTUBE_API_KEY=
 ```
 
 **Splitwise cutover:** Unset `SPLITWISE_API_KEY` and `SPLITWISE_GROUP_ID` to turn the bridge **off**. Settle still records the in-app ledger (`POST /api/ledger/record` via `dataService.recordMatchLedger`); the settle button is **Record expense** and does not require `splitwiseId`. “Import Splitwise balances” is hidden. Nước cam pool (`ojBalance`) is independent of Splitwise.

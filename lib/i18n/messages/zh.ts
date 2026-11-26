@@ -5,6 +5,7 @@ const zh: Messages = {
     matches: "比赛",
     challenges: "对局",
     leaderboard: "排行榜",
+    videos: "视频",
     orangeJuice: "橙汁",
     balances: "账本",
     mainNav: "主导航",
@@ -265,6 +266,16 @@ const zh: Messages = {
     spotlightMostActive: "最活跃",
     spotlightCamKing: "橙汁领先",
     spotlightSharpest: "胜率最高",
+  },
+  videos: {
+    title: "视频",
+    subtitle: "来自队伍 YouTube 播放列表的场次录像",
+    count: "{count} 个视频",
+    empty: "播放列表中还没有视频。",
+    openPlaylist: "在 YouTube 打开播放列表",
+    openOnYoutube: "在 YouTube 打开",
+    play: "播放 {title}",
+    loadFailed: "无法加载场次视频。",
   },
   eloGuide: {
     intro:
