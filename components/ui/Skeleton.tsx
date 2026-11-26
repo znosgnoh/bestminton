@@ -249,3 +249,22 @@ export function MemberProfileSkeleton() {
     </div>
   );
 }
+
+export function VideosPageSkeleton() {
+  return (
+    <div className="mx-auto max-w-lg px-4 py-4 space-y-4">
+      <Skeleton className="h-8 w-28" />
+      <Skeleton className="h-4 w-64" />
+      <Skeleton className="h-3 w-40" />
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="tet-card overflow-hidden">
+          <Skeleton className="aspect-video w-full rounded-none" />
+          <div className="space-y-2 p-3.5">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

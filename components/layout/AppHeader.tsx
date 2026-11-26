@@ -3,7 +3,7 @@
 import type { ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Flame, Swords, Trophy, Wallet } from "lucide-react";
+import { Film, Flame, Swords, Trophy, Wallet } from "lucide-react";
 import BadmintonRacketIcon from "@/components/ui/BadmintonRacketIcon";
 import OrangeJuiceIcon from "@/components/ui/OrangeJuiceIcon";
 import DarkModeToggle from "@/components/ui/DarkModeToggle";
@@ -31,6 +31,7 @@ export default function AppHeader() {
     { href: "/", label: t("nav.matches"), Icon: Trophy },
     { href: "/challenges", label: t("nav.challenges"), Icon: Swords },
     { href: "/leaderboard", label: t("nav.leaderboard"), Icon: Flame },
+    { href: "/videos", label: t("nav.videos"), Icon: Film },
     {
       href: "/cam",
       label: t("nav.orangeJuice"),

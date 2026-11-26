@@ -3,6 +3,7 @@ const en = {
     matches: "Matches",
     challenges: "Kèo",
     leaderboard: "Leaderboard",
+    videos: "Videos",
     orangeJuice: "Orange juice",
     balances: "Balances",
     mainNav: "Main navigation",
@@ -269,6 +270,16 @@ const en = {
     spotlightMostActive: "Most kèo",
     spotlightCamKing: "Cam lead",
     spotlightSharpest: "Sharpest",
+  },
+  videos: {
+    title: "Videos",
+    subtitle: "Session recordings from the team YouTube playlist",
+    count: "{count} videos",
+    empty: "No videos in the playlist yet.",
+    openPlaylist: "Open playlist on YouTube",
+    openOnYoutube: "Open on YouTube",
+    play: "Play {title}",
+    loadFailed: "Could not load session videos.",
   },
   eloGuide: {
     intro:

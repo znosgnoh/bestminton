@@ -5,6 +5,7 @@ const vi: Messages = {
     matches: "Trận đấu",
     challenges: "Kèo",
     leaderboard: "Bảng xếp hạng",
+    videos: "Video",
     orangeJuice: "Nước cam",
     balances: "Sổ",
     mainNav: "Điều hướng chính",
@@ -270,6 +271,16 @@ const vi: Messages = {
     spotlightMostActive: "Chơi nhiều",
     spotlightCamKing: "Dẫn cam",
     spotlightSharpest: "Sắc nhất",
+  },
+  videos: {
+    title: "Video",
+    subtitle: "Video buổi tập từ playlist YouTube của team",
+    count: "{count} video",
+    empty: "Playlist chưa có video.",
+    openPlaylist: "Mở playlist trên YouTube",
+    openOnYoutube: "Mở trên YouTube",
+    play: "Phát {title}",
+    loadFailed: "Không tải được video buổi tập.",
   },
   eloGuide: {
     intro:
