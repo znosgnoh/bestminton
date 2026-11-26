@@ -20,9 +20,9 @@ export default function VideosList({ playlist }: VideosListProps) {
           href={playlist.playlistUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="tet-btn-ghost mt-3 inline-flex items-center gap-1.5 text-sm"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-red-50 hover:text-red-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-red-950/50 dark:hover:text-red-300"
         >
-          <ExternalLink size={14} aria-hidden />
+          <ExternalLink size={13} aria-hidden />
           {t("videos.openPlaylist")}
         </a>
       </div>

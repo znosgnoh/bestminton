@@ -53,13 +53,15 @@ export default function VideosClient({ playlist: initial, error: initialError }:
         </h1>
         <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">{t("videos.subtitle")}</p>
         {playlist && (
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-slate-400">
-            <span>{t("videos.count", { count: playlist.videos.length })}</span>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+              {t("videos.count", { count: playlist.videos.length })}
+            </span>
             <a
               href={playlist.playlistUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-red-600 hover:underline dark:text-red-400"
+              className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-red-50 hover:text-red-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-red-950/50 dark:hover:text-red-300"
             >
               <ExternalLink size={12} aria-hidden />
               {playlist.title || t("videos.openPlaylist")}
